@@ -3,9 +3,10 @@ import struct
 import time
 import threading
 import queue
-from Plotter import plot_chunks
 from keyinput import check_key
 import os  # フォルダ作成用にosモジュールをインポート
+import subprocess
+import sys
 from ServerResponse import handle_handshake, handle_parameter_request  # 新しいモジュールをインポート
 from ChunkProcessor import build_dataframe_for_chunk, merge_and_save_chunks  # 新しいモジュールをインポート
 
@@ -52,6 +53,19 @@ agent_sockets = {}  # agent_id -> socket object
 shutdown_event = threading.Event()  # シャットダウン用イベント
 chunk_files_lock = threading.Lock()  # current_chunk_files用のロック
 main_socket = None  # メインソケット（グローバルで管理）
+
+
+def launch_plotter(file_path):
+    """Tk/matplotlibをサーバープロセスから分離してプロットする。"""
+    if not file_path:
+        return
+
+    plotter_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Plotter.py")
+    try:
+        subprocess.Popen([sys.executable, plotter_path, file_path])
+        print(f"[INFO] Plotter launched for: {file_path}")
+    except Exception as e:
+        print(f"[WARN] Failed to launch plotter for {file_path}: {e}")
 
 
 # ---------------------------
@@ -200,7 +214,7 @@ def main():
                     current_chunk_files.clear()
                 print("[INFO] Merged and saved chunks by date.")
                 if merged_path:
-                    plot_chunks(merged_path)
+                    launch_plotter(merged_path)
                 print("[DEBUG] current_chunk_files cleared.")
             elif key == 's':
                 print("[INFO] Sending START command.")
@@ -268,7 +282,7 @@ def main():
             if current_chunk_files:
                 merged_path = merge_and_save_chunks_by_date(current_chunk_files.copy())
                 if merged_path:
-                    plot_chunks(merged_path)
+                    launch_plotter(merged_path)
             current_chunk_files.clear()
         print("[DEBUG] current_chunk_files cleared.")
         print("[INFO] Exit complete.")
