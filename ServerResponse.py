@@ -19,6 +19,13 @@ feedback_tau_sec = 1.0  # 一次遅れフィルタの時定数 [s]
 
 # PRCのフーリエ係数（0..prc_harmonics を使用）
 # z(psi) = Σ [ prc_a[n] * cos(n*psi) + prc_b[n] * sin(n*psi) ]
+#
+# PRC_MODE:
+#   "file"      : gamma_exports の snippet から読み込む
+#   "sin_alpha" : sin(theta + alpha) のフーリエ係数を alpha から生成する
+# ここを書き換えてモードを切り替える。
+PRC_MODE = "sin_alpha"
+PRC_SIN_ALPHA_HARMONICS = 10
 PRC_SOURCE_DIR = os.environ.get(
     "PRC_SOURCE_DIR",
     os.path.join("gamma_exports")
@@ -69,14 +76,46 @@ def load_prc_from_directory(source_dir, source_file=PRC_SOURCE_FILE):
     return harmonics, a, b
 
 
+def build_sin_alpha_prc(alpha_rad, harmonics):
+    """sin(theta + alpha) のフーリエ係数を生成する。"""
+    if harmonics < 1:
+        raise ValueError("PRC_SIN_ALPHA_HARMONICS must be >= 1")
+
+    a = [0.0] * (harmonics + 1)
+    b = [0.0] * (harmonics + 1)
+
+    # sin(theta + alpha) = sin(alpha) * cos(theta) + cos(alpha) * sin(theta)
+    a[1] = math.sin(alpha_rad)
+    b[1] = math.cos(alpha_rad)
+    return harmonics, a, b
+
+
+def load_prc_coefficients():
+    """設定されたPRC_MODEに応じてフーリエ係数を用意する。"""
+    if PRC_MODE in ("file", "gamma", "gamma_export", "gammaexport"):
+        harmonics, a, b = load_prc_from_directory(PRC_SOURCE_DIR)
+        source = os.path.join(PRC_SOURCE_DIR, PRC_SOURCE_FILE)
+        print(f"[INFO] Loaded PRC from {source}")
+        return harmonics, a, b
+
+    if PRC_MODE in ("sin_alpha", "sin", "formula"):
+        harmonics, a, b = build_sin_alpha_prc(alpha, PRC_SIN_ALPHA_HARMONICS)
+        print(
+            f"[INFO] Generated PRC from sin(theta + alpha): "
+            f"alpha={alpha:.6f}, harmonics={harmonics}"
+        )
+        return harmonics, a, b
+
+    raise ValueError(
+        f"Unsupported PRC_MODE: {PRC_MODE!r}. "
+        "Use 'file' or 'sin_alpha'."
+    )
+
+
 try:
-    prc_harmonics, prc_a, prc_b = load_prc_from_directory(PRC_SOURCE_DIR)
-    print(f"[INFO] Loaded PRC from {os.path.join(PRC_SOURCE_DIR, PRC_SOURCE_FILE)}")
+    prc_harmonics, prc_a, prc_b = load_prc_coefficients()
 except Exception as e:
-    raise RuntimeError(
-        f"Failed to load PRC from directory '{PRC_SOURCE_DIR}' "
-        f"(file: {PRC_SOURCE_FILE}). {e}"
-    ) from e
+    raise RuntimeError(f"Failed to prepare PRC coefficients. {e}") from e
 
 
 
