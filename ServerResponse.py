@@ -5,11 +5,11 @@ import os
 import re
 
 omega_values = {
-    4: 3.14 * 2.7    # エージェント1の周波数
+    9: 3.14 * 2.50    # エージェント1の周波数
 }
 default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
 
-kappa = 5       # フィードバックゲイン
+kappa = 7       # フィードバックゲイン
 alpha = -3.14*1.1
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
