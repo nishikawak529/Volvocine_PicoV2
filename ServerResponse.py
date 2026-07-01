@@ -5,12 +5,12 @@ import os
 import re
 
 omega_values = {
-    9: 3.14 * 2.50    # エージェント1の周波数
+    7: 3.14 * 2.45    # エージェント1の周波数
 }
 default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
 
-kappa = 7       # フィードバックゲイン
-alpha = -3.14*1.1
+kappa = 0       # フィードバックゲイン
+alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
 stop_agent_id = 4      # 停止対象のエージェントID (0の場合はどのも停止しない等を意味づけることも可能)
