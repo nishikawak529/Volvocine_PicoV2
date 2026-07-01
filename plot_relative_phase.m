@@ -18,12 +18,12 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 %   overlay_mode = false
 
     if nargin < 1 || isempty(dirpath)
-        dirpath = fullfile('merged_chunks_organized','2026-06-18');
+        dirpath = fullfile('merged_chunks_organized','2026-07-01');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 2;
+        csv_rank_from_latest = 8;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
         n_seconds_to_cut = 10;
