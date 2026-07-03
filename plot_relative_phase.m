@@ -29,7 +29,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         n_seconds_to_cut = 10;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration = 1200;
+        plot_duration = 65;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;

@@ -1,0 +1,93 @@
+[INFO] Starting SVD Low-Rank Analysis on Round Data
+  Round directory: EstimateL\Round
+  Output directory: EstimateL\Round\low_rank_analysis\M5
+  Fourier order: M=5
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+
+[INFO] Pair 1/6: 7-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_0128552d9a451ace1ba62bc017a5a7f2.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.84994609311 rad/s, omega2 = 7.68992857419 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0263164, s2 = 0.0270964
+  [Agent 7 (s_1)] - Self phase: phi1
+    Removed self-only energy ratio:  0.993084
+    Removed constant energy ratio:   0.000787
+    Removed other-only energy ratio: 0.000000
+    Remaining coefficient energy ratio: 0.006129
+    Reconstruction mismatch RMSE: 2.631641e-02
+    Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
+    -----+-----------------+--------------+---------------+------------
+     1   |     0.862116     |    0.999155    |     0.693855    |   0.069892
+     2   |     0.978512     |    0.999868    |     0.641414    |   0.064610
+     3   |     0.988069     |    0.999927    |     0.636877    |   0.064153
+     4   |     0.993895     |    0.999963    |     0.634066    |   0.063869
+     5   |     0.996742     |    0.999980    |     0.632738    |   0.063736
+
+    [Imaginary-part check]
+      Self-only q_1: max|imag| = 2.272e-16, relative = 4.385e-16, OK
+      r=1: a max|imag| = 2.047e-16, rel = 4.622e-16, OK; b max|imag| = 1.093e-16, rel = 3.905e-16, OK
+      r=2: a max|imag| = 2.255e-16, rel = 1.109e-15, OK; b max|imag| = 6.991e-16, rel = 3.354e-15, OK
+      r=3: a max|imag| = 2.784e-16, rel = 2.578e-15, OK; b max|imag| = 4.614e-16, rel = 4.494e-15, OK
+      r=4: a max|imag| = 2.212e-16, rel = 1.962e-15, OK; b max|imag| = 1.752e-16, rel = 1.776e-15, OK
+      r=5: a max|imag| = 4.120e-16, rel = 4.893e-15, OK; b max|imag| = 3.734e-16, rel = 4.400e-15, OK
+
+  [Agent 10 (s_2)] - Self phase: phi2
+    Removed self-only energy ratio:  0.992049
+    Removed constant energy ratio:   0.001064
+    Removed other-only energy ratio: 0.000000
+    Remaining coefficient energy ratio: 0.006887
+    Reconstruction mismatch RMSE: 2.709642e-02
+    Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
+    -----+-----------------+--------------+---------------+------------
+     1   |     0.876476     |    0.999149    |     0.679073    |   0.071631
+     2   |     0.963133     |    0.999746    |     0.637231    |   0.067217
+     3   |     0.984089     |    0.999890    |     0.626762    |   0.066113
+     4   |     0.990165     |    0.999932    |     0.623682    |   0.065788
+     5   |     0.995766     |    0.999971    |     0.620958    |   0.065500
+
+    [Imaginary-part check]
+      Self-only q_2: max|imag| = 1.318e-16, relative = 2.489e-16, OK
+      r=1: a max|imag| = 1.110e-16, rel = 2.398e-16, OK; b max|imag| = 1.258e-16, rel = 4.613e-16, OK
+      r=2: a max|imag| = 1.162e-16, rel = 4.369e-16, OK; b max|imag| = 1.340e-16, rel = 7.903e-16, OK
+      r=3: a max|imag| = 1.093e-16, rel = 6.473e-16, OK; b max|imag| = 1.284e-16, rel = 8.702e-16, OK
+      r=4: a max|imag| = 1.306e-15, rel = 1.158e-14, OK; b max|imag| = 1.069e-15, rel = 9.759e-15, OK
+      r=5: a max|imag| = 1.043e-15, rel = 7.473e-15, OK; b max|imag| = 9.107e-16, rel = 7.868e-15, OK
+
+{処理は途中で終了しました print (行 31)
+
+
+場所 saveas (行 181)
+        print( h, name, ['-d' dev{i}] )
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+場所 rankr_approximation_test_round (行 252)
+                saveas(fig2d, fullfile(pair_plot_dir, sprintf('agent%d_rank_approx_2d.png', target_agent_id)));
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 
+joint_svd_analysis_round
+[INFO] Loading cached Joint SVD results from EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\joint_svd_cache_8f8f8f8f8f8f8f388f8f8f8f6e8f8f8f.mat
+[INFO] Saved Joint SVD separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent7_joint_svd_profiles_overlay.png
+[INFO] Saved Joint SVD profile CSV data to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent7_joint_svd_profiles_data.csv
+[INFO] Saved Joint SVD separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent8_joint_svd_profiles_overlay.png
+[INFO] Saved Joint SVD profile CSV data to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent8_joint_svd_profiles_data.csv
+[INFO] Saved Joint SVD separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent9_joint_svd_profiles_overlay.png
+[INFO] Saved Joint SVD profile CSV data to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent9_joint_svd_profiles_data.csv
+[INFO] Saved Joint SVD separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent10_joint_svd_profiles_overlay.png
+[INFO] Saved Joint SVD profile CSV data to: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\agent_self_profiles\agent10_joint_svd_profiles_data.csv
+[INFO] Joint SVD Analysis completed. Output folder: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis
+
+ans = 
+
+  フィールドをもつ 1×4 の struct 配列:
+
+    agent_id
+    sigma
+    energy
+    source_ids
+    associated_pairs
+    components
+    phi_grid
+
+global_joint_svd_analysis

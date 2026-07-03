@@ -1,0 +1,77 @@
+[INFO] Starting Joint SVD Analysis on Round Data
+  Round directory: EstimateL\Round
+  Output directory: EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis
+  Fourier order: M=10
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+
+[INFO] Loading Pair 1/6: 7-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_dc6f9e095a928acb9ed715be20ee5e95.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.84994609311 rad/s, omega2 = 7.68992857419 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.018357, s2 = 0.0212088
+[INFO] Loading Pair 2/6: 7-8
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-8\phase_dynamics_cache_9fc0d91d95154d9f02dd5c007cac6d1b.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 8
+[INFO] omega1 = 7.69002662422 rad/s, omega2 = 7.85001686729 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0153246, s2 = 0.0172865
+[INFO] Loading Pair 3/6: 7-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-9\phase_dynamics_cache_dbe6e161dc9bdb3c38b7530c431bfabc.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 9
+[INFO] omega1 = 7.68986927017 rad/s, omega2 = 7.85014667468 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0187644, s2 = 0.0197374
+[INFO] Loading Pair 4/6: 8-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-10\phase_dynamics_cache_332d34e885b4e0cba51db0a2367f0bde.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 10
+[INFO] omega1 = 7.85006922836 rad/s, omega2 = 7.69012889514 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0192751, s2 = 0.0187917
+[INFO] Loading Pair 5/6: 8-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-9\phase_dynamics_cache_2a7d409004430422e4492864d4df5413.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.68996369439 rad/s, omega2 = 7.84996967859 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0172972, s2 = 0.0166103
+[INFO] Loading Pair 6/6: 9-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\9-10\phase_dynamics_cache_465cdfa01e559bd6681b823e9e995a9d.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 10
+[INFO] omega1 = 7.69005808645 rad/s, omega2 = 7.85012310597 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0173058, s2 = 0.0206294
+[INFO] Processing Joint SVD for Agent 7...
+  Singular values:
+    r=1: val = 0.07243, energy ratio = 81.5958%
+    r=2: val = 0.02778, energy ratio = 12.0055%
+    r=3: val = 0.01189, energy ratio = 2.1983%
+    r=4: val = 0.00865, energy ratio = 1.1643%
+    r=5: val = 0.00707, energy ratio = 0.7766%
+
+[INFO] Processing Joint SVD for Agent 8...
+  Singular values:
+    r=1: val = 0.06445, energy ratio = 86.5877%
+    r=2: val = 0.01436, energy ratio = 4.2975%
+    r=3: val = 0.01192, energy ratio = 2.9610%
+    r=4: val = 0.00890, energy ratio = 1.6503%
+    r=5: val = 0.00663, energy ratio = 0.9155%
+
+[INFO] Processing Joint SVD for Agent 9...
+  Singular values:
+    r=1: val = 0.08300, energy ratio = 89.9785%
+    r=2: val = 0.02026, energy ratio = 5.3637%
+    r=3: val = 0.01031, energy ratio = 1.3886%
+    r=4: val = 0.00849, energy ratio = 0.9417%
+    r=5: val = 0.00725, energy ratio = 0.6866%
+
+[INFO] Processing Joint SVD for Agent 10...
+  Singular values:
+    r=1: val = 0.05714, energy ratio = 81.5468%
+    r=2: val = 0.01514, energy ratio = 5.7250%
+    r=3: val = 0.01274, energy ratio = 4.0529%
+    r=4: val = 0.01139, energy ratio = 3.2392%
+    r=5: val = 0.00745, energy ratio = 1.3859%
+
+[INFO] Saved Joint SVD cache to EstimateL\Round\low_rank_analysis\M10\joint_svd_analysis\joint_svd_cache_8f8f8f8f8f8f8f388f8f8f8f6e8f8f8f.mat

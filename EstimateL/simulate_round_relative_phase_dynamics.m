@@ -1,4 +1,4 @@
-function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
+function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 % Simulate a round oscillator network using pairwise couplings estimated from CSV data.
 %
 % For each pair folder such as "7-8", this function calls
@@ -14,7 +14,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
 % Examples:
 %   out = simulate_round_relative_phase_dynamics();
 %   out = simulate_round_relative_phase_dynamics(fullfile('EstimateL','Round'));
-%   out = simulate_round_relative_phase_dynamics(fullfile('EstimateL','Round'), 10, 10, ...
+%   out = simulate_round_relative_phase_dynamics(fullfile('EstimateL','Round'), 10, ...
 %       'simulation_duration_sec', 120, 'simulation_dt', 0.01);
 
     if nargin < 1 || isempty(round_dir)
@@ -23,15 +23,15 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
     if nargin < 2 || isempty(M)
         M = 10;
     end
-    if nargin < 3 || isempty(N)
-        N = M;
-    end
 
     default_sigma = 7;
+    default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
+    default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
+    default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
+    default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
 
-    opts = parse_options(default_sigma, varargin{:});
+    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
-    validateattributes(N, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'N');
 
     pair_infos = list_pair_folders(round_dir);
     if isempty(pair_infos)
@@ -45,7 +45,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
         fprintf('[INFO] Pair %d/%d: %d-%d\n', k, numel(pair_infos), info.agent_ids(1), info.agent_ids(2));
 
         try
-            pair_out = plot_phase_dynamics_from_csv(csv_pattern, info.agent_ids, M, N, ...
+            pair_out = plot_phase_dynamics_from_csv(csv_pattern, info.agent_ids, M, ...
                 'analysis_start_sec', opts.analysis_start_sec, ...
                 'analysis_duration_sec', opts.analysis_duration_sec, ...
                 'sample_dt', opts.sample_dt, ...
@@ -62,13 +62,16 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
                 'save_output', false, ...
                 'use_cache', opts.use_cache, ...
                 'cache_dir', opts.cache_dir, ...
-                'file_indices', opts.file_indices);
+                'file_indices', opts.file_indices, ...
+                'subtract_self_profile', opts.subtract_self_profile, ...
+                'self_profile_dir', opts.self_profile_dir, ...
+                'use_first_harmonic', opts.use_first_harmonic);
         catch ME
             warning('Skipping pair folder %s: %s', info.folder, ME.message);
             continue;
         end
 
-        pair_model = build_pair_model(info, pair_out);
+        pair_model = build_pair_model(info, pair_out, opts);
         if isempty(pair_results)
             pair_results = pair_model;
         else
@@ -107,8 +110,28 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
     phase = nan(numel(time), numel(node_ids));
     phase(1, :) = phi0.';
 
+    % Load self profiles if subtract_self_profile AND add_self_feedback are true to add 1 copy back to dynamics
+    node_self_profiles = cell(numel(node_ids), 1);
+    if opts.subtract_self_profile && opts.add_self_feedback
+        self_dir = opts.self_profile_dir;
+        if isempty(self_dir)
+            self_dir = fullfile('EstimateL', 'Round', 'low_rank_analysis', 'M10', 'agent_self_profiles');
+        end
+        for i = 1:numel(node_ids)
+            aid = node_ids(i);
+            csv_path = fullfile(self_dir, sprintf('agent%d_self_profile_data.csv', aid));
+            if isfile(csv_path)
+                t = readtable(csv_path);
+                node_self_profiles{i} = struct('phi', t.phi, 'val', t.mean_self_profile);
+                fprintf('[INFO] Loaded mean self-profile for Agent %d to add back to dynamics.\n', aid);
+            else
+                warning('Self-profile file not found for Agent %d: %s. Using zero self-profile.', aid, csv_path);
+            end
+        end
+    end
+
     for t_idx = 1:(numel(time) - 1)
-        dphi = compute_phase_velocity(phase(t_idx, :).', omega_rad_s, pair_results, opts.sigma);
+        dphi = compute_phase_velocity(phase(t_idx, :).', omega_rad_s, pair_results, opts.sigma, opts.subtract_self_profile && opts.add_self_feedback, node_self_profiles);
         phase(t_idx + 1, :) = phase(t_idx, :) + opts.simulation_dt * dphi.';
     end
 
@@ -135,7 +158,6 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
     out = struct();
     out.round_dir = round_dir;
     out.M = M;
-    out.N = N;
     out.options = opts;
     out.node_ids = node_ids;
     out.reference_agent_id = reference_agent_id;
@@ -151,7 +173,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, N, varargin)
     end
 end
 
-function opts = parse_options(default_sigma, varargin)
+function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, varargin)
     p = inputParser;
     addParameter(p, 'analysis_start_sec', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
     addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
@@ -176,6 +198,11 @@ function opts = parse_options(default_sigma, varargin)
     addParameter(p, 'use_cache', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'cache_dir', '', @(x) ischar(x) || isstring(x));
     addParameter(p, 'file_indices', [], @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'remove_gamma_bias', default_remove_gamma_bias, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'subtract_self_profile', default_subtract_self_profile, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'self_profile_dir', '', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'add_self_feedback', default_add_self_feedback, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'use_first_harmonic', default_use_first_harmonic, @(x) islogical(x) || isnumeric(x));
     parse(p, varargin{:});
 
     opts = p.Results;
@@ -189,6 +216,11 @@ function opts = parse_options(default_sigma, varargin)
     opts.output_dir = char(opts.output_dir);
     opts.cache_dir = char(opts.cache_dir);
     opts.file_indices = double(opts.file_indices);
+    opts.remove_gamma_bias = logical(opts.remove_gamma_bias);
+    opts.subtract_self_profile = logical(opts.subtract_self_profile);
+    opts.self_profile_dir = char(opts.self_profile_dir);
+    opts.add_self_feedback = logical(opts.add_self_feedback);
+    opts.use_first_harmonic = logical(opts.use_first_harmonic);
 end
 
 function pair_infos = list_pair_folders(round_dir)
@@ -230,9 +262,16 @@ function pair_infos = list_pair_folders(round_dir)
     end
 end
 
-function pair_model = build_pair_model(info, pair_out)
-    gamma1_fit = fit_first_harmonic(pair_out.psi, pair_out.gamma1);
-    gamma2_fit = fit_first_harmonic(pair_out.psi, pair_out.gamma2_minus_psi);
+function pair_model = build_pair_model(info, pair_out, opts)
+    gamma1 = pair_out.gamma1(:);
+    gamma2_minus_psi = pair_out.gamma2_minus_psi(:);
+    if opts.remove_gamma_bias
+        gamma1 = gamma1 - mean(gamma1, 'omitnan');
+        gamma2_minus_psi = gamma2_minus_psi - mean(gamma2_minus_psi, 'omitnan');
+    end
+
+    gamma1_fit = fit_first_harmonic(pair_out.psi, gamma1);
+    gamma2_fit = fit_first_harmonic(pair_out.psi, gamma2_minus_psi);
 
     pair_model = struct();
     pair_model.pair_name = info.name;
@@ -241,8 +280,8 @@ function pair_model = build_pair_model(info, pair_out)
     pair_model.source_agent_id = info.agent_ids(2);
     pair_model.target_agent_id = info.agent_ids(1);
     pair_model.psi = pair_out.psi(:);
-    pair_model.gamma1 = pair_out.gamma1(:);
-    pair_model.gamma2_minus_psi = pair_out.gamma2_minus_psi(:);
+    pair_model.gamma1 = gamma1;
+    pair_model.gamma2_minus_psi = gamma2_minus_psi;
     pair_model.gamma1_fit = gamma1_fit;
     pair_model.gamma2_fit = gamma2_fit;
     pair_model.delta_omega = pair_out.delta_omega;
@@ -262,8 +301,10 @@ function pair_model = build_pair_model(info, pair_out)
         'name', 'Gamma_2_minus_psi');
 end
 
-function dphi = compute_phase_velocity(phi, omega_rad_s, pair_results, sigma)
+function dphi = compute_phase_velocity(phi, omega_rad_s, pair_results, sigma, subtract_self_profile, node_self_profiles)
     dphi = omega_rad_s(:);
+    
+    % Add pairwise Gamma coupling terms
     for k = 1:numel(pair_results)
         pair = pair_results(k);
         psi = wrap_to_pi(phi(pair.target_idx) - phi(pair.source_idx));
@@ -271,6 +312,20 @@ function dphi = compute_phase_velocity(phi, omega_rad_s, pair_results, sigma)
         gamma2_value = interp1(pair.psi, pair.gamma2_minus_psi, psi, 'linear', 'extrap');
         dphi(pair.target_idx) = dphi(pair.target_idx) + sigma * gamma1_value;
         dphi(pair.source_idx) = dphi(pair.source_idx) + sigma * gamma2_value;
+    end
+    
+    % Add self-profile * z(phi) term (1 copy per agent) if subtract mode is active
+    if nargin >= 5 && subtract_self_profile && ~isempty(node_self_profiles)
+        for i = 1:numel(phi)
+            sp = node_self_profiles{i};
+            if ~isempty(sp)
+                % wrap phi to [0, 2*pi] for profile interpolation
+                phi_wrapped = mod(phi(i), 2*pi);
+                q_value = interp1(sp.phi, sp.val, phi_wrapped, 'linear', 'extrap');
+                z_value = -sin(phi_wrapped); % PRC: z(theta) = -sin(theta)
+                dphi(i) = dphi(i) + sigma * q_value * z_value;
+            end
+        end
     end
 end
 
@@ -313,14 +368,29 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
 
     colors = lines(numel(node_ids));
     for k = 1:numel(node_ids)
-        plot(ax, time, relative_phase(:, k), 'LineWidth', 1.5, 'Color', colors(k, :), ...
+        y_val = relative_phase(:, k);
+        
+        % Insert NaNs where phase jumps across wrapping boundaries (> pi gap)
+        for j = 2:numel(y_val)
+            if isnan(y_val(j)) || isnan(y_val(j-1))
+                continue;
+            end
+            if abs(y_val(j) - y_val(j-1)) > pi
+                y_val(j) = NaN;
+            end
+        end
+        
+        plot(ax, time, y_val, 'LineWidth', 1.5, 'Color', colors(k, :), ...
             'DisplayName', sprintf('ID %d', node_ids(k)));
     end
 
     grid(ax, 'on');
     box(ax, 'on');
+    ylim(ax, [-pi, pi]);
+    yticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
+    yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)');
-    ylabel(ax, sprintf('phi_j - phi_%d', reference_agent_id));
+    ylabel(ax, sprintf('\\phi_j - \\phi_{%d}', reference_agent_id));
     title(ax, 'Simulated relative phase differences');
     legend(ax, 'Location', 'best');
 end
@@ -347,7 +417,9 @@ end
 function fig = plot_all_gamma_functions(pair_results)
     fig = figure('Color', 'w', 'Name', 'All Gamma functions used in simulation');
     n_pairs = numel(pair_results);
-    tiledlayout(fig, n_pairs, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
+    n_cols = 2;
+    n_rows = ceil(n_pairs / n_cols);
+    tiledlayout(fig, n_rows, n_cols, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     for k = 1:n_pairs
         pair = pair_results(k);
@@ -362,13 +434,13 @@ function fig = plot_all_gamma_functions(pair_results)
         xlim(ax, [-pi, pi]);
         xticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
         xticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
+        xlabel(ax, '\psi');
         ylabel(ax, '\Gamma');
         title(ax, sprintf('Pair %d-%d', pair.agent_ids(1), pair.agent_ids(2)), 'Interpreter', 'none');
         if k == 1
             legend(ax, 'Location', 'best');
         end
     end
-    xlabel(ax, '\psi');
 end
 
 function phase_wrapped = wrap_to_pi(phase)

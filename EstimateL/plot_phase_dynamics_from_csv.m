@@ -1,4 +1,4 @@
-function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, varargin)
+function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, varargin)
 % Fit s_1(phi1,phi2), s_2(phi1,phi2) from CSV data and plot psi dynamics.
 %
 % Defaults target the current Round CSV:
@@ -6,8 +6,8 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
 %
 % Examples:
 %   out = plot_phase_dynamics_from_csv('EstimateL\Round\merged_20260701_115558.csv');
-%   out = plot_phase_dynamics_from_csv('EstimateL\Round', [7 8], 10, 10);
-%   out = plot_phase_dynamics_from_csv('EstimateL\Round', [], 8, 8, 'file_indices', 1);
+%   out = plot_phase_dynamics_from_csv('EstimateL\Round', [7 8], 10);
+%   out = plot_phase_dynamics_from_csv('EstimateL\Round', [], 8, 'file_indices', 1);
 %
 % The phase convention is psi = phi1 - phi2, so
 %   Delta omega = mean(omega_1) - mean(omega_2).
@@ -25,17 +25,15 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
         phase_agent_ids = [];
     end
     if nargin < 3 || isempty(M)
-        M = 10;
-    end
-    if nargin < 4 || isempty(N)
-        N = M;
+        M = 5;
     end
 
     default_sigma = 7;
+    default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
+    default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
 
-    opts = parse_options(default_sigma, varargin{:});
+    opts = parse_options(default_sigma, default_subtract_self_profile, default_use_first_harmonic, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
-    validateattributes(N, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'N');
 
     csv_paths = list_csv_paths(input_path, opts.file_indices);
     if isempty(csv_paths)
@@ -51,7 +49,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
         end
     end
 
-    [cache_path, cache_key] = resolve_cache_path(input_path, csv_paths, phase_agent_ids, M, N, opts);
+    [cache_path, cache_key] = resolve_cache_path(input_path, csv_paths, phase_agent_ids, M, opts);
     cache_data = [];
     if opts.use_cache
         cache_data = load_cache(cache_path);
@@ -60,22 +58,58 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
         elseif ~isempty(cache_data)
             fprintf('[INFO] Loaded cached dynamics from %s\n', cache_path);
         end
+        
+        % Fallback: If use_first_harmonic is true and no exact cache exists,
+        % check if use_first_harmonic=false cache exists with same other options.
+        if isempty(cache_data) && opts.use_first_harmonic
+            opts_raw = opts;
+            opts_raw.use_first_harmonic = false;
+            [cache_path_raw, cache_key_raw] = resolve_cache_path(input_path, csv_paths, phase_agent_ids, M, opts_raw);
+            cache_data_raw = load_cache(cache_path_raw);
+            if ~isempty(cache_data_raw) && isfield(cache_data_raw, 'cache_key') && strcmp(cache_data_raw.cache_key, cache_key_raw)
+                % Build new cache_data based on raw cache_data
+                cache_data = cache_data_raw;
+                cache_data.cache_key = cache_key;
+                cache_data.cache_path = cache_path;
+                
+                % Re-calculate 1st harmonic approximation using raw cache gamma
+                fit1 = fit_first_harmonic(cache_data.psi, cache_data.gamma1);
+                fit2 = fit_first_harmonic(cache_data.psi, cache_data.gamma2_minus_psi);
+                cache_data.gamma1 = evaluate_first_harmonic(fit1, cache_data.psi);
+                cache_data.gamma2_minus_psi = evaluate_first_harmonic(fit2, cache_data.psi);
+                
+                % Save back to the new cache path
+                save_cache(cache_path, cache_data);
+                fprintf('[INFO] Loaded use_first_harmonic=false cache. Computed 1st harmonic approximation and saved to %s\n', cache_path);
+            end
+        end
     end
 
     if isempty(cache_data)
         point_cloud = collect_point_cloud(csv_paths, phase_agent_ids, opts);
         fit_s1 = fit_double_fourier_scatter( ...
-            point_cloud.phi1, point_cloud.phi2, point_cloud.s1, M, N, ...
+            point_cloud.phi1, point_cloud.phi2, point_cloud.s1, M, ...
             sprintf('s_1, agent %d', phase_agent_ids(1)));
         fit_s2 = fit_double_fourier_scatter( ...
-            point_cloud.phi1, point_cloud.phi2, point_cloud.s2, M, N, ...
+            point_cloud.phi1, point_cloud.phi2, point_cloud.s2, M, ...
             sprintf('s_2, agent %d', phase_agent_ids(2)));
 
         psi = linspace(-pi, pi, opts.n_psi).';
         theta = linspace(0, 2*pi, opts.n_theta).';
         z_theta = -sin(theta);
 
-        [gamma1, gamma2_minus_psi] = compute_gamma_for_dynamics(psi, theta, z_theta, fit_s1, fit_s2);
+        [gamma1, gamma2_minus_psi] = compute_gamma_for_dynamics(psi, theta, z_theta, fit_s1, fit_s2, opts, phase_agent_ids);
+        
+        % Fit first harmonic (constant + 1st sin wave)
+        fit1 = fit_first_harmonic(psi, gamma1);
+        fit2 = fit_first_harmonic(psi, gamma2_minus_psi);
+        
+        if opts.use_first_harmonic
+            gamma1 = evaluate_first_harmonic(fit1, psi);
+            gamma2_minus_psi = evaluate_first_harmonic(fit2, psi);
+            fprintf('[INFO] Replaced Gamma functions with 1st harmonic approximations.\n');
+        end
+        
         omega_rad_s = mean(point_cloud.omega_rad_s, 1, 'omitnan');
         delta_omega = 0;
         psi_dot = compute_psi_dot(opts.sigma, gamma1, gamma2_minus_psi);
@@ -88,7 +122,6 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
         cache_data.csv_paths = csv_paths;
         cache_data.phase_agent_ids = phase_agent_ids;
         cache_data.M = M;
-        cache_data.N = N;
         cache_data.omega_rad_s = omega_rad_s;
         cache_data.delta_omega = delta_omega;
         cache_data.psi = psi;
@@ -132,7 +165,6 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
     out.phase_agent_ids = phase_agent_ids;
     out.signal_column = opts.signal_column;
     out.M = M;
-    out.N = N;
     out.sigma = opts.sigma;
     out.phase_sensitivity = 'z(phi) = -sin(phi)';
     out.psi_definition = 'psi = phi1 - phi2';
@@ -160,7 +192,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, N, v
     fprintf('[INFO] RMSE: s1 = %.6g, s2 = %.6g\n', fit_s1.rmse, fit_s2.rmse);
 end
 
-function opts = parse_options(default_sigma, varargin)
+function opts = parse_options(default_sigma, default_subtract_self_profile, default_use_first_harmonic, varargin)
     p = inputParser;
     addParameter(p, 'sigma', default_sigma, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
     addParameter(p, 'sample_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
@@ -180,6 +212,9 @@ function opts = parse_options(default_sigma, varargin)
     addParameter(p, 'use_cache', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'cache_dir', '', @(x) ischar(x) || isstring(x));
     addParameter(p, 'file_indices', [], @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'subtract_self_profile', default_subtract_self_profile, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'self_profile_dir', '', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'use_first_harmonic', default_use_first_harmonic, @(x) islogical(x) || isnumeric(x));
     parse(p, varargin{:});
 
     opts = p.Results;
@@ -194,6 +229,9 @@ function opts = parse_options(default_sigma, varargin)
     opts.output_dir = char(opts.output_dir);
     opts.use_cache = logical(opts.use_cache);
     opts.cache_dir = char(opts.cache_dir);
+    opts.subtract_self_profile = logical(opts.subtract_self_profile);
+    opts.self_profile_dir = char(opts.self_profile_dir);
+    opts.use_first_harmonic = logical(opts.use_first_harmonic);
 end
 
 function csv_paths = list_csv_paths(input_path, file_indices)
@@ -316,7 +354,7 @@ function point_cloud = collect_point_cloud(csv_paths, phase_agent_ids, opts)
     point_cloud.skipped_files = skipped_files;
 end
 
-function [cache_path, cache_key] = resolve_cache_path(input_path, csv_paths, phase_agent_ids, M, N, opts)
+function [cache_path, cache_key] = resolve_cache_path(input_path, csv_paths, phase_agent_ids, M, opts)
     cache_dir = opts.cache_dir;
     if isempty(cache_dir)
         if isfolder(input_path)
@@ -334,14 +372,14 @@ function [cache_path, cache_key] = resolve_cache_path(input_path, csv_paths, pha
         mkdir(cache_dir);
     end
 
-    cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, N, opts);
+    cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, opts);
     cache_path = fullfile(cache_dir, sprintf('phase_dynamics_cache_%s.mat', cache_key));
 end
 
-function cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, N, opts)
+function cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, opts)
     parts = {};
     parts{end + 1} = sprintf('phase_agents=%s', mat2str(phase_agent_ids));
-    parts{end + 1} = sprintf('M=%d|N=%d', M, N);
+    parts{end + 1} = sprintf('M=%d', M);
     parts{end + 1} = sprintf('sample_dt=%.15g', opts.sample_dt);
     parts{end + 1} = sprintf('analysis_start_sec=%.15g', opts.analysis_start_sec);
     parts{end + 1} = sprintf('analysis_duration_sec=%.15g', opts.analysis_duration_sec);
@@ -350,6 +388,9 @@ function cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, N, opts)
     parts{end + 1} = sprintf('tail_percent=%.15g', opts.tail_percent);
     parts{end + 1} = sprintf('clip_normalized_signal=%d', opts.clip_normalized_signal);
     parts{end + 1} = sprintf('clip_limit=%.15g', opts.clip_limit);
+    parts{end + 1} = sprintf('subtract_self_profile=%d', opts.subtract_self_profile);
+    parts{end + 1} = sprintf('self_profile_dir=%s', opts.self_profile_dir);
+    parts{end + 1} = sprintf('use_first_harmonic=%d', opts.use_first_harmonic);
     for i = 1:numel(csv_paths)
         info = dir(csv_paths{i});
         if isempty(info)
@@ -607,7 +648,7 @@ function x_clipped = clip_values(x, lower_bound, upper_bound)
     x_clipped = min(max(x, lower_bound), upper_bound);
 end
 
-function fit_result = fit_double_fourier_scatter(phi1, phi2, z, M, N, label)
+function fit_result = fit_double_fourier_scatter(phi1, phi2, z, M, label)
     phi1 = mod(phi1(:), 2*pi);
     phi2 = mod(phi2(:), 2*pi);
     z = z(:);
@@ -621,7 +662,7 @@ function fit_result = fit_double_fourier_scatter(phi1, phi2, z, M, N, label)
 
     z_mean = mean(z);
     z_centered = z - z_mean;
-    [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_double_fourier_design_matrix(phi1, phi2, M, N);
+    [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_double_fourier_design_matrix(phi1, phi2, M);
     coeff = A \ z_centered;
     z_hat_centered = A * coeff;
     z_hat = z_hat_centered + z_mean;
@@ -633,7 +674,6 @@ function fit_result = fit_double_fourier_scatter(phi1, phi2, z, M, N, label)
     fit_result = struct();
     fit_result.label = label;
     fit_result.M = M;
-    fit_result.N = N;
     fit_result.coeff = coeff;
     fit_result.z_mean = z_mean;
     fit_result.rmse = rmse;
@@ -656,9 +696,9 @@ function fit_result = fit_double_fourier_scatter(phi1, phi2, z, M, N, label)
         'phi1_order', 'phi2_order', 'basis_type', 'coefficient'});
 end
 
-function [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_double_fourier_design_matrix(phi1, phi2, M, N)
+function [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_double_fourier_design_matrix(phi1, phi2, M)
     n_samples = numel(phi1);
-    n_basis = 1 + 2*M + 2*N + 4*M*N;
+    n_basis = 1 + 4*M + 4*M*M;
     A = zeros(n_samples, n_basis);
     basis_names = cell(n_basis, 1);
     basis_groups = cell(n_basis, 1);
@@ -689,7 +729,7 @@ function [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_d
         col = col + 1;
     end
 
-    for n = 1:N
+    for n = 1:M
         A(:, col) = cos(n * phi2);
         basis_names{col} = sprintf('cos(%d*phi2)', n);
         basis_groups{col} = 'phi2_only';
@@ -708,7 +748,7 @@ function [A, basis_names, basis_groups, basis_m, basis_n, basis_types] = build_d
     for m = 1:M
         c1 = cos(m * phi1);
         s1 = sin(m * phi1);
-        for n = 1:N
+        for n = 1:M
             c2 = cos(n * phi2);
             s2 = sin(n * phi2);
 
@@ -751,17 +791,49 @@ function s_values = evaluate_fit_surface(phi1, phi2, fit_result)
     original_size = size(phi1);
     phi1_col = phi1(:);
     phi2_col = phi2(:);
-    A = build_double_fourier_design_matrix(phi1_col, phi2_col, fit_result.M, fit_result.N);
+    A = build_double_fourier_design_matrix(phi1_col, phi2_col, fit_result.M);
     s_values = reshape(A * fit_result.coeff + fit_result.z_mean, original_size);
 end
 
-function [gamma1, gamma2_minus_psi] = compute_gamma_for_dynamics(psi, theta, z_theta, fit_s1, fit_s2)
+function [gamma1, gamma2_minus_psi] = compute_gamma_for_dynamics(psi, theta, z_theta, fit_s1, fit_s2, opts, phase_agent_ids)
     gamma1 = nan(size(psi));
     gamma2_minus_psi = nan(size(psi));
+    
+    s1_self = zeros(size(theta));
+    s2_self = zeros(size(theta));
+    
+    if nargin >= 6 && opts.subtract_self_profile
+        self_dir = opts.self_profile_dir;
+        if isempty(self_dir)
+            self_dir = fullfile('EstimateL', 'Round', 'low_rank_analysis', 'M10', 'agent_self_profiles');
+        end
+        
+        aid1 = phase_agent_ids(1);
+        aid2 = phase_agent_ids(2);
+        csv_path_1 = fullfile(self_dir, sprintf('agent%d_self_profile_data.csv', aid1));
+        csv_path_2 = fullfile(self_dir, sprintf('agent%d_self_profile_data.csv', aid2));
+        
+        if isfile(csv_path_1)
+            t1 = readtable(csv_path_1);
+            s1_self = interp1(t1.phi, t1.mean_self_profile, theta, 'linear', 'extrap');
+            fprintf('[INFO] Subtracted self-profile for Agent %d from s_1.\n', aid1);
+        else
+            warning('Self-profile file not found for Agent %d: %s', aid1, csv_path_1);
+        end
+        
+        if isfile(csv_path_2)
+            t2 = readtable(csv_path_2);
+            s2_self = interp1(t2.phi, t2.mean_self_profile, theta, 'linear', 'extrap');
+            fprintf('[INFO] Subtracted self-profile for Agent %d from s_2.\n', aid2);
+        else
+            warning('Self-profile file not found for Agent %d: %s', aid2, csv_path_2);
+        end
+    end
+    
     for i = 1:numel(psi)
         psi_i = psi(i);
-        s1_shifted = evaluate_fit_surface(theta, theta - psi_i, fit_s1);
-        s2_shifted_minus = evaluate_fit_surface(theta + psi_i, theta, fit_s2);
+        s1_shifted = evaluate_fit_surface(theta, theta - psi_i, fit_s1) - s1_self;
+        s2_shifted_minus = evaluate_fit_surface(theta + psi_i, theta, fit_s2) - s2_self;
         gamma1(i) = trapz(theta, z_theta .* s1_shifted) / (2*pi);
         gamma2_minus_psi(i) = trapz(theta, z_theta .* s2_shifted_minus) / (2*pi);
     end
@@ -834,4 +906,36 @@ function export = save_outputs(out, opts)
     writetable(dynamics_table, csv_path);
 
     export = struct('output_dir', output_dir, 'csv_path', csv_path);
+end
+
+function value = evaluate_first_harmonic(fit, psi)
+    value = fit.bias + fit.sin_coefficient * sin(psi) + fit.cos_coefficient * cos(psi);
+end
+
+function fit = fit_first_harmonic(psi, gamma_values)
+    psi = psi(:);
+    gamma_values = gamma_values(:);
+    valid = isfinite(psi) & isfinite(gamma_values);
+    psi = psi(valid);
+    gamma_values = gamma_values(valid);
+    if numel(psi) < 3
+        error('At least three finite samples are required for sine fitting.');
+    end
+
+    X = [ones(size(psi)), sin(psi), cos(psi)];
+    coeff = X \ gamma_values;
+    y_fit = X * coeff;
+    residual = gamma_values - y_fit;
+    centered = gamma_values - mean(gamma_values);
+    ss_res = sum(residual .^ 2);
+    ss_tot = sum(centered .^ 2);
+
+    fit = struct();
+    fit.bias = coeff(1);
+    fit.sin_coefficient = coeff(2);
+    fit.cos_coefficient = coeff(3);
+    fit.amplitude = hypot(coeff(2), coeff(3));
+    fit.phase_rad = atan2(coeff(3), coeff(2));
+    fit.rmse = sqrt(mean(residual .^ 2));
+    fit.r2 = 1 - ss_res / max(ss_tot, eps);
 end
