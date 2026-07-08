@@ -26,10 +26,10 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         csv_rank_from_latest = 8;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
-        n_seconds_to_cut = 10;
+        n_seconds_to_cut = 0;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration = 65;
+        plot_duration = 650;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;
@@ -120,6 +120,26 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         T = T(T.agent_id ~= 99, :);
         if isempty(T)
             warning('Skipping %s: only agent_id == 99 found after filtering.', file_list{i});
+            continue;
+        end
+        % Filter out spurious agents (with very few samples compared to the main agent(s))
+        all_agents = unique(T.agent_id);
+        agent_counts = zeros(size(all_agents));
+        for k = 1:length(all_agents)
+            agent_counts(k) = sum(T.agent_id == all_agents(k));
+        end
+        if ~isempty(agent_counts)
+            max_count = max(agent_counts);
+            if max_count >= 100
+                min_count_thresh = max(50, 0.05 * max_count);
+            else
+                min_count_thresh = max(5, 0.05 * max_count);
+            end
+            valid_agents = all_agents(agent_counts >= min_count_thresh);
+            T = T(ismember(T.agent_id, valid_agents), :);
+        end
+        if isempty(T)
+            warning('Skipping %s: no valid agents after filtering spurious ones.', file_list{i});
             continue;
         end
         file_tables{i} = T(:,{'time_pc_sec_abs','a0','agent_id','chunk_id'});

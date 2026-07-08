@@ -40,6 +40,28 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
         error('No CSV files were found for input_path: %s', input_path);
     end
 
+    if isempty(opts.self_profile_dir) || isempty(opts.output_dir)
+        first_csv = csv_paths{1};
+        % Convert to absolute path if it is relative
+        if ~startsWith(first_csv, '/') && ~startsWith(first_csv, '\\') && ~contains(first_csv, ':')
+            first_csv = fullfile(pwd, first_csv);
+        end
+        parts = regexp(first_csv, '[/\\]', 'split');
+        idx = find(strcmpi(parts, 'EstimateL'), 1, 'last');
+        if ~isempty(idx) && idx < length(parts)
+            category = parts{idx + 1};
+        else
+            category = 'Round';
+        end
+        if isempty(opts.self_profile_dir)
+            opts.self_profile_dir = fullfile('EstimateL', category, 'low_rank_analysis', 'M10', 'agent_self_profiles');
+        end
+        if isempty(opts.output_dir)
+            opts.output_dir = fullfile('EstimateL', category, 'phase_dynamics_exports');
+        end
+    end
+
+
     if isempty(phase_agent_ids)
         phase_agent_ids = detect_default_phase_agents(csv_paths);
     else
@@ -53,7 +75,8 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
     cache_data = [];
     if opts.use_cache
         cache_data = load_cache(cache_path);
-        if ~isempty(cache_data) && (~isfield(cache_data, 'cache_key') || ~strcmp(cache_data.cache_key, cache_key))
+        if ~isempty(cache_data) && (~isfield(cache_data, 'cache_key') || ~strcmp(cache_data.cache_key, cache_key) ...
+                || ~isfield(cache_data, 'cache_version') || cache_data.cache_version < 3)
             cache_data = [];
         elseif ~isempty(cache_data)
             fprintf('[INFO] Loaded cached dynamics from %s\n', cache_path);
@@ -91,7 +114,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
             point_cloud.phi1, point_cloud.phi2, point_cloud.s1, M, ...
             sprintf('s_1, agent %d', phase_agent_ids(1)));
         fit_s2 = fit_double_fourier_scatter( ...
-            point_cloud.phi1, point_cloud.phi2, point_cloud.s2, M, ...
+            point_cloud.phi2, point_cloud.phi1, point_cloud.s2, M, ...
             sprintf('s_2, agent %d', phase_agent_ids(2)));
 
         psi = linspace(-pi, pi, opts.n_psi).';
@@ -115,7 +138,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
         psi_dot = compute_psi_dot(opts.sigma, gamma1, gamma2_minus_psi);
 
         cache_data = struct();
-        cache_data.cache_version = 2;
+        cache_data.cache_version = 3;
         cache_data.cache_key = cache_key;
         cache_data.cache_path = cache_path;
         cache_data.input_path = input_path;
@@ -391,6 +414,28 @@ function cache_key = compute_cache_key(csv_paths, phase_agent_ids, M, opts)
     parts{end + 1} = sprintf('subtract_self_profile=%d', opts.subtract_self_profile);
     parts{end + 1} = sprintf('self_profile_dir=%s', opts.self_profile_dir);
     parts{end + 1} = sprintf('use_first_harmonic=%d', opts.use_first_harmonic);
+    
+    if opts.subtract_self_profile && ~isempty(opts.self_profile_dir)
+        aid1 = phase_agent_ids(1);
+        aid2 = phase_agent_ids(2);
+        csv_path_1 = fullfile(opts.self_profile_dir, sprintf('agent%d_self_profile_data.csv', aid1));
+        csv_path_2 = fullfile(opts.self_profile_dir, sprintf('agent%d_self_profile_data.csv', aid2));
+        
+        info_sp1 = dir(csv_path_1);
+        if isempty(info_sp1)
+            parts{end + 1} = sprintf('missing_sp=%s', csv_path_1); %#ok<AGROW>
+        else
+            parts{end + 1} = sprintf('sp1=%s|%d|%.15g', csv_path_1, info_sp1.bytes, info_sp1.datenum); %#ok<AGROW>
+        end
+        
+        info_sp2 = dir(csv_path_2);
+        if isempty(info_sp2)
+            parts{end + 1} = sprintf('missing_sp=%s', csv_path_2); %#ok<AGROW>
+        else
+            parts{end + 1} = sprintf('sp2=%s|%d|%.15g', csv_path_2, info_sp2.bytes, info_sp2.datenum); %#ok<AGROW>
+        end
+    end
+    
     for i = 1:numel(csv_paths)
         info = dir(csv_paths{i});
         if isempty(info)
@@ -833,7 +878,7 @@ function [gamma1, gamma2_minus_psi] = compute_gamma_for_dynamics(psi, theta, z_t
     for i = 1:numel(psi)
         psi_i = psi(i);
         s1_shifted = evaluate_fit_surface(theta, theta - psi_i, fit_s1) - s1_self;
-        s2_shifted_minus = evaluate_fit_surface(theta + psi_i, theta, fit_s2) - s2_self;
+        s2_shifted_minus = evaluate_fit_surface(theta, theta + psi_i, fit_s2) - s2_self;
         gamma1(i) = trapz(theta, z_theta .* s1_shifted) / (2*pi);
         gamma2_minus_psi(i) = trapz(theta, z_theta .* s2_shifted_minus) / (2*pi);
     end
@@ -885,8 +930,8 @@ function fig = plot_fitted_surfaces(fit_s1, fit_s2, phase_agent_ids)
     set(ax2, 'YDir', 'normal');
     axis(ax2, 'square');
     colorbar(ax2);
-    xlabel(ax2, '\phi_1');
-    ylabel(ax2, '\phi_2');
+    xlabel(ax2, '\phi_2');
+    ylabel(ax2, '\phi_1');
     title(ax2, sprintf('s_2, agent %d', phase_agent_ids(2)));
 end
 

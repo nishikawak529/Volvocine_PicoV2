@@ -91,13 +91,13 @@ function all_joint_results = joint_svd_analysis_round(round_dir, M, varargin)
 
             % Re-estimate coefficient matrices C_full for s1 and s2
             [C1_full, m_values, n_values] = estimate_fourier_coeff_matrix(phi1_all, phi2_all, pair_out.point_cloud.s1, M);
-            [C2_full, ~, ~] = estimate_fourier_coeff_matrix(phi1_all, phi2_all, pair_out.point_cloud.s2, M);
+            [C2_full, ~, ~] = estimate_fourier_coeff_matrix(phi2_all, phi1_all, pair_out.point_cloud.s2, M);
 
             % Remove marginal terms if requested
             [C1_analysis, ~, ~] = remove_phase_marginal_terms(C1_full, phi1_all, phi2_all, pair_out.point_cloud.s1, m_values, n_values, ...
                 info.agent_ids(1), info.agent_ids, opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
-            [C2_analysis, ~, ~] = remove_phase_marginal_terms(C2_full, phi1_all, phi2_all, pair_out.point_cloud.s2, m_values, n_values, ...
-                info.agent_ids(2), info.agent_ids, opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
+            [C2_analysis, ~, ~] = remove_phase_marginal_terms(C2_full, phi2_all, phi1_all, pair_out.point_cloud.s2, m_values, n_values, ...
+                info.agent_ids(2), [info.agent_ids(2), info.agent_ids(1)], opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
 
             % Save to list
             entry = struct();
@@ -150,9 +150,9 @@ function all_joint_results = joint_svd_analysis_round(round_dir, M, varargin)
                     associated_pairs{end+1} = p_data.pair_name; %#ok<AGROW>
                 elseif p_data.agent_ids(2) == target_aid
                     % target is agent_ids(2), source is agent_ids(1), matrix is C2
-                    % Since C2 has rows = phi1 (source) and cols = phi2 (target),
-                    % we must transpose it to make rows = target, cols = source.
-                    C_blocks{end+1} = p_data.C2.'; %#ok<AGROW>
+                    % Since C2 is already estimated with rows = target, cols = source,
+                    % we do not transpose it.
+                    C_blocks{end+1} = p_data.C2; %#ok<AGROW>
                     source_ids(end+1) = p_data.agent_ids(1); %#ok<AGROW>
                     associated_pairs{end+1} = p_data.pair_name; %#ok<AGROW>
                 end
@@ -360,7 +360,7 @@ function all_joint_results = joint_svd_analysis_round(round_dir, M, varargin)
         fprintf('[INFO] Saved Joint SVD profile CSV data to: %s\n', csv_profile_path);
         
         if ~opts.keep_figures
-            close(fig_sep_overlay);
+            if isgraphics(fig_sep_overlay), close(fig_sep_overlay); end
         end
     end
 
@@ -468,13 +468,8 @@ function [C_out, y_rec, info] = remove_phase_marginal_terms(C, phi1, phi2, y, m_
     is_constant_term = (term_m == 0 & term_n == 0);
     is_other_term = false(size(coeff_vector));
 
-    if phase_agent_ids(1) == target_agent_id
-        is_self_term = (term_m ~= 0 & term_n == 0);
-        is_other_term = (term_m == 0 & term_n ~= 0);
-    else
-        is_self_term = (term_m == 0 & term_n ~= 0);
-        is_other_term = (term_m ~= 0 & term_n == 0);
-    end
+    is_self_term = (term_m ~= 0 & term_n == 0);
+    is_other_term = (term_m == 0 & term_n ~= 0);
 
     mask_to_remove = false(size(coeff_vector));
     if remove_self, mask_to_remove = mask_to_remove | is_self_term; end

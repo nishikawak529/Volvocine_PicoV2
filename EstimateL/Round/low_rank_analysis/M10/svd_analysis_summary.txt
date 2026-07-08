@@ -7,17 +7,24 @@
   Remove other-only terms: false
 
 [INFO] Pair 1/6: 7-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_dc6f9e095a928acb9ed715be20ee5e95.mat
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_e4099a83111fb19e89ccc9fa76b3b472.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 10
 [INFO] omega1 = 7.84994609311 rad/s, omega2 = 7.68992857419 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.018357, s2 = 0.0212088
-  [Agent 7 (s_1)] - Self phase: phi1
+  [Target 7 <- Source 10] fitting s_7(phi_{7}, phi_{10})
     Removed self-only energy ratio:  0.992561
     Removed constant energy ratio:   0.000781
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.006658
     Reconstruction mismatch RMSE: 1.835697e-02
+    [a/b convention check] target=7 source=10 r=1: rel_err = 1.527e-16
+    [a/b convention check] target=7 source=10 r=2: rel_err = 2.193e-16
+    [a/b convention check] target=7 source=10 r=3: rel_err = 2.009e-16
+    [a/b convention check] target=7 source=10 r=4: rel_err = 1.957e-16
+    [a/b convention check] target=7 source=10 r=5: rel_err = 2.297e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.846903     |    0.998981    |     0.588609    |   0.054636
@@ -34,12 +41,17 @@
       r=4: a max|imag| = 2.687e-16, rel = 1.908e-15, OK; b max|imag| = 2.229e-16, rel = 2.046e-15, OK
       r=5: a max|imag| = 2.691e-16, rel = 2.238e-15, OK; b max|imag| = 2.272e-16, rel = 1.916e-15, OK
 
-  [Agent 10 (s_2)] - Self phase: phi2
+  [Target 10 <- Source 7] fitting s_10(phi_{10}, phi_{7})
     Removed self-only energy ratio:  0.991382
     Removed constant energy ratio:   0.001064
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.007553
     Reconstruction mismatch RMSE: 2.120881e-02
+    [a/b convention check] target=10 source=7 r=1: rel_err = 2.006e-16
+    [a/b convention check] target=10 source=7 r=2: rel_err = 1.731e-16
+    [a/b convention check] target=10 source=7 r=3: rel_err = 1.432e-16
+    [a/b convention check] target=10 source=7 r=4: rel_err = 2.039e-16
+    [a/b convention check] target=10 source=7 r=5: rel_err = 1.445e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.847222     |    0.998846    |     0.610514    |   0.061550
@@ -49,25 +61,32 @@
      5   |     0.979054     |    0.999842    |     0.522014    |   0.052628
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 3.481e-16, relative = 6.825e-16, OK
-      r=1: a max|imag| = 6.332e-16, rel = 1.110e-15, OK; b max|imag| = 2.299e-16, rel = 8.201e-16, OK
-      r=2: a max|imag| = 1.599e-15, rel = 4.933e-15, OK; b max|imag| = 5.712e-16, rel = 3.217e-15, OK
-      r=3: a max|imag| = 9.437e-16, rel = 3.706e-15, OK; b max|imag| = 3.892e-16, rel = 2.208e-15, OK
-      r=4: a max|imag| = 3.227e-16, rel = 1.754e-15, OK; b max|imag| = 2.290e-16, rel = 1.258e-15, OK
-      r=5: a max|imag| = 3.131e-16, rel = 1.822e-15, OK; b max|imag| = 2.359e-16, rel = 1.475e-15, OK
+      Self-only q_2: max|imag| = 3.296e-16, relative = 6.462e-16, OK
+      r=1: a max|imag| = 3.834e-16, rel = 6.721e-16, OK; b max|imag| = 6.655e-16, rel = 2.374e-15, OK
+      r=2: a max|imag| = 9.532e-16, rel = 2.942e-15, OK; b max|imag| = 9.914e-16, rel = 5.585e-15, OK
+      r=3: a max|imag| = 8.205e-16, rel = 3.223e-15, OK; b max|imag| = 7.873e-16, rel = 4.466e-15, OK
+      r=4: a max|imag| = 3.574e-16, rel = 1.943e-15, OK; b max|imag| = 4.562e-16, rel = 2.506e-15, OK
+      r=5: a max|imag| = 3.036e-16, rel = 1.767e-15, OK; b max|imag| = 3.435e-16, rel = 2.147e-15, OK
 
 [INFO] Pair 2/6: 7-8
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-8\phase_dynamics_cache_9fc0d91d95154d9f02dd5c007cac6d1b.mat
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 8 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-8\phase_dynamics_cache_6388a076aa145a3f8b479f4924d2bedc.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 8
 [INFO] omega1 = 7.69002662422 rad/s, omega2 = 7.85001686729 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0153246, s2 = 0.0172865
-  [Agent 7 (s_1)] - Self phase: phi1
+  [Target 7 <- Source 8] fitting s_7(phi_{7}, phi_{8})
     Removed self-only energy ratio:  0.989211
     Removed constant energy ratio:   0.003381
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.007408
     Reconstruction mismatch RMSE: 1.532464e-02
+    [a/b convention check] target=7 source=8 r=1: rel_err = 1.828e-16
+    [a/b convention check] target=7 source=8 r=2: rel_err = 2.519e-16
+    [a/b convention check] target=7 source=8 r=3: rel_err = 1.750e-16
+    [a/b convention check] target=7 source=8 r=4: rel_err = 2.573e-16
+    [a/b convention check] target=7 source=8 r=5: rel_err = 1.583e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.930040     |    0.999482    |     0.455580    |   0.042829
@@ -84,12 +103,17 @@
       r=4: a max|imag| = 5.898e-16, rel = 4.020e-15, OK; b max|imag| = 2.701e-16, rel = 1.918e-15, OK
       r=5: a max|imag| = 4.428e-16, rel = 2.774e-15, OK; b max|imag| = 4.692e-16, rel = 2.962e-15, OK
 
-  [Agent 8 (s_2)] - Self phase: phi2
+  [Target 8 <- Source 7] fitting s_8(phi_{8}, phi_{7})
     Removed self-only energy ratio:  0.977490
     Removed constant energy ratio:   0.009296
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.013215
     Reconstruction mismatch RMSE: 1.728653e-02
+    [a/b convention check] target=8 source=7 r=1: rel_err = 1.589e-16
+    [a/b convention check] target=8 source=7 r=2: rel_err = 1.831e-16
+    [a/b convention check] target=8 source=7 r=3: rel_err = 1.524e-16
+    [a/b convention check] target=8 source=7 r=4: rel_err = 1.918e-16
+    [a/b convention check] target=8 source=7 r=5: rel_err = 2.312e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.912975     |    0.998850    |     0.443188    |   0.054042
@@ -99,25 +123,32 @@
      5   |     0.976972     |    0.999696    |     0.374297    |   0.045641
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 2.945e-16, relative = 5.470e-16, OK
-      r=1: a max|imag| = 1.906e-15, rel = 3.250e-15, OK; b max|imag| = 4.293e-16, rel = 1.307e-15, OK
-      r=2: a max|imag| = 6.919e-16, rel = 2.641e-15, OK; b max|imag| = 3.912e-16, rel = 1.828e-15, OK
-      r=3: a max|imag| = 5.359e-16, rel = 2.339e-15, OK; b max|imag| = 4.875e-16, rel = 3.120e-15, OK
-      r=4: a max|imag| = 1.119e-15, rel = 4.382e-15, OK; b max|imag| = 8.927e-16, rel = 3.987e-15, OK
-      r=5: a max|imag| = 1.420e-15, rel = 6.317e-15, OK; b max|imag| = 1.223e-15, rel = 6.219e-15, OK
+      Self-only q_2: max|imag| = 6.479e-16, relative = 1.203e-15, OK
+      r=1: a max|imag| = 7.806e-16, rel = 1.331e-15, OK; b max|imag| = 3.705e-15, rel = 1.127e-14, OK
+      r=2: a max|imag| = 8.730e-16, rel = 3.333e-15, OK; b max|imag| = 1.188e-15, rel = 5.554e-15, OK
+      r=3: a max|imag| = 9.138e-16, rel = 3.989e-15, OK; b max|imag| = 1.135e-15, rel = 7.264e-15, OK
+      r=4: a max|imag| = 6.661e-16, rel = 2.609e-15, OK; b max|imag| = 1.083e-15, rel = 4.838e-15, OK
+      r=5: a max|imag| = 1.181e-15, rel = 5.256e-15, OK; b max|imag| = 1.027e-15, rel = 5.224e-15, OK
 
 [INFO] Pair 3/6: 7-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-9\phase_dynamics_cache_dbe6e161dc9bdb3c38b7530c431bfabc.mat
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 9 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-9\phase_dynamics_cache_cbe6ec0fa239934a768a4f3f7f2fc700.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 9
 [INFO] omega1 = 7.68986927017 rad/s, omega2 = 7.85014667468 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0187644, s2 = 0.0197374
-  [Agent 7 (s_1)] - Self phase: phi1
+  [Target 7 <- Source 9] fitting s_7(phi_{7}, phi_{9})
     Removed self-only energy ratio:  0.970478
     Removed constant energy ratio:   0.006093
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.023429
     Reconstruction mismatch RMSE: 1.876438e-02
+    [a/b convention check] target=7 source=9 r=1: rel_err = 8.842e-17
+    [a/b convention check] target=7 source=9 r=2: rel_err = 1.594e-16
+    [a/b convention check] target=7 source=9 r=3: rel_err = 1.893e-16
+    [a/b convention check] target=7 source=9 r=4: rel_err = 1.420e-16
+    [a/b convention check] target=7 source=9 r=5: rel_err = 1.506e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.825371     |    0.995909    |     0.493190    |   0.078702
@@ -134,12 +165,17 @@
       r=4: a max|imag| = 7.216e-16, rel = 3.425e-15, OK; b max|imag| = 5.117e-16, rel = 2.001e-15, OK
       r=5: a max|imag| = 6.995e-16, rel = 4.368e-15, OK; b max|imag| = 6.219e-16, rel = 3.818e-15, OK
 
-  [Agent 9 (s_2)] - Self phase: phi2
+  [Target 9 <- Source 7] fitting s_9(phi_{9}, phi_{7})
     Removed self-only energy ratio:  0.949523
     Removed constant energy ratio:   0.023892
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.026584
     Reconstruction mismatch RMSE: 1.973745e-02
+    [a/b convention check] target=9 source=7 r=1: rel_err = 1.956e-16
+    [a/b convention check] target=9 source=7 r=2: rel_err = 1.613e-16
+    [a/b convention check] target=9 source=7 r=3: rel_err = 1.659e-16
+    [a/b convention check] target=9 source=7 r=4: rel_err = 2.280e-16
+    [a/b convention check] target=9 source=7 r=5: rel_err = 2.841e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.930056     |    0.998141    |     0.373356    |   0.064231
@@ -149,25 +185,32 @@
      5   |     0.990997     |    0.999761    |     0.290170    |   0.049920
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 1.264e-16, relative = 2.276e-16, OK
-      r=1: a max|imag| = 3.595e-15, rel = 6.357e-15, OK; b max|imag| = 6.720e-16, rel = 1.887e-15, OK
-      r=2: a max|imag| = 1.644e-15, rel = 5.449e-15, OK; b max|imag| = 6.349e-16, rel = 3.034e-15, OK
-      r=3: a max|imag| = 2.604e-16, rel = 8.542e-16, OK; b max|imag| = 2.258e-16, rel = 9.844e-16, OK
-      r=4: a max|imag| = 2.552e-16, rel = 1.167e-15, OK; b max|imag| = 2.351e-16, rel = 1.179e-15, OK
-      r=5: a max|imag| = 2.849e-16, rel = 1.614e-15, OK; b max|imag| = 2.862e-16, rel = 1.423e-15, OK
+      Self-only q_2: max|imag| = 2.556e-16, relative = 4.602e-16, OK
+      r=1: a max|imag| = 2.975e-16, rel = 5.261e-16, OK; b max|imag| = 2.689e-16, rel = 7.551e-16, OK
+      r=2: a max|imag| = 2.377e-16, rel = 7.877e-16, OK; b max|imag| = 1.754e-16, rel = 8.382e-16, OK
+      r=3: a max|imag| = 2.407e-16, rel = 7.894e-16, OK; b max|imag| = 2.509e-16, rel = 1.094e-15, OK
+      r=4: a max|imag| = 2.212e-16, rel = 1.011e-15, OK; b max|imag| = 3.803e-16, rel = 1.907e-15, OK
+      r=5: a max|imag| = 3.591e-16, rel = 2.034e-15, OK; b max|imag| = 4.853e-16, rel = 2.412e-15, OK
 
 [INFO] Pair 4/6: 8-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-10\phase_dynamics_cache_332d34e885b4e0cba51db0a2367f0bde.mat
+[INFO] Subtracted self-profile for Agent 8 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-10\phase_dynamics_cache_0a9379a30052635e3549541b8142bd7b.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 10
 [INFO] omega1 = 7.85006922836 rad/s, omega2 = 7.69012889514 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0192751, s2 = 0.0187917
-  [Agent 8 (s_1)] - Self phase: phi1
+  [Target 8 <- Source 10] fitting s_8(phi_{8}, phi_{10})
     Removed self-only energy ratio:  0.957459
     Removed constant energy ratio:   0.035037
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.007504
     Reconstruction mismatch RMSE: 1.927506e-02
+    [a/b convention check] target=8 source=10 r=1: rel_err = 2.070e-16
+    [a/b convention check] target=8 source=10 r=2: rel_err = 2.426e-16
+    [a/b convention check] target=8 source=10 r=3: rel_err = 1.653e-16
+    [a/b convention check] target=8 source=10 r=4: rel_err = 1.852e-16
+    [a/b convention check] target=8 source=10 r=5: rel_err = 2.041e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.830759     |    0.998730    |     0.595600    |   0.059369
@@ -184,12 +227,17 @@
       r=4: a max|imag| = 2.164e-16, rel = 9.803e-16, OK; b max|imag| = 1.687e-16, rel = 7.830e-16, OK
       r=5: a max|imag| = 3.487e-16, rel = 2.270e-15, OK; b max|imag| = 2.881e-16, rel = 2.073e-15, OK
 
-  [Agent 10 (s_2)] - Self phase: phi2
+  [Target 10 <- Source 8] fitting s_10(phi_{10}, phi_{8})
     Removed self-only energy ratio:  0.990033
     Removed constant energy ratio:   0.005672
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.004295
     Reconstruction mismatch RMSE: 1.879174e-02
+    [a/b convention check] target=10 source=8 r=1: rel_err = 2.098e-16
+    [a/b convention check] target=10 source=8 r=2: rel_err = 1.934e-16
+    [a/b convention check] target=10 source=8 r=3: rel_err = 1.881e-16
+    [a/b convention check] target=10 source=8 r=4: rel_err = 2.294e-16
+    [a/b convention check] target=10 source=8 r=5: rel_err = 1.702e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.772788     |    0.999024    |     0.684108    |   0.054172
@@ -199,25 +247,32 @@
      5   |     0.968255     |    0.999864    |     0.576740    |   0.045670
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 3.843e-16, relative = 7.198e-16, OK
-      r=1: a max|imag| = 2.482e-15, rel = 5.137e-15, OK; b max|imag| = 9.385e-16, rel = 2.564e-15, OK
-      r=2: a max|imag| = 1.785e-15, rel = 6.767e-15, OK; b max|imag| = 6.880e-16, rel = 4.001e-15, OK
-      r=3: a max|imag| = 5.204e-16, rel = 2.314e-15, OK; b max|imag| = 3.730e-16, rel = 1.635e-15, OK
-      r=4: a max|imag| = 5.868e-16, rel = 2.753e-15, OK; b max|imag| = 5.983e-16, rel = 2.843e-15, OK
-      r=5: a max|imag| = 6.935e-16, rel = 3.422e-15, OK; b max|imag| = 5.716e-16, rel = 3.426e-15, OK
+      Self-only q_2: max|imag| = 3.172e-16, relative = 5.941e-16, OK
+      r=1: a max|imag| = 4.285e-16, rel = 8.867e-16, OK; b max|imag| = 8.246e-16, rel = 2.253e-15, OK
+      r=2: a max|imag| = 3.079e-16, rel = 1.168e-15, OK; b max|imag| = 6.491e-16, rel = 3.775e-15, OK
+      r=3: a max|imag| = 2.394e-16, rel = 1.065e-15, OK; b max|imag| = 2.567e-16, rel = 1.126e-15, OK
+      r=4: a max|imag| = 4.215e-16, rel = 1.978e-15, OK; b max|imag| = 3.990e-16, rel = 1.896e-15, OK
+      r=5: a max|imag| = 2.750e-16, rel = 1.357e-15, OK; b max|imag| = 2.290e-16, rel = 1.373e-15, OK
 
 [INFO] Pair 5/6: 8-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-9\phase_dynamics_cache_2a7d409004430422e4492864d4df5413.mat
+[INFO] Subtracted self-profile for Agent 8 from s_1.
+[INFO] Subtracted self-profile for Agent 9 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-9\phase_dynamics_cache_9033d7ae10e8f3ee5902daa6670fc02d.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 9
 [INFO] omega1 = 7.68996369439 rad/s, omega2 = 7.84996967859 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0172972, s2 = 0.0166103
-  [Agent 8 (s_1)] - Self phase: phi1
+  [Target 8 <- Source 9] fitting s_8(phi_{8}, phi_{9})
     Removed self-only energy ratio:  0.971160
     Removed constant energy ratio:   0.021779
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.007061
     Reconstruction mismatch RMSE: 1.729717e-02
+    [a/b convention check] target=8 source=9 r=1: rel_err = 2.519e-16
+    [a/b convention check] target=8 source=9 r=2: rel_err = 2.068e-16
+    [a/b convention check] target=8 source=9 r=3: rel_err = 1.209e-16
+    [a/b convention check] target=8 source=9 r=4: rel_err = 1.777e-16
+    [a/b convention check] target=8 source=9 r=5: rel_err = 1.724e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.911292     |    0.999374    |     0.514912    |   0.048430
@@ -234,12 +289,17 @@
       r=4: a max|imag| = 2.212e-16, rel = 1.209e-15, OK; b max|imag| = 1.840e-16, rel = 1.447e-15, OK
       r=5: a max|imag| = 8.821e-16, rel = 5.493e-15, OK; b max|imag| = 6.262e-16, rel = 5.852e-15, OK
 
-  [Agent 9 (s_2)] - Self phase: phi2
+  [Target 9 <- Source 8] fitting s_9(phi_{9}, phi_{8})
     Removed self-only energy ratio:  0.978020
     Removed constant energy ratio:   0.014084
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.007895
     Reconstruction mismatch RMSE: 1.661030e-02
+    [a/b convention check] target=9 source=8 r=1: rel_err = 1.122e-16
+    [a/b convention check] target=9 source=8 r=2: rel_err = 1.518e-16
+    [a/b convention check] target=9 source=8 r=3: rel_err = 1.575e-16
+    [a/b convention check] target=9 source=8 r=4: rel_err = 1.453e-16
+    [a/b convention check] target=9 source=8 r=5: rel_err = 2.322e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.866125     |    0.998943    |     0.519096    |   0.050812
@@ -249,25 +309,32 @@
      5   |     0.989677     |    0.999918    |     0.409098    |   0.040045
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 6.287e-16, relative = 1.140e-15, OK
-      r=1: a max|imag| = 4.082e-15, rel = 8.977e-15, OK; b max|imag| = 1.119e-15, rel = 4.274e-15, OK
-      r=2: a max|imag| = 2.304e-15, rel = 7.677e-15, OK; b max|imag| = 8.236e-16, rel = 4.334e-15, OK
-      r=3: a max|imag| = 7.338e-16, rel = 3.511e-15, OK; b max|imag| = 5.950e-16, rel = 3.342e-15, OK
-      r=4: a max|imag| = 8.335e-16, rel = 4.586e-15, OK; b max|imag| = 7.343e-16, rel = 4.451e-15, OK
-      r=5: a max|imag| = 5.816e-16, rel = 5.193e-15, OK; b max|imag| = 7.516e-16, rel = 6.388e-15, OK
+      Self-only q_2: max|imag| = 4.722e-16, relative = 8.558e-16, OK
+      r=1: a max|imag| = 6.471e-16, rel = 1.423e-15, OK; b max|imag| = 9.302e-16, rel = 3.553e-15, OK
+      r=2: a max|imag| = 4.434e-16, rel = 1.477e-15, OK; b max|imag| = 6.864e-16, rel = 3.612e-15, OK
+      r=3: a max|imag| = 2.251e-16, rel = 1.077e-15, OK; b max|imag| = 2.604e-16, rel = 1.463e-15, OK
+      r=4: a max|imag| = 2.231e-16, rel = 1.227e-15, OK; b max|imag| = 1.995e-16, rel = 1.209e-15, OK
+      r=5: a max|imag| = 3.801e-16, rel = 3.394e-15, OK; b max|imag| = 5.438e-16, rel = 4.623e-15, OK
 
 [INFO] Pair 6/6: 9-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\9-10\phase_dynamics_cache_465cdfa01e559bd6681b823e9e995a9d.mat
+[INFO] Subtracted self-profile for Agent 9 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\9-10\phase_dynamics_cache_957b59abfd40186696c87bf7d08920ed.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 9, s2 -> 10
 [INFO] omega1 = 7.69005808645 rad/s, omega2 = 7.85012310597 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0173058, s2 = 0.0206294
-  [Agent 9 (s_1)] - Self phase: phi1
+  [Target 9 <- Source 10] fitting s_9(phi_{9}, phi_{10})
     Removed self-only energy ratio:  0.973732
     Removed constant energy ratio:   0.018084
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.008184
     Reconstruction mismatch RMSE: 1.730583e-02
+    [a/b convention check] target=9 source=10 r=1: rel_err = 1.975e-16
+    [a/b convention check] target=9 source=10 r=2: rel_err = 2.858e-16
+    [a/b convention check] target=9 source=10 r=3: rel_err = 2.965e-16
+    [a/b convention check] target=9 source=10 r=4: rel_err = 1.659e-16
+    [a/b convention check] target=9 source=10 r=5: rel_err = 2.064e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.865253     |    0.998897    |     0.531355    |   0.052941
@@ -284,12 +351,17 @@
       r=4: a max|imag| = 3.608e-16, rel = 2.063e-15, OK; b max|imag| = 2.810e-16, rel = 1.669e-15, OK
       r=5: a max|imag| = 3.565e-16, rel = 2.063e-15, OK; b max|imag| = 2.781e-16, rel = 1.795e-15, OK
 
-  [Agent 10 (s_2)] - Self phase: phi2
+  [Target 10 <- Source 9] fitting s_10(phi_{10}, phi_{9})
     Removed self-only energy ratio:  0.988808
     Removed constant energy ratio:   0.000114
     Removed other-only energy ratio: 0.000000
     Remaining coefficient energy ratio: 0.011077
     Reconstruction mismatch RMSE: 2.062943e-02
+    [a/b convention check] target=10 source=9 r=1: rel_err = 1.181e-16
+    [a/b convention check] target=10 source=9 r=2: rel_err = 1.731e-16
+    [a/b convention check] target=10 source=9 r=3: rel_err = 2.747e-16
+    [a/b convention check] target=10 source=9 r=4: rel_err = 1.913e-16
+    [a/b convention check] target=10 source=9 r=5: rel_err = 2.439e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
      1   |     0.862194     |    0.998473    |     0.541158    |   0.062892
@@ -299,14 +371,14 @@
      5   |     0.981542     |    0.999796    |     0.443286    |   0.051518
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 3.600e-16, relative = 7.266e-16, OK
-      r=1: a max|imag| = 5.317e-16, rel = 8.894e-16, OK; b max|imag| = 1.966e-16, rel = 6.585e-16, OK
-      r=2: a max|imag| = 3.348e-16, rel = 1.175e-15, OK; b max|imag| = 1.648e-16, rel = 6.552e-16, OK
-      r=3: a max|imag| = 2.524e-16, rel = 1.174e-15, OK; b max|imag| = 2.147e-16, rel = 8.812e-16, OK
-      r=4: a max|imag| = 1.952e-16, rel = 7.768e-16, OK; b max|imag| = 2.854e-16, rel = 1.056e-15, OK
-      r=5: a max|imag| = 4.059e-16, rel = 2.006e-15, OK; b max|imag| = 4.215e-16, rel = 2.235e-15, OK
+      Self-only q_2: max|imag| = 2.334e-16, relative = 4.711e-16, OK
+      r=1: a max|imag| = 1.605e-16, rel = 2.684e-16, OK; b max|imag| = 3.417e-16, rel = 1.144e-15, OK
+      r=2: a max|imag| = 2.455e-16, rel = 8.616e-16, OK; b max|imag| = 2.019e-16, rel = 8.026e-16, OK
+      r=3: a max|imag| = 1.652e-16, rel = 7.687e-16, OK; b max|imag| = 1.292e-16, rel = 5.305e-16, OK
+      r=4: a max|imag| = 2.121e-16, rel = 8.441e-16, OK; b max|imag| = 2.711e-16, rel = 1.003e-15, OK
+      r=5: a max|imag| = 3.313e-16, rel = 1.637e-15, OK; b max|imag| = 4.337e-16, rel = 2.299e-15, OK
 
-[INFO] Saved SVD analysis cache to EstimateL\Round\low_rank_analysis\M10\svd_cache_158f8f8f06448f8f388f428f6a738f8f.mat
+[INFO] Saved SVD analysis cache to EstimateL\Round\low_rank_analysis\M10\svd_cache_8f8f8f523f8f614f8f8f5e13568f4558.mat
 [INFO] Saved overlay plot to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent7_self_profile_overlay.png
 [INFO] Saved self-profile CSV data to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent7_self_profile_data.csv
 [INFO] Saved separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent7_separable_profiles_overlay.png
@@ -318,5 +390,4 @@
 [INFO] Saved separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent9_separable_profiles_overlay.png
 [INFO] Saved overlay plot to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent10_self_profile_overlay.png
 [INFO] Saved self-profile CSV data to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent10_self_profile_data.csv
-[警告: エクスポートされたイメージには座標軸ツール バーが表示されています。イメージから座標軸ツール バーを削除するには、再度エクスポートしてください。] 
 [INFO] Saved separable profiles overlay plot to: EstimateL\Round\low_rank_analysis\M10\agent_self_profiles\agent10_separable_profiles_overlay.png

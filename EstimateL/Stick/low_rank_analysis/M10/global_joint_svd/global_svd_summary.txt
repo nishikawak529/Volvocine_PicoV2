@@ -1,0 +1,74 @@
+[INFO] Starting Global Joint SVD (Column Concatenation) Analysis on Network Data
+  Round directory: EstimateL\Stick
+  Output directory: EstimateL\Stick\low_rank_analysis\M10\global_joint_svd
+  Fourier order: M=10
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+
+[INFO] Loading Pair 1/6: 7-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\7-10\phase_dynamics_cache_291928747520e4ac162ac60ad6b6b69b.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.68989289725 rad/s, omega2 = 7.85011132528 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0144684, s2 = 0.0164479
+[INFO] Loading Pair 2/6: 7-8
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\7-8\phase_dynamics_cache_542a975560e61c7c9280a5a4c98a4abb.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 8
+[INFO] omega1 = 7.85013488269 rad/s, omega2 = 7.69015248583 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0168811, s2 = 0.0227144
+[INFO] Loading Pair 3/6: 7-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\7-9\phase_dynamics_cache_58bd0916f3d4e8288d61e411a0816759.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 9
+[INFO] omega1 = 7.84978482137 rad/s, omega2 = 7.68992437414 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0163954, s2 = 0.017603
+[INFO] Loading Pair 4/6: 8-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\8-10\phase_dynamics_cache_94aad9409f8d48b424a5c7ca15c750f1.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 10
+[INFO] omega1 = 7.69003451492 rad/s, omega2 = 7.84999328393 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0207525, s2 = 0.0192561
+[INFO] Loading Pair 5/6: 8-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\8-9\phase_dynamics_cache_5d2b14ef35e8366c98b4989e2243b99e.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.84999298879 rad/s, omega2 = 7.68996370454 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0156731, s2 = 0.0165367
+[INFO] Loading Pair 6/6: 9-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Stick\9-10\phase_dynamics_cache_ac76abe6e7736f63644e056ef6f487a9.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 10
+[INFO] omega1 = 7.68991649836 rad/s, omega2 = 7.84990282825 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0168719, s2 = 0.0168187
+[INFO] Global Concatenated SVD Singular Values:
+  r=1: val = 0.07382, energy ratio = 72.8154%
+  r=2: val = 0.02979, energy ratio = 11.8627%
+  r=3: val = 0.01727, energy ratio = 3.9849%
+  r=4: val = 0.01413, energy ratio = 2.6664%
+  r=5: val = 0.01285, energy ratio = 2.2076%
+  r=6: val = 0.01025, energy ratio = 1.4027%
+  r=7: val = 0.00905, energy ratio = 1.0953%
+  r=8: val = 0.00768, energy ratio = 0.7887%
+  r=9: val = 0.00654, energy ratio = 0.5716%
+  r=10: val = 0.00628, energy ratio = 0.5270%
+
+[INFO] Verifying pre-normalization SVD reconstruction...
+[INFO] Verifying post-normalization SVD reconstruction...
+[INFO] Interaction Matrix SVD Metrics Comparison:
+Pair         Dir   | Indiv_R1%  Indiv_R2%  Indiv_R3%  | Joint_R1%  Joint_R2%  Joint_R3%  | Weight_R1 
+---------------------------------------------------------------------------------------------------------
+7-10         s1    | 30.76    % 19.92    % 16.00    % | 18.43    % 23.70    % 7.97     % | -0.0016   
+7-10         s2    | 41.62    % 19.46    % 15.27    % | 16.92    % 33.22    % 15.89    % | -0.0019   
+7-8          s1    | 90.93    % 2.80     % 1.76     % | 56.41    % 31.04    % 2.80     % | -0.0183   
+7-8          s2    | 81.28    % 7.17     % 4.00     % | 77.50    % 5.54     % 4.30     % | -0.0267   
+7-9          s1    | 75.81    % 8.82     % 3.70     % | 16.91    % 58.27    % 5.24     % | 0.0046    
+7-9          s2    | 74.55    % 10.90    % 5.82     % | 60.40    % 15.01    % 10.59    % | 0.0113    
+8-10         s1    | 56.87    % 13.63    % 7.94     % | 37.93    % 6.80     % 16.85    % | 0.0066    
+8-10         s2    | 68.85    % 12.80    % 6.12     % | 16.47    % 49.19    % 6.17     % | 0.0055    
+8-9          s1    | 92.29    % 2.89     % 1.80     % | 87.80    % 3.68     % 1.81     % | 0.0346    
+8-9          s2    | 93.30    % 2.65     % 1.64     % | 91.09    % 2.10     % 1.49     % | 0.0394    
+9-10         s1    | 80.76    % 8.77     % 3.94     % | 79.33    % 4.88     % 5.62     % | -0.0253   
+9-10         s2    | 86.65    % 5.19     % 2.36     % | 66.29    % 17.79    % 3.72     % | -0.0208   
+

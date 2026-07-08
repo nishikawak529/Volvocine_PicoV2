@@ -24,13 +24,14 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
         M = 10;
     end
 
-    default_sigma = 7;
+    default_sigma = -7;
     default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
+    default_use_original_system = false; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
 
-    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, varargin{:});
+    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
 
     pair_infos = list_pair_folders(round_dir);
@@ -110,12 +111,20 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     phase = nan(numel(time), numel(node_ids));
     phase(1, :) = phi0.';
 
-    % Load self profiles if subtract_self_profile AND add_self_feedback are true to add 1 copy back to dynamics
+    % Load self profiles if subtract_self_profile is true
     node_self_profiles = cell(numel(node_ids), 1);
-    if opts.subtract_self_profile && opts.add_self_feedback
+    if opts.subtract_self_profile
         self_dir = opts.self_profile_dir;
         if isempty(self_dir)
-            self_dir = fullfile('EstimateL', 'Round', 'low_rank_analysis', 'M10', 'agent_self_profiles');
+            clean_dir = char(round_dir);
+            if clean_dir(end) == '/' || clean_dir(end) == '\'
+                clean_dir = clean_dir(1:end-1);
+            end
+            [~, category, ~] = fileparts(clean_dir);
+            if ~strcmp(category, 'Round') && ~strcmp(category, 'Stick')
+                category = 'Round'; % Fallback
+            end
+            self_dir = fullfile('EstimateL', category, 'low_rank_analysis', 'M10', 'agent_self_profiles');
         end
         for i = 1:numel(node_ids)
             aid = node_ids(i);
@@ -131,7 +140,8 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     end
 
     for t_idx = 1:(numel(time) - 1)
-        dphi = compute_phase_velocity(phase(t_idx, :).', omega_rad_s, pair_results, opts.sigma, opts.subtract_self_profile && opts.add_self_feedback, node_self_profiles);
+        dphi = compute_phase_velocity(phase(t_idx, :).', omega_rad_s, pair_results, opts.sigma, ...
+            opts.subtract_self_profile, opts.add_self_feedback, node_self_profiles, opts.use_original_system);
         phase(t_idx + 1, :) = phase(t_idx, :) + opts.simulation_dt * dphi.';
     end
 
@@ -148,7 +158,11 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 
     figures = struct();
     figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id);
-    figures.gamma_functions = plot_all_gamma_functions(pair_results);
+    if opts.use_original_system
+        figures.gamma_functions = [];
+    else
+        figures.gamma_functions = plot_all_gamma_functions(pair_results);
+    end
     if opts.plot_absolute_phases
         figures.absolute_phase = plot_absolute_phases(time, phase, node_ids);
     else
@@ -173,7 +187,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     end
 end
 
-function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, varargin)
+function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, varargin)
     p = inputParser;
     addParameter(p, 'analysis_start_sec', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
     addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
@@ -203,6 +217,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'self_profile_dir', '', @(x) ischar(x) || isstring(x));
     addParameter(p, 'add_self_feedback', default_add_self_feedback, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'use_first_harmonic', default_use_first_harmonic, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'use_original_system', default_use_original_system, @(x) islogical(x) || isnumeric(x));
     parse(p, varargin{:});
 
     opts = p.Results;
@@ -221,6 +236,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     opts.self_profile_dir = char(opts.self_profile_dir);
     opts.add_self_feedback = logical(opts.add_self_feedback);
     opts.use_first_harmonic = logical(opts.use_first_harmonic);
+    opts.use_original_system = logical(opts.use_original_system);
 end
 
 function pair_infos = list_pair_folders(round_dir)
@@ -284,6 +300,8 @@ function pair_model = build_pair_model(info, pair_out, opts)
     pair_model.gamma2_minus_psi = gamma2_minus_psi;
     pair_model.gamma1_fit = gamma1_fit;
     pair_model.gamma2_fit = gamma2_fit;
+    pair_model.fit_s1 = pair_out.fit_s1; % Save original 2D Fourier fit for target s1
+    pair_model.fit_s2 = pair_out.fit_s2; % Save original 2D Fourier fit for target s2
     pair_model.delta_omega = pair_out.delta_omega;
     pair_model.sigma = pair_out.sigma;
     pair_model.n_points = numel(pair_out.point_cloud.phi1);
@@ -301,21 +319,70 @@ function pair_model = build_pair_model(info, pair_out, opts)
         'name', 'Gamma_2_minus_psi');
 end
 
-function dphi = compute_phase_velocity(phi, omega_rad_s, pair_results, sigma, subtract_self_profile, node_self_profiles)
+function dphi = compute_phase_velocity(phi, omega_rad_s, pair_results, sigma, subtract_self_profile, add_self_feedback, node_self_profiles, use_original_system)
+    if nargin < 8
+        use_original_system = false;
+    end
+    if nargin < 6
+        add_self_feedback = false;
+    end
+    if nargin < 5
+        subtract_self_profile = false;
+    end
     dphi = omega_rad_s(:);
     
-    % Add pairwise Gamma coupling terms
-    for k = 1:numel(pair_results)
-        pair = pair_results(k);
-        psi = wrap_to_pi(phi(pair.target_idx) - phi(pair.source_idx));
-        gamma1_value = interp1(pair.psi, pair.gamma1, psi, 'linear', 'extrap');
-        gamma2_value = interp1(pair.psi, pair.gamma2_minus_psi, psi, 'linear', 'extrap');
-        dphi(pair.target_idx) = dphi(pair.target_idx) + sigma * gamma1_value;
-        dphi(pair.source_idx) = dphi(pair.source_idx) + sigma * gamma2_value;
+    if use_original_system
+        % -- Original System Dynamics --
+        % dphi_j/dt = omega_j + sigma * ( q_j(phi_j)*z(phi_j) + sum_k (s_kj(phi_j, phi_k) - q_j(phi_j))*z(phi_j) )
+        % Note: self-profile feedback q_j(phi_j)*z(phi_j) is added at the end of this function if add_self_feedback is true.
+        % Here we compute the sum_k (s_kj(phi_j, phi_k) - q_j(phi_j))*z(phi_j) term.
+        coupling_sum = zeros(size(phi));
+        
+        for k = 1:numel(pair_results)
+            pair = pair_results(k);
+            t_idx = pair.target_idx; % receiver j
+            s_idx = pair.source_idx; % sender k
+            
+            phi_t = phi(t_idx);
+            phi_s = phi(s_idx);
+            
+            % Compute s_kj(phi_j, phi_k) for both directions
+            s_value_1 = evaluate_fit_surface_local(phi_t, phi_s, pair.fit_s1);
+            s_value_2 = evaluate_fit_surface_local(phi_s, phi_t, pair.fit_s2);
+            
+            % Get self profiles q_j(phi_j)
+            q_t = 0; q_s = 0;
+            if subtract_self_profile && ~isempty(node_self_profiles)
+                if ~isempty(node_self_profiles{t_idx})
+                    q_t = interp1(node_self_profiles{t_idx}.phi, node_self_profiles{t_idx}.val, mod(phi_t, 2*pi), 'linear', 'extrap');
+                end
+                if ~isempty(node_self_profiles{s_idx})
+                    q_s = interp1(node_self_profiles{s_idx}.phi, node_self_profiles{s_idx}.val, mod(phi_s, 2*pi), 'linear', 'extrap');
+                end
+            end
+            
+            % Multiply by PRC z(phi) = -sin(phi) and accumulate
+            z_t = -sin(phi_t);
+            z_s = -sin(phi_s);
+            coupling_sum(t_idx) = coupling_sum(t_idx) + (s_value_1 - q_t) * z_t;
+            coupling_sum(s_idx) = coupling_sum(s_idx) + (s_value_2 - q_s) * z_s;
+        end
+        
+        dphi = dphi + sigma * coupling_sum;
+    else
+        % -- Phase-averaged Gamma Coupling System --
+        for k = 1:numel(pair_results)
+            pair = pair_results(k);
+            psi = wrap_to_pi(phi(pair.target_idx) - phi(pair.source_idx));
+            gamma1_value = interp1(pair.psi, pair.gamma1, psi, 'linear', 'extrap');
+            gamma2_value = interp1(pair.psi, pair.gamma2_minus_psi, psi, 'linear', 'extrap');
+            dphi(pair.target_idx) = dphi(pair.target_idx) + sigma * gamma1_value;
+            dphi(pair.source_idx) = dphi(pair.source_idx) + sigma * gamma2_value;
+        end
     end
     
-    % Add self-profile * z(phi) term (1 copy per agent) if subtract mode is active
-    if nargin >= 5 && subtract_self_profile && ~isempty(node_self_profiles)
+    % Add self-profile * z(phi) term (1 copy per agent) if add_self_feedback is active
+    if nargin >= 6 && add_self_feedback && ~isempty(node_self_profiles)
         for i = 1:numel(phi)
             sp = node_self_profiles{i};
             if ~isempty(sp)
@@ -478,4 +545,52 @@ function close_pair_figures(pair_out)
             close(h);
         end
     end
+end
+
+function s_values = evaluate_fit_surface_local(phi1, phi2, fit_result)
+    M = fit_result.M;
+    coeff = fit_result.coeff;
+    z_mean = fit_result.z_mean;
+    
+    n_samples = numel(phi1);
+    n_basis = 1 + 4*M + 4*M*M;
+    A = zeros(n_samples, n_basis);
+    
+    col = 1;
+    A(:, col) = 1;
+    col = col + 1;
+    
+    for m = 1:M
+        A(:, col) = cos(m * phi1);
+        col = col + 1;
+        A(:, col) = sin(m * phi1);
+        col = col + 1;
+    end
+    
+    for n = 1:M
+        A(:, col) = cos(n * phi2);
+        col = col + 1;
+        A(:, col) = sin(n * phi2);
+        col = col + 1;
+    end
+    
+    for m = 1:M
+        c1 = cos(m * phi1);
+        s1 = sin(m * phi1);
+        for n = 1:M
+            c2 = cos(n * phi2);
+            s2 = sin(n * phi2);
+            
+            A(:, col) = c1 .* c2;
+            col = col + 1;
+            A(:, col) = c1 .* s2;
+            col = col + 1;
+            A(:, col) = s1 .* c2;
+            col = col + 1;
+            A(:, col) = s1 .* s2;
+            col = col + 1;
+        end
+    end
+    
+    s_values = A * coeff + z_mean;
 end

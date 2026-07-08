@@ -1,0 +1,82 @@
+[INFO] Starting Joint SVD Analysis on Round Data
+  Round directory: EstimateL/Stick
+  Output directory: EstimateL\Stick\low_rank_analysis\M10\joint_svd_analysis
+  Fourier order: M=10
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+
+[INFO] Loading Pair 1/6: 7-10
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.68989289725 rad/s, omega2 = 7.85011132528 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0144684, s2 = 0.0164479
+[INFO] Loading Pair 2/6: 7-8
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 8 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 8
+[INFO] omega1 = 7.85013488269 rad/s, omega2 = 7.69015248583 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0168811, s2 = 0.0227144
+[INFO] Loading Pair 3/6: 7-9
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 9 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 9
+[INFO] omega1 = 7.84978482137 rad/s, omega2 = 7.68992437414 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0163954, s2 = 0.017603
+[INFO] Loading Pair 4/6: 8-10
+[INFO] Subtracted self-profile for Agent 8 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 10
+[INFO] omega1 = 7.69003451492 rad/s, omega2 = 7.84999328393 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0207525, s2 = 0.0192561
+[INFO] Loading Pair 5/6: 8-9
+[INFO] Subtracted self-profile for Agent 8 from s_1.
+[INFO] Subtracted self-profile for Agent 9 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.84999298879 rad/s, omega2 = 7.68996370454 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0156731, s2 = 0.0165367
+[INFO] Loading Pair 6/6: 9-10
+[INFO] Subtracted self-profile for Agent 9 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 10
+[INFO] omega1 = 7.68991649836 rad/s, omega2 = 7.84990282825 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0168719, s2 = 0.0168187
+[INFO] Processing Joint SVD for Agent 7...
+  Singular values:
+    r=1: val = 0.02705, energy ratio = 78.5685%
+    r=2: val = 0.00809, energy ratio = 7.0239%
+    r=3: val = 0.00570, energy ratio = 3.4902%
+    r=4: val = 0.00469, energy ratio = 2.3575%
+    r=5: val = 0.00417, energy ratio = 1.8630%
+
+[INFO] Processing Joint SVD for Agent 8...
+  Singular values:
+    r=1: val = 0.04632, energy ratio = 84.1688%
+    r=2: val = 0.01153, energy ratio = 5.2114%
+    r=3: val = 0.00872, energy ratio = 2.9830%
+    r=4: val = 0.00682, energy ratio = 1.8245%
+    r=5: val = 0.00643, energy ratio = 1.6224%
+
+[INFO] Processing Joint SVD for Agent 9...
+  Singular values:
+    r=1: val = 0.05007, energy ratio = 86.7129%
+    r=2: val = 0.01212, energy ratio = 5.0767%
+    r=3: val = 0.00908, energy ratio = 2.8489%
+    r=4: val = 0.00741, energy ratio = 1.8976%
+    r=5: val = 0.00502, energy ratio = 0.8714%
+
+[INFO] Processing Joint SVD for Agent 10...
+  Singular values:
+    r=1: val = 0.02717, energy ratio = 66.4678%
+    r=2: val = 0.01230, energy ratio = 13.6265%
+    r=3: val = 0.00834, energy ratio = 6.2588%
+    r=4: val = 0.00599, energy ratio = 3.2338%
+    r=5: val = 0.00527, energy ratio = 2.4965%
+

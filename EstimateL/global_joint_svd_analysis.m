@@ -16,10 +16,10 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
 %
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'Stick');
     end
     if nargin < 2 || isempty(M)
-        M = 5;
+        M = 10;
     end
 
     opts = parse_options(varargin{:});
@@ -82,13 +82,13 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
 
             % Re-estimate coefficient matrices C_full for s1 and s2
             [C1_full, m_values, n_values] = estimate_fourier_coeff_matrix(phi1_all, phi2_all, pair_out.point_cloud.s1, M);
-            [C2_full, ~, ~] = estimate_fourier_coeff_matrix(phi1_all, phi2_all, pair_out.point_cloud.s2, M);
+            [C2_full, ~, ~] = estimate_fourier_coeff_matrix(phi2_all, phi1_all, pair_out.point_cloud.s2, M);
 
             % Remove marginal terms if requested
             [C1_analysis, ~, ~] = remove_phase_marginal_terms(C1_full, phi1_all, phi2_all, pair_out.point_cloud.s1, m_values, n_values, ...
                 info.agent_ids(1), info.agent_ids, opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
-            [C2_analysis, ~, ~] = remove_phase_marginal_terms(C2_full, phi1_all, phi2_all, pair_out.point_cloud.s2, m_values, n_values, ...
-                info.agent_ids(2), info.agent_ids, opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
+            [C2_analysis, ~, ~] = remove_phase_marginal_terms(C2_full, phi2_all, phi1_all, pair_out.point_cloud.s2, m_values, n_values, ...
+                info.agent_ids(2), [info.agent_ids(2), info.agent_ids(1)], opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
 
             % Save to list
             entry = struct();
@@ -128,9 +128,10 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
                 interaction_meta(end+1) = meta; %#ok<AGROW>
             end
 
-            % Block 2: C2.' (target: agent_ids(2), source: agent_ids(1))
-            % Transpose is necessary because C2 row = source, col = target
-            C_blocks{end+1} = p_data.C2.'; %#ok<AGROW>
+            % Block 2: C2 (target: agent_ids(2), source: agent_ids(1))
+            % Since C2 is already estimated with rows = target, cols = source,
+            % we do not transpose it.
+            C_blocks{end+1} = p_data.C2; %#ok<AGROW>
             meta = struct('pair_name', p_data.pair_name, 'target_id', p_data.agent_ids(2), ...
                           'source_id', p_data.agent_ids(1), 'direction', 's2');
             interaction_meta(end+1) = meta; %#ok<AGROW>
@@ -169,24 +170,23 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             sigma_r = sigma(r);
             alpha_r = sqrt(sigma_r) * U(:, r);
 
-            % Phase align U based on the maximum real part of the 1st component
-            if r == 1
-                a1_temp = exp(1i * phi_grid * m_vals(:).') * alpha_r;
-                [~, idx_max] = max(abs(a1_temp));
-                phase_shift = exp(-1i * angle(a1_temp(idx_max)));
-            end
+            % Phase align U based on the maximum real part of the r-th component
+            a_temp = exp(1i * phi_grid * m_vals(:).') * alpha_r;
+            [~, idx_max] = max(abs(a_temp));
+            phase_shift_r = exp(-1i * angle(a_temp(idx_max)));
 
-            alpha_r = phase_shift * alpha_r;
+            alpha_r = phase_shift_r * alpha_r;
             a_values = exp(1i * phi_grid * m_vals(:).') * alpha_r;
 
-            % Partition right singular vector V(:, r) into 12 blocks
-            v_r = conj(phase_shift) * V(:, r);
             b_values_by_interaction = struct([]);
 
             for p = 1:n_blocks
                 start_idx = (p-1)*block_size + 1;
                 end_idx = p*block_size;
-                beta_r_p = sqrt(sigma_r) * conj(v_r(start_idx:end_idx)); % conjugate to match u_k * conj(v_k)
+                
+                % Direct phase-compensated SVD projection to match U_r * V_r^H
+                v_block = V(start_idx:end_idx, r);
+                beta_r_p = sqrt(sigma_r) * conj(phase_shift_r) * conj(v_block);
 
                 b_vals_p = exp(1i * phi_grid * n_vals(:).') * beta_r_p;
 
@@ -220,6 +220,24 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             end
         end
 
+        % --- Diagnostic check before normalization ---
+        fprintf('[INFO] Verifying pre-normalization SVD reconstruction...\n');
+        for r = 1:n_ranks
+            for p = 1:n_blocks
+                alpha_coeff = components(r).alpha_coeff;
+                beta_coeff = components(r).b_values_by_interaction(p).beta_coeff;
+                C_from_profiles = alpha_coeff * beta_coeff.';
+                
+                block_indices = (p-1)*block_size + 1 : p*block_size;
+                C_from_svd = sigma(r) * U(:, r) * V(block_indices, r)';
+                
+                rel_err = norm(C_from_profiles - C_from_svd, 'fro') / max(norm(C_from_svd, 'fro'), eps);
+                if rel_err > 1e-12
+                    fprintf('[WARNING] Pre-norm discrepancy in Rank %d, Block %d: %.3e\n', r, p, rel_err);
+                end
+            end
+        end
+
         % --- 1. Target (Receiver) Profile a_1 Normalization ---
         % Extract raw receiver profile a_1
         comp_r1 = components(1);
@@ -235,11 +253,38 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
         components(1).a_values = a_r1_norm;
         components(1).alpha_coeff = alpha_r1_norm;
 
+        % Update stored sender profiles b_1^(p) to keep the product invariant
+        for p = 1:n_blocks
+            beta_scaled = components(1).b_values_by_interaction(p).beta_coeff * scale_a;
+            components(1).b_values_by_interaction(p).beta_coeff = beta_scaled;
+            components(1).b_values_by_interaction(p).b_values = real( ...
+                exp(1i * phi_grid * n_vals(:).') * beta_scaled ...
+            );
+        end
+
+        % --- Diagnostic check after normalization ---
+        fprintf('[INFO] Verifying post-normalization SVD reconstruction...\n');
+        for r = 1:n_ranks
+            for p = 1:n_blocks
+                alpha_coeff = components(r).alpha_coeff;
+                beta_coeff = components(r).b_values_by_interaction(p).beta_coeff;
+                C_from_profiles = alpha_coeff * beta_coeff.';
+                
+                block_indices = (p-1)*block_size + 1 : p*block_size;
+                C_from_svd = sigma(r) * U(:, r) * V(block_indices, r)';
+                
+                rel_err = norm(C_from_profiles - C_from_svd, 'fro') / max(norm(C_from_svd, 'fro'), eps);
+                if rel_err > 1e-12
+                    fprintf('[WARNING] Post-norm discrepancy in Rank %d, Block %d: %.3e\n', r, p, rel_err);
+                end
+            end
+        end
+
         % --- 2. Construct B matrix for r=1 (scale automatically determined by a_1 normalization) ---
         % The scale of individual b_1^(p) is scaled up by scale_a to keep the product invariant
         B_coeff = zeros(block_size, n_blocks);
         for p = 1:n_blocks
-            B_coeff(:, p) = comp_r1.b_values_by_interaction(p).beta_coeff * scale_a;
+            B_coeff(:, p) = components(1).b_values_by_interaction(p).beta_coeff;
         end
         
         % --- 3. Second-Stage SVD for scale-determined sender profiles ---
@@ -559,7 +604,7 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
         target_names = arrayfun(@(id) sprintf('%d', id), target_agent_id(:), 'UniformOutput', false);
         
         G_dig = digraph(source_names, target_names, strength(:), node_names);
-        [x_data, y_data] = get_preferred_node_positions(G_dig);
+        [x_data, y_data] = get_preferred_node_positions(G_dig, round_dir);
         
         p_dig = plot(ax_dig, G_dig, 'XData', x_data, 'YData', y_data, 'NodeLabel', {}, ...
             'ArrowSize', 16, 'ArrowPosition', 0.75, 'MarkerSize', 8, ...
@@ -596,8 +641,8 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             if len > 0
                 nx = dy / len;
                 ny = -dx / len;
-                xl = (xs + xt)/2 + offset_dist * nx;
-                yl = (ys + yt)/2 + offset_dist * ny;
+                xl = xs + 0.35 * dx + offset_dist * nx;
+                yl = ys + 0.35 * dy + offset_dist * ny;
             else
                 xl = xs;
                 yl = ys + offset_dist;
@@ -748,13 +793,8 @@ function [C_out, y_rec, info] = remove_phase_marginal_terms(C, phi1, phi2, y, m_
     is_constant_term = (term_m == 0 & term_n == 0);
     is_other_term = false(size(coeff_vector));
 
-    if phase_agent_ids(1) == target_agent_id
-        is_self_term = (term_m ~= 0 & term_n == 0);
-        is_other_term = (term_m == 0 & term_n ~= 0);
-    else
-        is_self_term = (term_m == 0 & term_n ~= 0);
-        is_other_term = (term_m ~= 0 & term_n == 0);
-    end
+    is_self_term = (term_m ~= 0 & term_n == 0);
+    is_other_term = (term_m == 0 & term_n ~= 0);
 
     mask_to_remove = false(size(coeff_vector));
     if remove_self, mask_to_remove = mask_to_remove | is_self_term; end
@@ -786,7 +826,7 @@ function [C_out, y_rec, info] = remove_phase_marginal_terms(C, phi1, phi2, y, m_
 end
 
 
-function [x_data, y_data] = get_preferred_node_positions(G)
+function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
     node_names = G.Nodes.Name;
     if isstring(node_names)
         node_names = cellstr(node_names);
@@ -796,7 +836,17 @@ function [x_data, y_data] = get_preferred_node_positions(G)
     x_data = nan(1, numnodes(G));
     y_data = nan(1, numnodes(G));
 
-    preferred_ids = [8, 10, 7, 9];
+    if nargin >= 2 && contains(lower(round_dir), 'stick')
+        % Stick layout:
+        % 7  10
+        % 8   9
+        preferred_ids = [7, 10, 8, 9];
+    else
+        % Round layout:
+        % 8  10
+        % 7   9
+        preferred_ids = [8, 10, 7, 9];
+    end
     preferred_x = [1, 2, 1, 2];
     preferred_y = [2, 2, 1, 1];
     for k = 1:numel(preferred_ids)

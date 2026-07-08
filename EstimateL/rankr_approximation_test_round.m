@@ -15,7 +15,7 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
         round_dir = fullfile('EstimateL', 'Round');
     end
     if nargin < 2 || isempty(M)
-        M = 5;
+        M = 10;
     end
 
     opts = parse_options(varargin{:});
@@ -88,32 +88,30 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
             continue;
         end
 
-        phi1_all = pair_out.point_cloud.phi1;
-        phi2_all = pair_out.point_cloud.phi2;
-        phase_agent_ids = pair_out.phase_agent_ids;
+        phase_agent_ids = pair_out.phase_agent_ids(:).';
 
-        for agent_idx = 1:2
-            target_agent_id = phase_agent_ids(agent_idx);
-            
-            if agent_idx == 1
-                y_all = pair_out.point_cloud.s1;
-                signal_index = 1;
-                self_phase_name = 'phi1';
-            else
-                y_all = pair_out.point_cloud.s2;
-                signal_index = 2;
-                self_phase_name = 'phi2';
-            end
+        for target_agent_id = phase_agent_ids
+            d = extract_target_pair_data(pair_out, target_agent_id);
 
-            fprintf('  [Agent %d (s_%d)] - Self phase: %s\n', target_agent_id, signal_index, self_phase_name);
+            phi_self = d.phi_self;
+            phi_other = d.phi_other;
+            y_all = d.y_self;
+
+            self_phase_name = d.self_phase_name;
+            other_phase_name = d.other_phase_name;
+            signal_index = d.self_idx;
+
+            fprintf('  [Target %d <- Source %d] fitting s_%d(%s, %s)\n', ...
+                d.target_agent_id, d.source_agent_id, d.target_agent_id, ...
+                d.self_phase_name, d.other_phase_name);
 
             % Estimate full Fourier coefficients via regularized LS
-            [C_full, m_values, n_values] = estimate_fourier_coeff_matrix(phi1_all, phi2_all, y_all, M);
+            [C_full, m_values, n_values] = estimate_fourier_coeff_matrix(phi_self, phi_other, y_all, M);
             
             % Remove phase marginal terms if requested
             [C_analysis, y_analysis, removed_info] = remove_phase_marginal_terms( ...
-                C_full, phi1_all, phi2_all, y_all, m_values, n_values, ...
-                target_agent_id, phase_agent_ids, ...
+                C_full, phi_self, phi_other, y_all, m_values, n_values, ...
+                target_agent_id, [d.target_agent_id, d.source_agent_id], ...
                 opts.RemoveSelfOnly, opts.RemoveConstant, opts.RemoveOtherOnly);
             
             % Print removal info
@@ -135,11 +133,27 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
             expected_result_count = expected_result_count + n_rank_to_test;
             
             % Build separable components
-            components_all = build_separable_components(U, S, V, m_values, n_values, min(5, numel(sigma)), opts.ImagTolAbs, opts.ImagTolRel, agent_idx);
+            components_all = build_separable_components(U, S, V, m_values, n_values, min(5, numel(sigma)), opts.ImagTolAbs, opts.ImagTolRel, signal_index);
+            
+            % SVD check diagnostics (target/source reconstruction check)
+            for rr = 1:numel(components_all)
+                comp = components_all(rr);
+
+                C_from_ab = comp.alpha * comp.beta.';
+                C_from_svd = U(:, rr) * S(rr, rr) * V(:, rr)';
+
+                rel_err = norm(C_from_ab - C_from_svd, 'fro') / max(norm(C_from_svd, 'fro'), eps);
+
+                fprintf('    [a/b convention check] target=%d source=%d r=%d: rel_err = %.3e\n', ...
+                    d.target_agent_id, d.source_agent_id, rr, rel_err);
+            end
+
             component_imag_checks = get_component_imag_checks(components_all);
             
             % Compute self-only profile
-            self_profile = compute_self_only_profile(C_full, m_values, n_values, target_agent_id, phase_agent_ids, opts.ImagTolAbs, opts.ImagTolRel);
+            self_profile = compute_self_only_profile(C_full, m_values, n_values, target_agent_id, [d.target_agent_id, d.source_agent_id], opts.ImagTolAbs, opts.ImagTolRel);
+            self_profile.self_phase = d.self_phase_name;
+            self_profile.self_phase_index = d.target_agent_id;
             
             total_coeff_energy = removed_info.total_coeff_energy;
             removed_total_coeff_energy = removed_info.removed_total_coeff_energy;
@@ -159,13 +173,13 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
                 
                 % Residual metrics (C_analysis based)
                 residual_energy_ratio = energy_r / energy;
-                residual_nrmse = compute_nrmse_fast(phi1_all, phi2_all, y_analysis, coef_rankr, term_m, term_n);
+                residual_nrmse = compute_nrmse_fast(phi_self, phi_other, y_analysis, coef_rankr, term_m, term_n);
                 
                 % Total metrics (C_full based, with removed components added back)
                 C_total_rankr = removed_info.C_removed_total + C_rankr;
                 coef_total_rankr = reshape(C_total_rankr.', [], 1);
                 total_energy_ratio = (removed_total_coeff_energy + energy_r) / total_coeff_energy;
-                total_nrmse = compute_nrmse_fast(phi1_all, phi2_all, y_all, coef_total_rankr, term_m, term_n);
+                total_nrmse = compute_nrmse_fast(phi_self, phi_other, y_all, coef_total_rankr, term_m, term_n);
 
                 fprintf('    %2d   |     %.6f     |    %.6f    |     %.6f    |   %.6f\n', ...
                     R, residual_energy_ratio, total_energy_ratio, residual_nrmse, total_nrmse);
@@ -195,6 +209,18 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
                 result.removed_info = removed_info;
                 result.self_profile = self_profile;
                 result.components = components_all(1:min(R, numel(components_all)));
+                
+                % Add target/source phase metadata
+                result.target_agent_id = d.target_agent_id;
+                result.source_agent_id = d.source_agent_id;
+                result.self_agent_id = d.target_agent_id;
+                result.other_agent_id = d.source_agent_id;
+                result.first_arg_agent_id = d.target_agent_id;
+                result.second_arg_agent_id = d.source_agent_id;
+                result.self_phase = d.self_phase_name;
+                result.other_phase = d.other_phase_name;
+                result.self_idx_in_pair = d.self_idx;
+                result.other_idx_in_pair = d.other_idx;
                 
                 result.imag_check = struct();
                 result.imag_check.self_profile = struct( ...
@@ -239,9 +265,9 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
                     title_suffix = [title_suffix, ' - marginal removed']; %#ok<AGROW>
                 end
 
-                fig2d = plot_rank_approximations(phi1_all, phi2_all, y_analysis, rank_results(1:3), m_values, n_values, target_agent_id, title_suffix);
-                fig3d = plot_rank_approximations_3d(phi1_all, phi2_all, y_analysis, rank_results(1:3), m_values, n_values, target_agent_id, opts.show_points, opts.colormap, title_suffix);
-                fig_sep = plot_separable_profiles(components_all(1:min(opts.ProfileRank, numel(components_all))), m_values, n_values, target_agent_id, opts.ProfileRank, title_suffix);
+                fig2d = plot_rank_approximations(phi_self, phi_other, y_analysis, rank_results(1:3), m_values, n_values, target_agent_id, self_phase_name, other_phase_name, title_suffix);
+                fig3d = plot_rank_approximations_3d(phi_self, phi_other, y_analysis, rank_results(1:3), m_values, n_values, target_agent_id, opts.show_points, opts.colormap, self_phase_name, other_phase_name, title_suffix);
+                fig_sep = plot_separable_profiles(components_all(1:min(opts.ProfileRank, numel(components_all))), m_values, n_values, target_agent_id, opts.ProfileRank, self_phase_name, other_phase_name, title_suffix);
                 
                 % Save figures in the pairwise_reconstructions/<pair_name> folder
                 pair_plot_dir = fullfile(analysis_out_dir, 'pairwise_reconstructions', info.name);
@@ -375,9 +401,7 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
                                'other_id', {}, 'pair_name', {});
         for p_idx = 1:numel(unique_pair_results)
             res = unique_pair_results{p_idx};
-            pair_parts = strsplit(res.pair_name, '-');
-            pair_ids = cellfun(@str2double, pair_parts);
-            other_id = pair_ids(pair_ids ~= target_aid);
+            other_id = res.other_agent_id;
             
             n_comps = numel(res.components);
             incoming_data(end+1).other_id = other_id; %#ok<AGROW>
@@ -474,8 +498,8 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
         fprintf('[INFO] Saved separable profiles overlay plot to: %s\n', sep_overlay_save_path);
         
         if ~opts.keep_figures
-            close(fig);
-            close(fig_sep_overlay);
+            if isgraphics(fig), close(fig); end
+            if isgraphics(fig_sep_overlay), close(fig_sep_overlay); end
         end
     end
 
@@ -643,24 +667,14 @@ function [C_analysis, y_analysis, removed_info] = remove_phase_marginal_terms( .
         self_phase_name = 'phi2';
     end
     
-    if signal_index == 1
-        if remove_self_only
-            C_removed_self(m_values ~= 0, idx_n0) = C_full(m_values ~= 0, idx_n0);
-            C_analysis(m_values ~= 0, idx_n0) = 0;
-        end
-        if remove_other_only
-            C_removed_other(idx_m0, n_values ~= 0) = C_full(idx_m0, n_values ~= 0);
-            C_analysis(idx_m0, n_values ~= 0) = 0;
-        end
-    else
-        if remove_self_only
-            C_removed_self(idx_m0, n_values ~= 0) = C_full(idx_m0, n_values ~= 0);
-            C_analysis(idx_m0, n_values ~= 0) = 0;
-        end
-        if remove_other_only
-            C_removed_other(m_values ~= 0, idx_n0) = C_full(m_values ~= 0, idx_n0);
-            C_analysis(m_values ~= 0, idx_n0) = 0;
-        end
+
+    if remove_self_only
+        C_removed_self(m_values ~= 0, idx_n0) = C_full(m_values ~= 0, idx_n0);
+        C_analysis(m_values ~= 0, idx_n0) = 0;
+    end
+    if remove_other_only
+        C_removed_other(idx_m0, n_values ~= 0) = C_full(idx_m0, n_values ~= 0);
+        C_analysis(idx_m0, n_values ~= 0) = 0;
     end
     
     if remove_constant
@@ -747,34 +761,19 @@ function components = build_separable_components(U, S, V, m_values, n_values, pr
     for r = 1:n_ranks
         sigma_r = S(r, r);
         
-        if nargin >= 9 && agent_idx == 2
-            % For s2: target is phi2 (V-side), source is phi1 (U-side)
-            % So target profile (a) should be associated with V, and source (b) with U.
-            alpha_r = sqrt(sigma_r) * conj(V(:, r));
-            beta_r = sqrt(sigma_r) * U(:, r);
-            
-            a_r_temp = exp(1i * phi_grid * n_values(:).') * alpha_r;
-            [~, idx_max] = max(abs(a_r_temp));
-            phase_shift = exp(-1i * angle(a_r_temp(idx_max)));
-            alpha_r = phase_shift * alpha_r;
-            beta_r = conj(phase_shift) * beta_r;
+        % Target profile (a) is always associated with U (rows / phi_self)
+        % Source profile (b) is always associated with V (columns / phi_other)
+        alpha_r = sqrt(sigma_r) * U(:, r);
+        beta_r = sqrt(sigma_r) * conj(V(:, r));
+        
+        a_r_temp = exp(1i * phi_grid * m_values(:).') * alpha_r;
+        [~, idx_max] = max(abs(a_r_temp));
+        phase_shift = exp(-1i * angle(a_r_temp(idx_max)));
+        alpha_r = phase_shift * alpha_r;
+        beta_r = conj(phase_shift) * beta_r;
 
-            a_values = exp(1i * phi_grid * n_values(:).') * alpha_r;
-            b_values = exp(1i * phi_grid * m_values(:).') * beta_r;
-        else
-            % For s1: target is phi1 (U-side), source is phi2 (V-side)
-            alpha_r = sqrt(sigma_r) * U(:, r);
-            beta_r = sqrt(sigma_r) * conj(V(:, r));
-            
-            a_r_temp = exp(1i * phi_grid * m_values(:).') * alpha_r;
-            [~, idx_max] = max(abs(a_r_temp));
-            phase_shift = exp(-1i * angle(a_r_temp(idx_max)));
-            alpha_r = phase_shift * alpha_r;
-            beta_r = conj(phase_shift) * beta_r;
-
-            a_values = exp(1i * phi_grid * m_values(:).') * alpha_r;
-            b_values = exp(1i * phi_grid * n_values(:).') * beta_r;
-        end
+        a_values = exp(1i * phi_grid * m_values(:).') * alpha_r;
+        b_values = exp(1i * phi_grid * n_values(:).') * beta_r;
         
         a_stats = compute_imag_part_metrics(a_values, imag_tol_abs, imag_tol_rel);
         b_stats = compute_imag_part_metrics(b_values, imag_tol_abs, imag_tol_rel);
@@ -796,8 +795,14 @@ function components = build_separable_components(U, S, V, m_values, n_values, pr
     end
 end
 
-function fig = plot_separable_profiles(components, m_values, n_values, agent_id, profile_rank, title_suffix)
-    if nargin < 6
+function fig = plot_separable_profiles(components, m_values, n_values, agent_id, profile_rank, self_phase_name, other_phase_name, title_suffix)
+    if ~startsWith(self_phase_name, '\') && startsWith(self_phase_name, 'phi')
+        self_phase_name = ['\' self_phase_name];
+    end
+    if ~startsWith(other_phase_name, '\') && startsWith(other_phase_name, 'phi')
+        other_phase_name = ['\' other_phase_name];
+    end
+    if nargin < 8
         title_suffix = '';
     end
     n_components = numel(components);
@@ -819,31 +824,37 @@ function fig = plot_separable_profiles(components, m_values, n_values, agent_id,
         
         ax_a = nexttile;
         plot(ax_a, phi_grid, real(a_r), 'LineWidth', 1.5);
-        xlabel(ax_a, '$$\phi_1$$', 'Interpreter', 'latex');
-        ylabel(ax_a, '$$a_{j,r}(\phi_1)$$', 'Interpreter', 'latex');
-        title(ax_a, sprintf('$a_{%d,%d}(\\phi_1)$, $\\sigma = %.4e$', agent_id, r, sigma_r), 'Interpreter', 'latex');
+        xlabel(ax_a, sprintf('$$\\%s$$', self_phase_name), 'Interpreter', 'latex');
+        ylabel(ax_a, sprintf('$$a_{j,r}(\\%s)$$', self_phase_name), 'Interpreter', 'latex');
+        title(ax_a, sprintf('$a_{%d,%d}(\\%s)$, $\\sigma = %.4e$', agent_id, r, self_phase_name, sigma_r), 'Interpreter', 'latex');
         set(ax_a, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
         set(ax_a, 'XTickLabel', {'0', '$\pi/2$', '$\pi$', '$3\pi/2$', '$2\pi$'}, 'TickLabelInterpreter', 'latex');
         grid(ax_a, 'on');
         
         ax_b = nexttile;
         plot(ax_b, phi_grid, real(b_r), 'LineWidth', 1.5);
-        xlabel(ax_b, '$$\phi_2$$', 'Interpreter', 'latex');
-        ylabel(ax_b, '$$b_{j,r}(\phi_2)$$', 'Interpreter', 'latex');
-        title(ax_b, sprintf('$b_{%d,%d}(\\phi_2)$, $\\sigma = %.4e$', agent_id, r, sigma_r), 'Interpreter', 'latex');
+        xlabel(ax_b, sprintf('$$\\%s$$', other_phase_name), 'Interpreter', 'latex');
+        ylabel(ax_b, sprintf('$$b_{j,r}(\\%s)$$', other_phase_name), 'Interpreter', 'latex');
+        title(ax_b, sprintf('$b_{%d,%d}(\\%s)$, $\\sigma = %.4e$', agent_id, r, other_phase_name, sigma_r), 'Interpreter', 'latex');
         set(ax_b, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
         set(ax_b, 'XTickLabel', {'0', '$\pi/2$', '$\pi$', '$3\pi/2$', '$2\pi$'}, 'TickLabelInterpreter', 'latex');
         grid(ax_b, 'on');
     end
 end
 
-function fig = plot_rank_approximations(phi1_all, phi2_all, y_all, rank_results, m_values, n_values, agent_id, title_suffix)
-    if nargin < 8
+function fig = plot_rank_approximations(phi_self, phi_other, y_all, rank_results, m_values, n_values, agent_id, self_phase_name, other_phase_name, title_suffix)
+    if ~startsWith(self_phase_name, '\') && startsWith(self_phase_name, 'phi')
+        self_phase_name = ['\' self_phase_name];
+    end
+    if ~startsWith(other_phase_name, '\') && startsWith(other_phase_name, 'phi')
+        other_phase_name = ['\' other_phase_name];
+    end
+    if nargin < 10
         title_suffix = '';
     end
     n_grid = 64;
-    phi1_grid = linspace(0, 2*pi, n_grid);
-    phi2_grid = linspace(0, 2*pi, n_grid);
+    phi_self_grid = linspace(0, 2*pi, n_grid);
+    phi_other_grid = linspace(0, 2*pi, n_grid);
     
     fig = figure('Color', 'w', 'Position', [100, 100, 1200, 400], ...
         'Name', sprintf('Rank Approximations - Agent %d%s', agent_id, title_suffix));
@@ -858,19 +869,19 @@ function fig = plot_rank_approximations(phi1_all, phi2_all, y_all, rank_results,
         term_m = repelem(m_values(:), numel(n_values));
         term_n = repmat(n_values(:), numel(m_values), 1);
         
-        n_phi1 = numel(phi1_grid);
-        n_phi2 = numel(phi2_grid);
-        Z = zeros(n_phi2, n_phi1);
+        n_phi_self = numel(phi_self_grid);
+        n_phi_other = numel(phi_other_grid);
+        Z = zeros(n_phi_other, n_phi_self);
         
-        for i = 1:n_phi1
-            for j = 1:n_phi2
-                A = exp(1i * (phi1_grid(i) * term_m.' + phi2_grid(j) * term_n.'));
+        for i = 1:n_phi_self
+            for j = 1:n_phi_other
+                A = exp(1i * (phi_self_grid(i) * term_m.' + phi_other_grid(j) * term_n.'));
                 Z(j, i) = real(A * coef);
             end
         end
         
         ax = subplot(1, 3, rank_idx);
-        imagesc(phi1_grid, phi2_grid, Z);
+        imagesc(phi_self_grid, phi_other_grid, Z);
         set(ax, 'YDir', 'normal');
         colorbar(ax);
         
@@ -883,8 +894,8 @@ function fig = plot_rank_approximations(phi1_all, phi2_all, y_all, rank_results,
         z_max = max(abs(Z(:)));
         if z_max > 0, caxis(ax, [-z_max, z_max]); end
         
-        xlabel(ax, '$$\phi_1$$', 'Interpreter', 'latex');
-        ylabel(ax, '$$\phi_2$$', 'Interpreter', 'latex');
+        xlabel(ax, sprintf('$$\\%s$$', self_phase_name), 'Interpreter', 'latex');
+        ylabel(ax, sprintf('$$\\%s$$', other_phase_name), 'Interpreter', 'latex');
         title(ax, sprintf('Rank %d (NRMSE=%.4f)', rank, result.nrmse), 'Interpreter', 'latex');
         
         set(ax, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
@@ -895,14 +906,20 @@ function fig = plot_rank_approximations(phi1_all, phi2_all, y_all, rank_results,
     end
 end
 
-function fig = plot_rank_approximations_3d(phi1_all, phi2_all, y_all, rank_results, m_values, n_values, agent_id, show_points, colormap_name, title_suffix)
-    if nargin < 10
+function fig = plot_rank_approximations_3d(phi_self, phi_other, y_all, rank_results, m_values, n_values, agent_id, show_points, colormap_name, self_phase_name, other_phase_name, title_suffix)
+    if ~startsWith(self_phase_name, '\') && startsWith(self_phase_name, 'phi')
+        self_phase_name = ['\' self_phase_name];
+    end
+    if ~startsWith(other_phase_name, '\') && startsWith(other_phase_name, 'phi')
+        other_phase_name = ['\' other_phase_name];
+    end
+    if nargin < 12
         title_suffix = '';
     end
     n_grid = 64;
-    phi1_grid = linspace(0, 2*pi, n_grid);
-    phi2_grid = linspace(0, 2*pi, n_grid);
-    [PHI1_grid, PHI2_grid] = meshgrid(phi1_grid, phi2_grid);
+    phi_self_grid = linspace(0, 2*pi, n_grid);
+    phi_other_grid = linspace(0, 2*pi, n_grid);
+    [PHI_self_grid, PHI_other_grid] = meshgrid(phi_self_grid, phi_other_grid);
     
     fig = figure('Color', 'w', 'Position', [100, 550, 1200, 400], ...
         'Name', sprintf('Rank Approximations 3D - Agent %d%s', agent_id, title_suffix));
@@ -917,32 +934,32 @@ function fig = plot_rank_approximations_3d(phi1_all, phi2_all, y_all, rank_resul
         term_m = repelem(m_values(:), numel(n_values));
         term_n = repmat(n_values(:), numel(m_values), 1);
         
-        n_phi1 = numel(phi1_grid);
-        n_phi2 = numel(phi2_grid);
-        Z = zeros(n_phi2, n_phi1);
+        n_phi_self = numel(phi_self_grid);
+        n_phi_other = numel(phi_other_grid);
+        Z = zeros(n_phi_other, n_phi_self);
         
-        for i = 1:n_phi1
-            for j = 1:n_phi2
-                A = exp(1i * (phi1_grid(i) * term_m.' + phi2_grid(j) * term_n.'));
+        for i = 1:n_phi_self
+            for j = 1:n_phi_other
+                A = exp(1i * (phi_self_grid(i) * term_m.' + phi_other_grid(j) * term_n.'));
                 Z(j, i) = real(A * coef);
             end
         end
         
         ax = subplot(1, 3, rank_idx);
-        surf(ax, PHI1_grid, PHI2_grid, Z, 'EdgeColor', 'none');
+        surf(ax, PHI_self_grid, PHI_other_grid, Z, 'EdgeColor', 'none');
         hold(ax, 'on');
         
         if show_points
-            scatter3(ax, phi1_all, phi2_all, y_all, 15, y_all, 'filled', 'MarkerEdgeColor', 'k', ...
+            scatter3(ax, phi_self, phi_other, y_all, 15, y_all, 'filled', 'MarkerEdgeColor', 'k', ...
                 'MarkerEdgeAlpha', 0.3, 'MarkerFaceAlpha', 0.5);
         end
         
         colormap(ax, colormap_name);
         colorbar(ax);
         
-        xlabel(ax, '$$\phi_1$$', 'Interpreter', 'latex');
-        ylabel(ax, '$$\phi_2$$', 'Interpreter', 'latex');
-        zlabel(ax, '$$s_j(\phi_1,\phi_2)$$', 'Interpreter', 'latex');
+        xlabel(ax, sprintf('$$\\%s$$', self_phase_name), 'Interpreter', 'latex');
+        ylabel(ax, sprintf('$$\\%s$$', other_phase_name), 'Interpreter', 'latex');
+        zlabel(ax, sprintf('$$s_j(\\%s,\\%s)$$', self_phase_name, other_phase_name), 'Interpreter', 'latex');
         title(ax, sprintf('Rank %d (NRMSE=%.4f)', rank, result.nrmse), 'Interpreter', 'latex');
         
         set(ax, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
@@ -963,36 +980,23 @@ function self_profile = compute_self_only_profile(C_full, m_values, n_values, ta
         signal_index = 1;
         self_phase_index = 1;
         self_phase_name = 'phi1';
-        
-        idx_n0 = find(n_values == 0);
-        idx_m_nonzero = find(m_values ~= 0);
-        
-        if ~isempty(idx_n0) && ~isempty(idx_m_nonzero)
-            coeff_vec = C_full(idx_m_nonzero, idx_n0(:));
-            coeff_vec = coeff_vec(:);
-            m_basis = m_values(idx_m_nonzero);
-            E = exp(1i * phi_grid * m_basis(:).');
-        else
-            coeff_vec = 0;
-            E = zeros(numel(phi_grid), 1);
-        end
     else
         signal_index = 2;
         self_phase_index = 2;
         self_phase_name = 'phi2';
-        
-        idx_m0 = find(m_values == 0);
-        idx_n_nonzero = find(n_values ~= 0);
-        
-        if ~isempty(idx_m0) && ~isempty(idx_n_nonzero)
-            coeff_vec = C_full(idx_m0(:), idx_n_nonzero);
-            coeff_vec = coeff_vec(:);
-            n_basis = n_values(idx_n_nonzero);
-            E = exp(1i * phi_grid * n_basis(:).');
-        else
-            coeff_vec = 0;
-            E = zeros(numel(phi_grid), 1);
-        end
+    end
+    
+    idx_n0 = find(n_values == 0);
+    idx_m_nonzero = find(m_values ~= 0);
+    
+    if ~isempty(idx_n0) && ~isempty(idx_m_nonzero)
+        coeff_vec = C_full(idx_m_nonzero, idx_n0(:));
+        coeff_vec = coeff_vec(:);
+        m_basis = m_values(idx_m_nonzero);
+        E = exp(1i * phi_grid * m_basis(:).');
+    else
+        coeff_vec = 0;
+        E = zeros(numel(phi_grid), 1);
     end
     
     if numel(E) == 1
@@ -1065,6 +1069,9 @@ function fig = plot_self_only_profile(self_profile)
     ax = axes('Parent', fig);
     plot(ax, phi_grid, self_profile.real, 'LineWidth', 1.5);
     
+    if ~startsWith(self_phase, '\') && startsWith(self_phase, 'phi')
+        self_phase = ['\' self_phase];
+    end
     xlabel(ax, sprintf('$$%s$$', self_phase), 'Interpreter', 'latex');
     ylabel(ax, '$$s_{j,\mathrm{self}}$$', 'Interpreter', 'latex');
     title(ax, sprintf('Self-only profile $q_{%d}(\\phi_{%d})$, max $|\\mathrm{imag}|$ = %.2e', ...
@@ -1089,7 +1096,7 @@ end
 
 function cache_key = compute_svd_cache_key(pair_infos, M, opts)
     parts = {};
-    parts{end + 1} = 'version=v2_direction_unified';
+    parts{end + 1} = 'version=v3_target_source_phase_convention';
     parts{end + 1} = sprintf('M=%d', M);
     parts{end + 1} = sprintf('analysis_start_sec=%.15g', opts.analysis_start_sec);
     parts{end + 1} = sprintf('analysis_duration_sec=%.15g', opts.analysis_duration_sec);
@@ -1137,4 +1144,35 @@ function hex_text = md5_hex(text_value)
         hex_str(idx*2) = hex_chars(lo);
     end
     hex_text = hex_str;
+end
+
+function d = extract_target_pair_data(pair_out, target_agent_id)
+    phase_agent_ids = pair_out.phase_agent_ids(:).';
+
+    self_idx = find(phase_agent_ids == target_agent_id, 1);
+    if isempty(self_idx)
+        error('target_agent_id %d not found in phase_agent_ids.', target_agent_id);
+    end
+
+    other_idx = 3 - self_idx;
+
+    if self_idx == 1
+        phi_self = pair_out.point_cloud.phi1;
+        phi_other = pair_out.point_cloud.phi2;
+        y_self = pair_out.point_cloud.s1;
+    else
+        phi_self = pair_out.point_cloud.phi2;
+        phi_other = pair_out.point_cloud.phi1;
+        y_self = pair_out.point_cloud.s2;
+    end
+
+    d.target_agent_id = phase_agent_ids(self_idx);
+    d.source_agent_id = phase_agent_ids(other_idx);
+    d.self_idx = self_idx;
+    d.other_idx = other_idx;
+    d.phi_self = phi_self;
+    d.phi_other = phi_other;
+    d.y_self = y_self;
+    d.self_phase_name = sprintf('phi_{%d}', phase_agent_ids(self_idx));
+    d.other_phase_name = sprintf('phi_{%d}', phase_agent_ids(other_idx));
 end
