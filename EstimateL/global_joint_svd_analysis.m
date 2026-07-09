@@ -15,8 +15,20 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
 %   results = global_joint_svd_analysis('EstimateL/Round', 10);
 %
 
+    % =========================================================================
+    % CONFIGURATION: Digraph edge color and thickness limits
+    % =========================================================================
+    % Fixed upper/lower bounds for coupling strength color mapping.
+    % The colormap range will be [-clim_limit, clim_limit] to allow comparison.
+    clim_limit = 0.06;
+    
+    % Fixed maximum weight limit for coupling strength line thickness.
+    % The edge line thickness is normalized in [0, linewidth_limit].
+    linewidth_limit = 0.06;
+    % =========================================================================
+
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Stick');
+        round_dir = fullfile('EstimateL', 'Round');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -584,7 +596,9 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
 
     % Create and save Influence Digraph based on Joint SVD weights
     if isfield(all_global_results, 'individual_metrics')
-        fig_digraph = figure('Color', 'w', 'Name', 'Global Joint SVD Influence Digraph');
+        % Define figure position/size to be close to square (accommodating the colorbar on the right)
+        % to minimize extra whitespace margins.
+        fig_digraph = figure('Color', 'w', 'Position', [100, 100, 520, 450], 'Name', 'Global Joint SVD Influence Digraph');
         ax_dig = axes('Parent', fig_digraph);
         
         n_edges = numel(all_global_results.individual_metrics);
@@ -610,15 +624,37 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             'ArrowSize', 16, 'ArrowPosition', 0.75, 'MarkerSize', 8, ...
             'NodeColor', [0.15, 0.15, 0.15], 'EdgeColor', [0.0, 0.4470, 0.7410]);
         axis(ax_dig, 'equal');
-        xlim(ax_dig, [0.5, 2.5]);
-        ylim(ax_dig, [0.5, 2.5]);
+        xlim(ax_dig, [0.6, 2.4]);
+        ylim(ax_dig, [0.6, 2.4]);
         title(ax_dig, 'Global Joint SVD Directed Influence Graph (Weight R1)', 'Interpreter', 'none');
         
         if numedges(G_dig) > 0
             w_vals = G_dig.Edges.Weight;
-            p_dig.LineWidth = scale_edge_width(abs(w_vals)); % Use absolute values for edge thickness
+            p_dig.LineWidth = scale_edge_width(abs(w_vals), linewidth_limit); % Use absolute values for edge thickness
             p_dig.EdgeCData = w_vals;
-            colormap(ax_dig, parula);
+            p_dig.EdgeColor = 'flat';
+            
+            % Set color limits symmetric around zero so that 0 is neutral
+            caxis(ax_dig, [-clim_limit, clim_limit]);
+            
+            % Create custom diverging colormap: Blue (negative) -> Gray (zero) -> Red (positive)
+            n_colors = 256;
+            half_colors = n_colors / 2;
+            c_blue = [0.0, 0.0, 0.85];       % Deep blue for negative strength
+            c_center = [0.95, 0.95, 0.95];   % Light gray for zero strength
+            c_red = [0.85, 0.0, 0.0];        % Deep red for positive strength
+            
+            r_blue = linspace(c_blue(1), c_center(1), half_colors)';
+            g_blue = linspace(c_blue(2), c_center(2), half_colors)';
+            b_blue = linspace(c_blue(3), c_center(3), half_colors)';
+            
+            r_red = linspace(c_center(1), c_red(1), half_colors)';
+            g_red = linspace(c_center(2), c_red(2), half_colors)';
+            b_red = linspace(c_center(3), c_red(3), half_colors)';
+            
+            custom_cmap = [r_blue, g_blue, b_blue; r_red, g_red, b_red];
+            colormap(ax_dig, custom_cmap);
+            
             cb = colorbar(ax_dig);
             cb.Label.String = 'Weight R1 (Coupling Strength)';
         end
@@ -866,17 +902,24 @@ function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
     end
 end
 
-function widths = scale_edge_width(weights)
+function widths = scale_edge_width(weights, max_limit)
     weights = double(weights(:));
     if isempty(weights) || all(~isfinite(weights))
         widths = 1.5;
         return;
     end
-    w_min = min(weights, [], 'omitnan');
-    w_max = max(weights, [], 'omitnan');
-    if ~isfinite(w_min) || ~isfinite(w_max) || abs(w_max - w_min) < eps
-        widths = 2.5 * ones(size(weights));
-        return;
+    if nargin >= 2 && ~isempty(max_limit)
+        % Normalize using the fixed max_limit (from 0 to max_limit)
+        clamped_weights = min(max(weights, 0), max_limit);
+        widths = 1.0 + 5.0 * (clamped_weights / max_limit);
+    else
+        % Fallback to dynamic scaling if max_limit is not provided
+        w_min = min(weights, [], 'omitnan');
+        w_max = max(weights, [], 'omitnan');
+        if ~isfinite(w_min) || ~isfinite(w_max) || abs(w_max - w_min) < eps
+            widths = 2.5 * ones(size(weights));
+            return;
+        end
+        widths = 1.0 + 5.0 * (weights - w_min) / (w_max - w_min);
     end
-    widths = 1.0 + 5.0 * (weights - w_min) / (w_max - w_min);
 end
