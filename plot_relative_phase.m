@@ -24,11 +24,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-<<<<<<< HEAD
-        csv_rank_from_latest = 7;
-=======
         csv_rank_from_latest = 2;
->>>>>>> 87ec4e6200bf7041d1f7474e7cc0dce28a9b1c55
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
         n_seconds_to_cut = 0;
