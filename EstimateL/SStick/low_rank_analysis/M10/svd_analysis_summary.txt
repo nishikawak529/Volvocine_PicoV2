@@ -7,7 +7,7 @@
   Remove other-only terms: false
 
 [INFO] Pair 1/6: 7-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\phase_dynamics_cache_d7b0a0f5a0b27b84d8c7bc0aeab4fcb5.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\phase_dynamics_cache_a3c6a0d6baeca31f4eabb2384da0f5b8.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 10
@@ -76,68 +76,68 @@ plot_phase_dynamics_from_csv (行 112) 内
 rankr_approximation_test_round (行 71) 内] 
 [INFO] Subtracted self-profile for Agent 7 from s_1.
 [INFO] Subtracted self-profile for Agent 8 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\phase_dynamics_cache_85b5a51d2630e126f62e6be7f11644a7.mat
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\phase_dynamics_cache_4f085abfedb872101431734b56e9e352.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 2 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 8
-[INFO] omega1 = 7.69001089378 rad/s, omega2 = 7.85001688927 rad/s, Delta omega = 0 rad/s
-[INFO] RMSE: s1 = 0.0196339, s2 = 0.0183634
+[INFO] omega1 = 7.68999258932 rad/s, omega2 = 7.85004049461 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0172365, s2 = 0.0161959
   [Target 7 <- Source 8] fitting s_7(phi_{7}, phi_{8})
-    Removed self-only energy ratio:  0.986237
-    Removed constant energy ratio:   0.007706
+    Removed self-only energy ratio:  0.980299
+    Removed constant energy ratio:   0.011266
     Removed other-only energy ratio: 0.000000
-    Remaining coefficient energy ratio: 0.006057
-    Reconstruction mismatch RMSE: 1.963393e-02
-    [a/b convention check] target=7 source=8 r=1: rel_err = 1.730e-16
-    [a/b convention check] target=7 source=8 r=2: rel_err = 1.593e-16
-    [a/b convention check] target=7 source=8 r=3: rel_err = 1.440e-16
-    [a/b convention check] target=7 source=8 r=4: rel_err = 2.755e-16
-    [a/b convention check] target=7 source=8 r=5: rel_err = 2.155e-16
+    Remaining coefficient energy ratio: 0.008436
+    Reconstruction mismatch RMSE: 1.723646e-02
+    [a/b convention check] target=7 source=8 r=1: rel_err = 1.474e-16
+    [a/b convention check] target=7 source=8 r=2: rel_err = 1.657e-16
+    [a/b convention check] target=7 source=8 r=3: rel_err = 1.649e-16
+    [a/b convention check] target=7 source=8 r=4: rel_err = 3.292e-16
+    [a/b convention check] target=7 source=8 r=5: rel_err = 1.784e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
-     1   |     0.733045     |    0.998383    |     0.682647    |   0.062269
-     2   |     0.805497     |    0.998822    |     0.643308    |   0.058681
-     3   |     0.851768     |    0.999102    |     0.616723    |   0.056256
-     4   |     0.896864     |    0.999375    |     0.589618    |   0.053783
-     5   |     0.928371     |    0.999566    |     0.569939    |   0.051988
+     1   |     0.853232     |    0.998762    |     0.545089    |   0.054945
+     2   |     0.921379     |    0.999337    |     0.488907    |   0.049282
+     3   |     0.948956     |    0.999569    |     0.464956    |   0.046868
+     4   |     0.961259     |    0.999673    |     0.453972    |   0.045760
+     5   |     0.971777     |    0.999762    |     0.444101    |   0.044765
 
     [Imaginary-part check]
-      Self-only q_1: max|imag| = 1.962e-16, relative = 3.662e-16, OK
-      r=1: a max|imag| = 2.012e-16, rel = 4.234e-16, OK; b max|imag| = 3.565e-16, rel = 8.926e-16, OK
-      r=2: a max|imag| = 2.316e-16, rel = 7.955e-16, OK; b max|imag| = 2.689e-16, rel = 1.258e-15, OK
-      r=3: a max|imag| = 7.310e-15, rel = 2.481e-14, OK; b max|imag| = 7.149e-15, rel = 3.035e-14, OK
-      r=4: a max|imag| = 8.107e-15, rel = 3.132e-14, OK; b max|imag| = 6.343e-15, rel = 2.535e-14, OK
-      r=5: a max|imag| = 5.875e-16, rel = 2.590e-15, OK; b max|imag| = 4.797e-16, rel = 2.416e-15, OK
+      Self-only q_1: max|imag| = 6.796e-16, relative = 1.256e-15, OK
+      r=1: a max|imag| = 3.287e-16, rel = 6.568e-16, OK; b max|imag| = 1.045e-15, rel = 2.663e-15, OK
+      r=2: a max|imag| = 4.388e-16, rel = 1.535e-15, OK; b max|imag| = 7.055e-16, rel = 3.061e-15, OK
+      r=3: a max|imag| = 3.764e-16, rel = 1.387e-15, OK; b max|imag| = 3.946e-16, rel = 1.918e-15, OK
+      r=4: a max|imag| = 9.033e-16, rel = 5.036e-15, OK; b max|imag| = 9.422e-16, rel = 4.524e-15, OK
+      r=5: a max|imag| = 1.043e-15, rel = 6.938e-15, OK; b max|imag| = 1.267e-15, rel = 8.354e-15, OK
 
   [Target 8 <- Source 7] fitting s_8(phi_{8}, phi_{7})
-    Removed self-only energy ratio:  0.970199
-    Removed constant energy ratio:   0.012558
+    Removed self-only energy ratio:  0.989396
+    Removed constant energy ratio:   0.000019
     Removed other-only energy ratio: 0.000000
-    Remaining coefficient energy ratio: 0.017242
-    Reconstruction mismatch RMSE: 1.836337e-02
-    [a/b convention check] target=8 source=7 r=1: rel_err = 2.089e-16
-    [a/b convention check] target=8 source=7 r=2: rel_err = 3.040e-16
-    [a/b convention check] target=8 source=7 r=3: rel_err = 1.654e-16
-    [a/b convention check] target=8 source=7 r=4: rel_err = 1.310e-16
-    [a/b convention check] target=8 source=7 r=5: rel_err = 1.549e-16
+    Remaining coefficient energy ratio: 0.010585
+    Reconstruction mismatch RMSE: 1.619591e-02
+    [a/b convention check] target=8 source=7 r=1: rel_err = 2.263e-16
+    [a/b convention check] target=8 source=7 r=2: rel_err = 1.968e-16
+    [a/b convention check] target=8 source=7 r=3: rel_err = 1.925e-16
+    [a/b convention check] target=8 source=7 r=4: rel_err = 2.063e-16
+    [a/b convention check] target=8 source=7 r=5: rel_err = 1.415e-16
     Rank | Residual Energy | Total Energy | Residual NRMSE | Total NRMSE
     -----+-----------------+--------------+---------------+------------
-     1   |     0.859387     |    0.997576    |     0.479535    |   0.066585
-     2   |     0.942530     |    0.999009    |     0.393122    |   0.054586
-     3   |     0.957336     |    0.999264    |     0.376254    |   0.052244
-     4   |     0.971541     |    0.999509    |     0.358993    |   0.049847
-     5   |     0.980756     |    0.999668    |     0.347335    |   0.048229
+     1   |     0.833400     |    0.998237    |     0.520067    |   0.057188
+     2   |     0.908886     |    0.999036    |     0.452339    |   0.049741
+     3   |     0.944572     |    0.999413    |     0.416706    |   0.045822
+     4   |     0.963489     |    0.999614    |     0.396840    |   0.043638
+     5   |     0.972097     |    0.999705    |     0.387364    |   0.042596
 
     [Imaginary-part check]
-      Self-only q_2: max|imag| = 2.815e-16, relative = 5.201e-16, OK
-      r=1: a max|imag| = 1.432e-15, rel = 2.062e-15, OK; b max|imag| = 3.186e-15, rel = 7.396e-15, OK
-      r=2: a max|imag| = 1.233e-15, rel = 4.014e-15, OK; b max|imag| = 2.275e-15, rel = 9.094e-15, OK
-      r=3: a max|imag| = 9.975e-16, rel = 4.943e-15, OK; b max|imag| = 9.493e-16, rel = 5.204e-15, OK
-      r=4: a max|imag| = 5.842e-16, rel = 2.340e-15, OK; b max|imag| = 5.768e-16, rel = 2.930e-15, OK
-      r=5: a max|imag| = 5.889e-16, rel = 3.266e-15, OK; b max|imag| = 5.623e-16, rel = 2.829e-15, OK
+      Self-only q_2: max|imag| = 3.510e-16, relative = 6.952e-16, OK
+      r=1: a max|imag| = 2.778e-16, rel = 5.283e-16, OK; b max|imag| = 3.504e-16, rel = 1.125e-15, OK
+      r=2: a max|imag| = 2.896e-16, rel = 1.049e-15, OK; b max|imag| = 2.669e-16, rel = 1.193e-15, OK
+      r=3: a max|imag| = 2.220e-16, rel = 1.036e-15, OK; b max|imag| = 2.598e-16, rel = 1.366e-15, OK
+      r=4: a max|imag| = 2.082e-16, rel = 1.167e-15, OK; b max|imag| = 1.695e-16, rel = 7.983e-16, OK
+      r=5: a max|imag| = 1.145e-15, rel = 6.080e-15, OK; b max|imag| = 1.053e-15, rel = 7.039e-15, OK
 
 [INFO] Pair 3/6: 7-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\phase_dynamics_cache_5974ec259c0a0b6dab7312726a33b229.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\phase_dynamics_cache_4bdadd9a8a114acf2b928465ce7a1289.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 2 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 9
@@ -198,7 +198,7 @@ rankr_approximation_test_round (行 71) 内]
       r=5: a max|imag| = 4.823e-16, rel = 2.459e-15, OK; b max|imag| = 4.476e-16, rel = 2.409e-15, OK
 
 [INFO] Pair 4/6: 8-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\phase_dynamics_cache_d23152f4985eace1f66dcadc479082d1.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\phase_dynamics_cache_3963df3cceac76334b9e8f3d667decd0.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 10
@@ -259,7 +259,7 @@ rankr_approximation_test_round (行 71) 内]
       r=5: a max|imag| = 4.640e-16, rel = 3.365e-15, OK; b max|imag| = 4.662e-16, rel = 4.410e-15, OK
 
 [INFO] Pair 5/6: 8-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\phase_dynamics_cache_07cda844982e59894463059f6b015a98.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\phase_dynamics_cache_c518a0ba64f4d7172db92a234344afaf.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 9
@@ -320,7 +320,7 @@ rankr_approximation_test_round (行 71) 内]
       r=5: a max|imag| = 3.450e-16, rel = 2.384e-15, OK; b max|imag| = 4.033e-16, rel = 3.253e-15, OK
 
 [INFO] Pair 6/6: 9-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\phase_dynamics_cache_89fdd78c215a8f8da0e35c21ffa5693c.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\phase_dynamics_cache_e5eec54f46f89b00b46a13651bf318ae.mat
 [INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\s_functions_3d.png (.png, .fig)
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 9, s2 -> 10
@@ -380,7 +380,7 @@ rankr_approximation_test_round (行 71) 内]
       r=4: a max|imag| = 5.039e-16, rel = 2.051e-15, OK; b max|imag| = 3.946e-16, rel = 2.597e-15, OK
       r=5: a max|imag| = 5.600e-16, rel = 2.898e-15, OK; b max|imag| = 4.319e-16, rel = 2.896e-15, OK
 
-[INFO] Saved SVD analysis cache to EstimateL\SStick\low_rank_analysis\M10\svd_cache_8f8f2f1a8f2d688f8f64338a238f2306.mat
+[INFO] Saved SVD analysis cache to EstimateL\SStick\low_rank_analysis\M10\svd_cache_8f248f8f8f6f8f8f8f8f6e8f7f4f8f8f.mat
 [INFO] Saved overlay plot to: EstimateL\SStick\low_rank_analysis\M10\agent_self_profiles\agent7_self_profile_overlay.png
 [INFO] Saved self-profile CSV data to: EstimateL\SStick\low_rank_analysis\M10\agent_self_profiles\agent7_self_profile_data.csv
 [INFO] Saved separable profiles overlay plot to: EstimateL\SStick\low_rank_analysis\M10\agent_self_profiles\agent7_separable_profiles_overlay.png
