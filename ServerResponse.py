@@ -5,7 +5,7 @@ import os
 import re
 
 omega_values = {
-    7: 3.14 * 2.5    # エージェント1の周波数
+    7: 3.14 * 2.50    # エージェント1の周波数
 }
 default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
 
