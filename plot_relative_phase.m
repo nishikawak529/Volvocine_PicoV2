@@ -1,13 +1,13 @@
-function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode)
+function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode, plot_phase_timeseries)
 % Phase-relationship time evolution from one selected CSV in a directory
 %
 % Usage:
 %   plot_relative_phase()
 %   plot_relative_phase(dirpath, csv_rank_from_latest)
-%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode)
+%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode, plot_phase_timeseries)
 %
 % Defaults:
-%   dirpath = 'merged_chunks_organized/2026-06-18'
+%   dirpath = 'merged_chunks_organized/2026-07-13'
 %   csv_rank_from_latest = 1
 %   n_seconds_to_cut = 10
 %   plot_duration = 1200
@@ -16,14 +16,15 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 %   do_save_figure = false
 %   sample_window = [50, 60]
 %   overlay_mode = false
+%   plot_phase_timeseries = true
 
     if nargin < 1 || isempty(dirpath)
-        dirpath = fullfile('merged_chunks_organized','2026-07-01');
+        dirpath = fullfile('merged_chunks_organized','2026-07-13');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 8;
+        csv_rank_from_latest = 2;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
         n_seconds_to_cut = 0;
@@ -51,6 +52,9 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     end
     if nargin < 11 || isempty(overlay_mode)
         overlay_mode = false;
+    end
+    if nargin < 12 || isempty(plot_phase_timeseries)
+        plot_phase_timeseries = true;
     end
 
     if ~isnumeric(csv_rank_from_latest) || ~isscalar(csv_rank_from_latest) || ...
@@ -342,6 +346,11 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         saveFigure();
     end
 
+    if plot_phase_timeseries
+        plot_absolute_phase_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+            max_plot_time, overlay_mode, line_style);
+    end
+
     if nargout >= 1
         varargout{1} = cluster_info;
     end
@@ -454,13 +463,13 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
     end
 
     if isempty(df_all)
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
     df_main = df_all(df_all.agent_id ~= 99, :);
     if isempty(df_main)
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
@@ -484,13 +493,13 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
     max_allowed_time = plot_duration - n_seconds_to_cut;
     candidate_end_abs = min(max_time, start_time_abs + max_allowed_time);
     if candidate_end_abs < start_time_abs
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
     new_time_series = (start_time_abs:0.01:candidate_end_abs) - start_time_abs;
     if isempty(new_time_series)
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
@@ -503,13 +512,13 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
     min_valid = length(agents) - allow_missing_agents;
     valid_idx = find(valid_counts >= min_valid);
     if isempty(valid_idx)
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
     new_time_series = new_time_series(valid_idx);
     if isempty(new_time_series)
-        series_struct = struct('agent_id', {}, 'time', {}, 'phase', {});
+        series_struct = empty_phase_series_struct();
         return;
     end
 
@@ -534,10 +543,13 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
 
     base_agent_a0 = interpolated_data(base_agent_id).a0;
 
-    series_struct = repmat(struct('agent_id', [], 'time', [], 'phase', []), 1, numel(agents));
+    series_struct = repmat(empty_phase_series_entry(), 1, numel(agents));
 
     for i = 1:length(agents)
         agent_id = agents(i);
+        absolute_phase_unwrapped = interpolated_data(agent_id).a0 * (2*pi/256);
+        absolute_phase = mod(interpolated_data(agent_id).a0, 256) * (2*pi/256);
+        absolute_phase = break_wrapped_phase_jumps(absolute_phase);
         phase_raw = n_sync * interpolated_data(agent_id).a0 - m_sync * base_agent_a0;
         phase_diff = mod(phase_raw + 128, 256) - 128;
         phase_diff = phase_diff * (2*pi/256);
@@ -552,12 +564,125 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
         end
         series_struct(i).agent_id = agent_id;
         series_struct(i).time = new_time_series;
+        series_struct(i).absolute_phase = absolute_phase;
+        series_struct(i).absolute_phase_unwrapped = absolute_phase_unwrapped;
         if agent_id == base_agent_id
             series_struct(i).phase = zeros(size(new_time_series));
         else
             series_struct(i).phase = phase_diff_with_nan;
         end
     end
+end
+
+function plot_absolute_phase_time_series(phase_series_by_file, file_list, agents_to_plot, max_plot_time, overlay_mode, line_style)
+    y_label_str = '$$\phi_j$$';
+
+    if overlay_mode
+        figure('Visible','on');
+        ax = axes('Parent', gcf);
+        hold(ax,'on');
+        colors = lines(numel(agents_to_plot));
+        agent_legend = {};
+        line_handles = [];
+
+        for p = 1:numel(agents_to_plot)
+            ag = agents_to_plot(p);
+            for f = 1:numel(file_list)
+                series_entry = get_agent_series_entry(phase_series_by_file{f}, ag);
+                if isempty(series_entry) || isempty(series_entry.time) || ...
+                        ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+                    continue;
+                end
+                h = plot(ax, series_entry.time, series_entry.absolute_phase, ...
+                    'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
+                if f == 1
+                    line_handles = [line_handles; h]; %#ok<AGROW>
+                    agent_legend = [agent_legend; {sprintf('Agent %d', ag)}]; %#ok<AGROW>
+                end
+            end
+        end
+
+        format_absolute_phase_axis(ax, y_label_str, max_plot_time);
+        hold(ax,'off');
+
+        if ~isempty(line_handles)
+            legend(ax, line_handles, agent_legend, ...
+                'Location','eastoutside','Interpreter','latex');
+        end
+
+        if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+            tuneFigure();
+        end
+    else
+        for f = 1:numel(file_list)
+            figure('Visible','on');
+            ax = axes('Parent', gcf);
+            hold(ax,'on');
+            [~, file_label] = fileparts(file_list{f});
+            set(gcf, 'Name', sprintf('Phase time series: %s', file_label));
+
+            colors = lines(numel(agents_to_plot));
+            agent_legend = {};
+            line_handles = [];
+
+            for p = 1:numel(agents_to_plot)
+                ag = agents_to_plot(p);
+                series_entry = get_agent_series_entry(phase_series_by_file{f}, ag);
+                if isempty(series_entry) || isempty(series_entry.time) || ...
+                        ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+                    continue;
+                end
+                h = plot(ax, series_entry.time, series_entry.absolute_phase, ...
+                    'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
+                line_handles = [line_handles; h]; %#ok<AGROW>
+                agent_legend = [agent_legend; {sprintf('Agent %d', ag)}]; %#ok<AGROW>
+            end
+
+            format_absolute_phase_axis(ax, y_label_str, max_plot_time);
+            hold(ax,'off');
+
+            if ~isempty(line_handles)
+                legend(ax, line_handles, agent_legend, ...
+                    'Location','eastoutside','Interpreter','latex');
+            end
+
+            if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+                tuneFigure();
+            end
+        end
+    end
+end
+
+function format_absolute_phase_axis(ax, y_label_str, max_plot_time)
+    ylabel(ax, y_label_str,'Interpreter','latex');
+    ylim(ax, [0, 2*pi]);
+    yticks(ax, [0, pi, 2*pi]);
+    yticklabels(ax, {'0','\pi','2\pi'});
+    set(ax,'TickLabelInterpreter','latex');
+    xlim(ax, [0, max_plot_time]);
+    xlabel(ax, 'Time (s)','Interpreter','latex');
+    grid(ax, 'on');
+end
+
+function phase_for_plot = break_wrapped_phase_jumps(phase_for_plot)
+    for j = 2:length(phase_for_plot)
+        if isnan(phase_for_plot(j)) || isnan(phase_for_plot(j-1))
+            continue;
+        end
+        if abs(phase_for_plot(j) - phase_for_plot(j-1)) > pi
+            phase_for_plot(j) = NaN;
+        end
+    end
+end
+
+function series_struct = empty_phase_series_struct()
+    series_struct = struct('agent_id', {}, 'time', {}, 'phase', {}, ...
+        'absolute_phase', {}, 'absolute_phase_unwrapped', {});
+end
+
+function series_entry = empty_phase_series_entry()
+    series_entry = struct('agent_id', [], 'time', [], 'phase', [], ...
+        'absolute_phase', [], 'absolute_phase_unwrapped', []);
 end
 
 function corrected_phase = correct_phase_discontinuity(phase_data)
