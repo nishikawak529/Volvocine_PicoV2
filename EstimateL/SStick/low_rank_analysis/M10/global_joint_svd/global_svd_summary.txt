@@ -1,0 +1,80 @@
+[INFO] Starting Global Joint SVD (Column Concatenation) Analysis on Network Data
+  Round directory: EstimateL\SStick
+  Output directory: EstimateL\SStick\low_rank_analysis\M10\global_joint_svd
+  Fourier order: M=10
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+
+[INFO] Loading Pair 1/6: 7-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\phase_dynamics_cache_d7b0a0f5a0b27b84d8c7bc0aeab4fcb5.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.85006408545 rad/s, omega2 = 7.68977487506 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0204997, s2 = 0.0193381
+[INFO] Loading Pair 2/6: 7-8
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\phase_dynamics_cache_62f3476a7d0f94692802997b73a19ce6.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 2 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 8
+[INFO] omega1 = 7.68979455322 rad/s, omega2 = 7.85008768331 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0175263, s2 = 0.0171616
+[INFO] Loading Pair 3/6: 7-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\phase_dynamics_cache_5974ec259c0a0b6dab7312726a33b229.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 2 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 9
+[INFO] omega1 = 7.68991648371 rad/s, omega2 = 7.85010863298 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0170537, s2 = 0.0201497
+[INFO] Loading Pair 4/6: 8-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\phase_dynamics_cache_d23152f4985eace1f66dcadc479082d1.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 10
+[INFO] omega1 = 7.84980451447 rad/s, omega2 = 7.69012888049 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0131596, s2 = 0.0180954
+[INFO] Loading Pair 5/6: 8-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\phase_dynamics_cache_07cda844982e59894463059f6b015a98.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.69016278661 rad/s, omega2 = 7.84991067989 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0136831, s2 = 0.0212954
+[INFO] Loading Pair 6/6: 9-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\phase_dynamics_cache_89fdd78c215a8f8da0e35c21ffa5693c.mat
+[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\s_functions_3d.png (.png, .fig)
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 10
+[INFO] omega1 = 7.68994008905 rad/s, omega2 = 7.84996970056 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0217963, s2 = 0.02283
+[INFO] Global Concatenated SVD Singular Values:
+  r=1: val = 0.12338, energy ratio = 71.7534%
+  r=2: val = 0.05129, energy ratio = 12.3997%
+  r=3: val = 0.03433, energy ratio = 5.5556%
+  r=4: val = 0.02508, energy ratio = 2.9643%
+  r=5: val = 0.02011, energy ratio = 1.9071%
+  r=6: val = 0.01682, energy ratio = 1.3338%
+  r=7: val = 0.01528, energy ratio = 1.1004%
+  r=8: val = 0.01288, energy ratio = 0.7823%
+  r=9: val = 0.01021, energy ratio = 0.4911%
+  r=10: val = 0.00967, energy ratio = 0.4409%
+
+[INFO] Verifying pre-normalization SVD reconstruction...
+[INFO] Verifying post-normalization SVD reconstruction...
+[INFO] Interaction Matrix SVD Metrics Comparison:
+Pair         Dir   | Indiv_R1%  Indiv_R2%  Indiv_R3%  | Joint_R1%  Joint_R2%  Joint_R3%  | Weight_R1 
+---------------------------------------------------------------------------------------------------------
+7-10         s1    | 84.59    % 7.87     % 1.85     % | 79.56    % 1.72     % 3.81     % | 0.0231    
+7-10         s2    | 87.99    % 6.18     % 1.84     % | 64.91    % 13.43    % 12.40    % | 0.0250    
+7-8          s1    | 83.75    % 5.23     % 2.97     % | 63.90    % 7.22     % 2.53     % | -0.0201   
+7-8          s2    | 87.29    % 6.01     % 2.54     % | 59.05    % 31.70    % 2.34     % | -0.0503   
+7-9          s1    | 91.78    % 3.63     % 1.84     % | 84.81    % 2.55     % 0.69     % | 0.0457    
+7-9          s2    | 92.80    % 2.79     % 2.17     % | 85.47    % 2.16     % 7.05     % | 0.0546    
+8-10         s1    | 85.85    % 6.90     % 2.30     % | 59.72    % 11.23    % 11.44    % | 0.0132    
+8-10         s2    | 74.44    % 10.47    % 4.05     % | 59.08    % 10.15    % 12.49    % | 0.0121    
+8-9          s1    | 92.08    % 4.52     % 1.21     % | 71.91    % 6.69     % 10.06    % | 0.0245    
+8-9          s2    | 91.61    % 3.48     % 1.39     % | 76.47    % 0.72     % 14.00    % | 0.0268    
+9-10         s1    | 82.61    % 7.63     % 3.26     % | 74.65    % 6.71     % 5.78     % | -0.0374   
+9-10         s2    | 88.76    % 3.40     % 2.99     % | 71.38    % 8.28     % 9.88     % | -0.0335   
+

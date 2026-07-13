@@ -19,7 +19,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
 % with z(theta) = -sin(theta).
 
     if nargin < 1 || isempty(input_path)
-        input_path = fullfile('EstimateL', 'Round', '7-10', '*.csv');
+        input_path = fullfile('EstimateL', 'SStick', '7-8', '*.csv');
     end
     if nargin < 2
         phase_agent_ids = [];
@@ -28,7 +28,7 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
         M = 5;
     end
 
-    default_sigma = 7;
+    default_sigma = -7;
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
 
@@ -205,6 +205,68 @@ function out = plot_phase_dynamics_from_csv(input_path, phase_agent_ids, M, vara
 
     if opts.save_output
         out.export = save_outputs(out, opts);
+    end
+
+    % --- Save 3D plots (s-functions and point cloud overlay) to the respective pair/combination folder ---
+    [combination_folder, ~, ~] = fileparts(csv_paths{1});
+    if ~isempty(combination_folder) && exist(combination_folder, 'dir')
+        try
+            fig_3d = figure('Color', 'w', 'Position', [100, 100, 1100, 500], 'Visible', 'off', ...
+                'Name', sprintf('Fitted s-functions and point cloud - Agents %d and %d', ...
+                phase_agent_ids(1), phase_agent_ids(2)));
+            
+            % Generate grid for 3D surface plot
+            phi_grid_vals = linspace(0, 2*pi, 100);
+            [PhiG1, PhiG2] = meshgrid(phi_grid_vals, phi_grid_vals);
+            S1_grid = evaluate_fit_surface(PhiG1, PhiG2, fit_s1);
+            S2_grid = evaluate_fit_surface(PhiG1, PhiG2, fit_s2);
+            
+            % Subplot 1: s1
+            ax_3d_1 = subplot(1, 2, 1, 'Parent', fig_3d);
+            surf(ax_3d_1, PhiG1, PhiG2, S1_grid, 'EdgeColor', 'none', 'FaceAlpha', 0.7);
+            hold(ax_3d_1, 'on');
+            scatter3(ax_3d_1, point_cloud.phi1, point_cloud.phi2, point_cloud.s1, 8, point_cloud.s1, 'filled', ...
+                'MarkerEdgeColor', 'k', 'MarkerEdgeAlpha', 0.1, 'MarkerFaceAlpha', 0.4);
+            xlabel(ax_3d_1, '\phi_1');
+            ylabel(ax_3d_1, '\phi_2');
+            zlabel(ax_3d_1, 's_1');
+            title(ax_3d_1, sprintf('s_1, Agent %d', phase_agent_ids(1)));
+            set(ax_3d_1, 'XTick', [0, pi, 2*pi], 'XTickLabel', {'0', '\pi', '2\pi'});
+            set(ax_3d_1, 'YTick', [0, pi, 2*pi], 'YTickLabel', {'0', '\pi', '2\pi'});
+            grid(ax_3d_1, 'on');
+            axis(ax_3d_1, 'square');
+            view(ax_3d_1, 45, 30);
+            colormap(ax_3d_1, 'parula');
+            colorbar(ax_3d_1);
+            
+            % Subplot 2: s2
+            ax_3d_2 = subplot(1, 2, 2, 'Parent', fig_3d);
+            surf(ax_3d_2, PhiG1, PhiG2, S2_grid, 'EdgeColor', 'none', 'FaceAlpha', 0.7);
+            hold(ax_3d_2, 'on');
+            scatter3(ax_3d_2, point_cloud.phi2, point_cloud.phi1, point_cloud.s2, 8, point_cloud.s2, 'filled', ...
+                'MarkerEdgeColor', 'k', 'MarkerEdgeAlpha', 0.1, 'MarkerFaceAlpha', 0.4);
+            xlabel(ax_3d_2, '\phi_2');
+            ylabel(ax_3d_2, '\phi_1');
+            zlabel(ax_3d_2, 's_2');
+            title(ax_3d_2, sprintf('s_2, Agent %d', phase_agent_ids(2)));
+            set(ax_3d_2, 'XTick', [0, pi, 2*pi], 'XTickLabel', {'0', '\pi', '2\pi'});
+            set(ax_3d_2, 'YTick', [0, pi, 2*pi], 'YTickLabel', {'0', '\pi', '2\pi'});
+            grid(ax_3d_2, 'on');
+            axis(ax_3d_2, 'square');
+            view(ax_3d_2, 45, 30);
+            colormap(ax_3d_2, 'parula');
+            colorbar(ax_3d_2);
+            
+            % Save figure
+            fig_png_path = fullfile(combination_folder, 's_functions_3d.png');
+            fig_fig_path = fullfile(combination_folder, 's_functions_3d.fig');
+            saveas(fig_3d, fig_png_path);
+            saveas(fig_3d, fig_fig_path);
+            close(fig_3d);
+            fprintf('[INFO] Saved 3D surface and point cloud plots to %s (.png, .fig)\n', fig_png_path);
+        catch ME_fig
+            warning('Failed to save 3D plots in %s: %s', combination_folder, ME_fig.message);
+        end
     end
 
     fprintf('[INFO] Fit completed with %d samples from %d file(s).\n', ...

@@ -12,7 +12,7 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
 %
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;

@@ -28,7 +28,7 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
     % =========================================================================
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -874,9 +874,9 @@ function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
 
     if nargin >= 2 && contains(lower(round_dir), 'stick')
         % Stick layout:
-        % 7  10
-        % 8   9
-        preferred_ids = [7, 10, 8, 9];
+        % 8  10
+        % 7   9
+        preferred_ids = [8, 10, 7, 9];
     else
         % Round layout:
         % 8  10
