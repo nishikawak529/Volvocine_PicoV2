@@ -18,18 +18,18 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 %       'simulation_duration_sec', 120, 'simulation_dt', 0.01);
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStick');
+        round_dir = fullfile('EstimateL', 'Round');
     end
     if nargin < 2 || isempty(M)
         M = 10;
     end
 
-    default_sigma = -7;
+    default_sigma = 7;
     default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
-    default_use_original_system = true; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
+    default_use_original_system = false; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
 
     opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');

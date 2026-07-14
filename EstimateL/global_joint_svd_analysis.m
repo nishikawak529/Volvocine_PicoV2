@@ -507,7 +507,7 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             if r == 1 && isfield(all_global_results, 'b_shared_r1')
                 leg_lbls{end+1} = 'Shared Sender (scaled)';
             end
-            legend(ax_out, leg_lbls, 'Location', 'best', 'FontSize', 7, 'Interpreter', 'none');
+            legend(ax_out, leg_lbls, 'Location', 'eastoutside', 'FontSize', 7, 'Interpreter', 'none');
         end
         title(ax_out, sprintf('%d-order Sender Profiles b_%d by Pair', r, r));
     end
