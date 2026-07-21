@@ -7,67 +7,37 @@
   Remove other-only terms: false
 
 [INFO] Loading Pair 1/6: 7-10
-[INFO] Subtracted self-profile for Agent 7 from s_1.
-[INFO] Subtracted self-profile for Agent 10 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\phase_dynamics_cache_4270bea47049b8dc00112e3c0922dcaa.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-10\phase_dynamics_cache_4270bea47049b8dc00112e3c0922dcaa.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 10
 [INFO] omega1 = 7.85006408545 rad/s, omega2 = 7.68977487506 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0204997, s2 = 0.0193381
 [INFO] Loading Pair 2/6: 7-8
-[警告: Skipping
-C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\point_cloud_data.csv:
-CSV missing required columns. Required: time_pc_sec_abs, a0, a2] 
-[> plot_phase_dynamics_from_csv>collect_point_cloud (行 411) 内
-plot_phase_dynamics_from_csv (行 112) 内
-global_joint_svd_analysis (行 72) 内] 
-[INFO] Subtracted self-profile for Agent 7 from s_1.
-[INFO] Subtracted self-profile for Agent 8 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\phase_dynamics_cache_05f029b0b70b67d45b159e4f9aa88d83.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-8\phase_dynamics_cache_05f029b0b70b67d45b159e4f9aa88d83.mat
 [INFO] Fit completed with 8001 samples from 2 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 8
 [INFO] omega1 = 7.68999258932 rad/s, omega2 = 7.85004049461 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0172365, s2 = 0.0161959
 [INFO] Loading Pair 3/6: 7-9
-[警告: Skipping
-C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\point_cloud_data.csv:
-CSV missing required columns. Required: time_pc_sec_abs, a0, a2] 
-[> plot_phase_dynamics_from_csv>collect_point_cloud (行 411) 内
-plot_phase_dynamics_from_csv (行 112) 内
-global_joint_svd_analysis (行 72) 内] 
-[INFO] Subtracted self-profile for Agent 7 from s_1.
-[INFO] Subtracted self-profile for Agent 9 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\phase_dynamics_cache_c57744b348a0a1bef5ff0bcfae64e1fb.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\7-9\phase_dynamics_cache_c57744b348a0a1bef5ff0bcfae64e1fb.mat
 [INFO] Fit completed with 8001 samples from 2 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 9
 [INFO] omega1 = 7.68991648371 rad/s, omega2 = 7.85010863298 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0170537, s2 = 0.0201497
 [INFO] Loading Pair 4/6: 8-10
-[INFO] Subtracted self-profile for Agent 8 from s_1.
-[INFO] Subtracted self-profile for Agent 10 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\phase_dynamics_cache_afabf99fba91bb1e93169ba23437a637.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-10\phase_dynamics_cache_afabf99fba91bb1e93169ba23437a637.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 10
 [INFO] omega1 = 7.84980451447 rad/s, omega2 = 7.69012888049 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0131596, s2 = 0.0180954
 [INFO] Loading Pair 5/6: 8-9
-[INFO] Subtracted self-profile for Agent 8 from s_1.
-[INFO] Subtracted self-profile for Agent 9 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\phase_dynamics_cache_058c0f727e3b512893637f6fe2376913.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\8-9\phase_dynamics_cache_058c0f727e3b512893637f6fe2376913.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 9
 [INFO] omega1 = 7.69016278661 rad/s, omega2 = 7.84991067989 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0136831, s2 = 0.0212954
 [INFO] Loading Pair 6/6: 9-10
-[INFO] Subtracted self-profile for Agent 9 from s_1.
-[INFO] Subtracted self-profile for Agent 10 from s_2.
-[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\phase_dynamics_cache_c69b92e9943bf7d3115a2f834b951375.mat
-[INFO] Saved 3D surface and point cloud plots to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\s_functions_3d.png (.png, .fig)
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStick\9-10\phase_dynamics_cache_c69b92e9943bf7d3115a2f834b951375.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 9, s2 -> 10
 [INFO] omega1 = 7.68994008905 rad/s, omega2 = 7.84996970056 rad/s, Delta omega = 0 rad/s
