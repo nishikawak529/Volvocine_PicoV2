@@ -18,7 +18,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 %       'simulation_duration_sec', 120, 'simulation_dt', 0.01);
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -30,8 +30,9 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
     default_use_original_system = false; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
+    default_plot_gamma = false; % Set to true to plot the Gamma functions used in simulation
 
-    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, varargin{:});
+    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, default_plot_gamma, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
 
     pair_infos = list_pair_folders(round_dir);
@@ -158,10 +159,10 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 
     figures = struct();
     figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id);
-    if opts.use_original_system
-        figures.gamma_functions = [];
-    else
+    if ~opts.use_original_system && opts.plot_gamma
         figures.gamma_functions = plot_all_gamma_functions(pair_results);
+    else
+        figures.gamma_functions = [];
     end
     if opts.plot_absolute_phases
         figures.absolute_phase = plot_absolute_phases(time, phase, node_ids);
@@ -187,7 +188,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     end
 end
 
-function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, varargin)
+function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, default_plot_gamma, varargin)
     p = inputParser;
     addParameter(p, 'analysis_start_sec', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
     addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
@@ -218,6 +219,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'add_self_feedback', default_add_self_feedback, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'use_first_harmonic', default_use_first_harmonic, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'use_original_system', default_use_original_system, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'plot_gamma', default_plot_gamma, @(x) islogical(x) || isnumeric(x));
     parse(p, varargin{:});
 
     opts = p.Results;
@@ -237,6 +239,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     opts.add_self_feedback = logical(opts.add_self_feedback);
     opts.use_first_harmonic = logical(opts.use_first_harmonic);
     opts.use_original_system = logical(opts.use_original_system);
+    opts.plot_gamma = logical(opts.plot_gamma);
 end
 
 function pair_infos = list_pair_folders(round_dir)
@@ -453,13 +456,18 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
 
     grid(ax, 'on');
     box(ax, 'on');
+    xlim(ax, [time(1), time(end)]);
     ylim(ax, [-pi, pi]);
     yticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)');
-    ylabel(ax, sprintf('\\phi_j - \\phi_{%d}', reference_agent_id));
-    title(ax, 'Simulated relative phase differences');
-    legend(ax, 'Location', 'best');
+    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', reference_agent_id), 'Interpreter', 'latex');
+    legend(ax, 'Location', 'eastoutside');
+
+    if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+        figure(fig);
+        tuneFigure();
+    end
 end
 
 function fig = plot_absolute_phases(time, phase, node_ids)
@@ -470,43 +478,61 @@ function fig = plot_absolute_phases(time, phase, node_ids)
     colors = lines(numel(node_ids));
     for k = 1:numel(node_ids)
         plot(ax, time, phase(:, k), 'LineWidth', 1.2, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d: \phi', node_ids(k)));
+            'DisplayName', sprintf('ID %d: \\phi', node_ids(k)));
     end
 
     grid(ax, 'on');
     box(ax, 'on');
+    xlim(ax, [time(1), time(end)]);
     xlabel(ax, 'Time (s)');
-    ylabel(ax, '\phi_j');
-    title(ax, 'Simulated oscillator phases');
+    ylabel(ax, '$$\\phi_j$$', 'Interpreter', 'latex');
     legend(ax, 'Location', 'best');
+
+    if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+        figure(fig);
+        tuneFigure();
+    end
 end
 
 function fig = plot_all_gamma_functions(pair_results)
-    fig = figure('Color', 'w', 'Name', 'All Gamma functions used in simulation');
     n_pairs = numel(pair_results);
-    n_cols = 2;
-    n_rows = ceil(n_pairs / n_cols);
-    tiledlayout(fig, n_rows, n_cols, 'TileSpacing', 'compact', 'Padding', 'compact');
+    % Taller window for multiple rows of side-by-side plots
+    fig = figure('Color', 'w', 'Position', [100, 100, 800, min(1000, 250*n_pairs)], ...
+        'Name', 'All Gamma functions used in simulation');
+    
+    tiledlayout(fig, n_pairs, 2, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     for k = 1:n_pairs
         pair = pair_results(k);
-        ax = nexttile;
-        hold(ax, 'on');
-        plot(ax, pair.psi, pair.gamma1, 'LineWidth', 1.5, ...
-            'DisplayName', sprintf('\\Gamma_{%d<-%d}(\\psi)', pair.target_agent_id, pair.source_agent_id));
-        plot(ax, pair.psi, pair.gamma2_minus_psi, 'LineWidth', 1.5, ...
-            'DisplayName', sprintf('\\Gamma_{%d<-%d}(-\\psi)', pair.source_agent_id, pair.target_agent_id));
-        grid(ax, 'on');
-        box(ax, 'on');
-        xlim(ax, [-pi, pi]);
-        xticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
-        xticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
-        xlabel(ax, '\psi');
-        ylabel(ax, '\Gamma');
-        title(ax, sprintf('Pair %d-%d', pair.agent_ids(1), pair.agent_ids(2)), 'Interpreter', 'none');
-        if k == 1
-            legend(ax, 'Location', 'best');
-        end
+        
+        % Left subplot: i <- j
+        ax1 = nexttile;
+        hold(ax1, 'on');
+        plot(ax1, pair.psi, pair.gamma1, 'LineWidth', 1.5);
+        grid(ax1, 'on');
+        box(ax1, 'on');
+        xlim(ax1, [-pi, pi]);
+        xticks(ax1, [-pi, -pi/2, 0, pi/2, pi]);
+        xticklabels(ax1, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
+        xlabel(ax1, '$$\\psi$$', 'Interpreter', 'latex');
+        ylabel(ax1, sprintf('$$\\Gamma_{%d\\leftarrow%d}(\\psi)$$', pair.target_agent_id, pair.source_agent_id), 'Interpreter', 'latex');
+        
+        % Right subplot: j <- i
+        ax2 = nexttile;
+        hold(ax2, 'on');
+        plot(ax2, pair.psi, pair.gamma2_minus_psi, 'LineWidth', 1.5);
+        grid(ax2, 'on');
+        box(ax2, 'on');
+        xlim(ax2, [-pi, pi]);
+        xticks(ax2, [-pi, -pi/2, 0, pi/2, pi]);
+        xticklabels(ax2, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
+        xlabel(ax2, '$$\\psi$$', 'Interpreter', 'latex');
+        ylabel(ax2, sprintf('$$\\Gamma_{%d\\leftarrow%d}(-\\psi)$$', pair.source_agent_id, pair.target_agent_id), 'Interpreter', 'latex');
+    end
+    
+    if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+        figure(fig);
+        tuneFigure();
     end
 end
 

@@ -367,13 +367,17 @@ function all_results = rankr_approximation_test_round(round_dir, M, varargin)
         
         sp_ref = unique_pair_results{1}.self_profile;
         xlabel(ax, sprintf('$$\\phi_{%d}$$', sp_ref.self_phase_index), 'Interpreter', 'latex');
-        ylabel(ax, '$$s_{j,\\mathrm{self}}$$', 'Interpreter', 'latex');
-        title(ax, sprintf('Self-only profile overlay (with Mean) for Agent %d', target_aid), 'Interpreter', 'latex');
+        ylabel(ax, '$$s_{j,\mathrm{self}}$$', 'Interpreter', 'latex');
         legend(ax, legend_labels, 'Location', 'best', 'Interpreter', 'none');
         
         set(ax, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
         set(ax, 'XTickLabel', {'0', '\pi/2', '\pi', '3\pi/2', '2\pi'});
         xlim(ax, [0, 2*pi]);
+        
+        if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+            figure(fig);
+            tuneFigure();
+        end
         
         % Save plot
         save_path = fullfile(self_profile_dir, sprintf('agent%d_self_profile_overlay.png', target_aid));
