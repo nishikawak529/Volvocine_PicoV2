@@ -17,6 +17,10 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 %   out = simulate_round_relative_phase_dynamics(fullfile('EstimateL','Round'), 10, ...
 %       'simulation_duration_sec', 120, 'simulation_dt', 0.01);
 
+    % --- Display-only agent ID offset for publication plots ---
+    % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
+    agent_display_offset = -0;
+
     if nargin < 1 || isempty(round_dir)
         round_dir = fullfile('EstimateL', 'SStick');
     end
@@ -25,7 +29,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     end
 
     default_sigma = 7;
-    default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
+    default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
@@ -158,14 +162,14 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     relative_phase = wrap_to_pi(phase - phase(:, reference_idx));
 
     figures = struct();
-    figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id);
+    figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset);
     if ~opts.use_original_system && opts.plot_gamma
-        figures.gamma_functions = plot_all_gamma_functions(pair_results);
+        figures.gamma_functions = plot_all_gamma_functions(pair_results, agent_display_offset);
     else
         figures.gamma_functions = [];
     end
     if opts.plot_absolute_phases
-        figures.absolute_phase = plot_absolute_phases(time, phase, node_ids);
+        figures.absolute_phase = plot_absolute_phases(time, phase, node_ids, agent_display_offset);
     else
         figures.absolute_phase = [];
     end
@@ -201,7 +205,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'tail_percent', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0 && x < 50);
     addParameter(p, 'clip_normalized_signal', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'clip_limit', 0.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
-    addParameter(p, 'simulation_duration_sec', 120, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
+    addParameter(p, 'simulation_duration_sec', 100, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'simulation_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'omega_rad_s', 2.5*pi, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
     addParameter(p, 'initial_phases', [], @(x) isempty(x) || isnumeric(x));
@@ -431,7 +435,11 @@ function fit = fit_first_harmonic(psi, gamma_values)
     fit.r2 = 1 - ss_res / max(ss_tot, eps);
 end
 
-function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id)
+function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset)
+    if nargin < 5 || isempty(agent_display_offset)
+        agent_display_offset = 0;
+    end
+
     fig = figure('Color', 'w', 'Name', 'Relative phase simulation');
     ax = axes('Parent', fig);
     hold(ax, 'on');
@@ -451,7 +459,7 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
         end
         
         plot(ax, time, y_val, 'LineWidth', 1.5, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d', node_ids(k)));
+            'DisplayName', sprintf('ID %d', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -461,7 +469,7 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     yticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)');
-    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', reference_agent_id), 'Interpreter', 'latex');
+    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', displayed_agent_id(reference_agent_id, agent_display_offset)), 'Interpreter', 'latex');
     legend(ax, 'Location', 'eastoutside');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
@@ -470,7 +478,11 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     end
 end
 
-function fig = plot_absolute_phases(time, phase, node_ids)
+function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
+    if nargin < 4 || isempty(agent_display_offset)
+        agent_display_offset = 0;
+    end
+
     fig = figure('Color', 'w', 'Name', 'Absolute phase simulation');
     ax = axes('Parent', fig);
     hold(ax, 'on');
@@ -478,7 +490,7 @@ function fig = plot_absolute_phases(time, phase, node_ids)
     colors = lines(numel(node_ids));
     for k = 1:numel(node_ids)
         plot(ax, time, phase(:, k), 'LineWidth', 1.2, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d: \\phi', node_ids(k)));
+            'DisplayName', sprintf('ID %d: \\phi', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -494,7 +506,11 @@ function fig = plot_absolute_phases(time, phase, node_ids)
     end
 end
 
-function fig = plot_all_gamma_functions(pair_results)
+function fig = plot_all_gamma_functions(pair_results, agent_display_offset)
+    if nargin < 2 || isempty(agent_display_offset)
+        agent_display_offset = 0;
+    end
+
     n_pairs = numel(pair_results);
     % Taller window for multiple rows of side-by-side plots
     fig = figure('Color', 'w', 'Position', [100, 100, 800, min(1000, 250*n_pairs)], ...
@@ -515,7 +531,7 @@ function fig = plot_all_gamma_functions(pair_results)
         xticks(ax1, [-pi, -pi/2, 0, pi/2, pi]);
         xticklabels(ax1, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
         xlabel(ax1, '$$\\psi$$', 'Interpreter', 'latex');
-        ylabel(ax1, sprintf('$$\\Gamma_{%d\\leftarrow%d}(\\psi)$$', pair.target_agent_id, pair.source_agent_id), 'Interpreter', 'latex');
+        ylabel(ax1, sprintf('$$\\Gamma_{%d\\leftarrow%d}(\\psi)$$', displayed_agent_id(pair.target_agent_id, agent_display_offset), displayed_agent_id(pair.source_agent_id, agent_display_offset)), 'Interpreter', 'latex');
         
         % Right subplot: j <- i
         ax2 = nexttile;
@@ -527,13 +543,17 @@ function fig = plot_all_gamma_functions(pair_results)
         xticks(ax2, [-pi, -pi/2, 0, pi/2, pi]);
         xticklabels(ax2, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
         xlabel(ax2, '$$\\psi$$', 'Interpreter', 'latex');
-        ylabel(ax2, sprintf('$$\\Gamma_{%d\\leftarrow%d}(-\\psi)$$', pair.source_agent_id, pair.target_agent_id), 'Interpreter', 'latex');
+        ylabel(ax2, sprintf('$$\\Gamma_{%d\\leftarrow%d}(-\\psi)$$', displayed_agent_id(pair.source_agent_id, agent_display_offset), displayed_agent_id(pair.target_agent_id, agent_display_offset)), 'Interpreter', 'latex');
     end
     
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
         figure(fig);
         tuneFigure();
     end
+end
+
+function display_id = displayed_agent_id(agent_id, offset)
+    display_id = agent_id + offset;
 end
 
 function phase_wrapped = wrap_to_pi(phase)

@@ -7,37 +7,37 @@
   Remove other-only terms: false
 
 [INFO] Loading Pair 1/6: 7-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_be846395874681665decdbe097f75274.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-10\phase_dynamics_cache_b5a9cbbbf23c305be303acee816708ab.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 10
 [INFO] omega1 = 7.84994609311 rad/s, omega2 = 7.68992857419 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.018357, s2 = 0.0212088
 [INFO] Loading Pair 2/6: 7-8
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-8\phase_dynamics_cache_82cae1290f049b20f35d72a3479dd766.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-8\phase_dynamics_cache_ce455c2e7b256be8195107d99d72a3e5.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 8
 [INFO] omega1 = 7.69002662422 rad/s, omega2 = 7.85001686729 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0153246, s2 = 0.0172865
 [INFO] Loading Pair 3/6: 7-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-9\phase_dynamics_cache_5899e1edaf5198cc2e6e94ab350e6a9a.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\7-9\phase_dynamics_cache_6d4742c7bd51a71091d1c0d8ff457093.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 7, s2 -> 9
 [INFO] omega1 = 7.68986927017 rad/s, omega2 = 7.85014667468 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0187644, s2 = 0.0197374
 [INFO] Loading Pair 4/6: 8-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-10\phase_dynamics_cache_d8fdd707cf0e24e221e323ccc3a6c867.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-10\phase_dynamics_cache_c8a283d0c19f0a7c0938e1b9dce59a69.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 10
 [INFO] omega1 = 7.85006922836 rad/s, omega2 = 7.69012889514 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0192751, s2 = 0.0187917
 [INFO] Loading Pair 5/6: 8-9
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-9\phase_dynamics_cache_08d6babbd85c8e2a18ce18bf9c6340d8.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\8-9\phase_dynamics_cache_55abecca9099726dac8c4ac8cda68fef.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 8, s2 -> 9
 [INFO] omega1 = 7.68996369439 rad/s, omega2 = 7.84996967859 rad/s, Delta omega = 0 rad/s
 [INFO] RMSE: s1 = 0.0172972, s2 = 0.0166103
 [INFO] Loading Pair 6/6: 9-10
-[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\9-10\phase_dynamics_cache_17c4479bde5a797dedb7830db87ec1a2.mat
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round\9-10\phase_dynamics_cache_9bc170ab6d13c2b66aea3f041ce92b14.mat
 [INFO] Fit completed with 8001 samples from 1 file(s).
 [INFO] Agent IDs: s1 -> 9, s2 -> 10
 [INFO] omega1 = 7.69005808645 rad/s, omega2 = 7.85012310597 rad/s, Delta omega = 0 rad/s

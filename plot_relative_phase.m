@@ -18,8 +18,12 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 %   overlay_mode = false
 %   plot_phase_timeseries = true
 
+    % --- Display-only agent ID offset for publication plots ---
+    % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
+    agent_display_offset = -0;
+
     if nargin < 1 || isempty(dirpath)
-        dirpath = fullfile('merged_chunks_organized','2026-07-21');
+        dirpath = fullfile('merged_chunks_organized','2026-07-13');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
@@ -27,10 +31,10 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         csv_rank_from_latest = 1;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
-        n_seconds_to_cut = 0;
+        n_seconds_to_cut = 5.1;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration = 650;
+        plot_duration = 105.1;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;
@@ -230,7 +234,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     line_style = '-';
     max_plot_time = min(plot_duration - n_seconds_to_cut, 120);
 
-    y_label_str = sprintf('$$\\phi_j - \\phi_k\\quad(k=%d)$$', ref_agent_for_label);
+    y_label_str = sprintf('$$\\phi_j - \\phi_k\\quad(k=%d)$$', displayed_agent_id(ref_agent_for_label, agent_display_offset));
 
     if overlay_mode
         % ===== OVERLAY MODE: selected CSV in one figure =====
@@ -321,7 +325,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
                 h = plot(ax, series_entry.time, series_entry.phase, ...
                     'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
                 line_handles_sep = [line_handles_sep; h];
-                agent_legend = [agent_legend; {sprintf('Agent %d', ag)}];
+                agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}];
             end
 
             xlim(ax, [0, max_plot_time]);
@@ -597,7 +601,7 @@ function plot_absolute_phase_time_series(phase_series_by_file, file_list, agents
                     'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
                 if f == 1
                     line_handles = [line_handles; h]; %#ok<AGROW>
-                    agent_legend = [agent_legend; {sprintf('Agent %d', ag)}]; %#ok<AGROW>
+                    agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}]; %#ok<AGROW>
                 end
             end
         end
@@ -635,7 +639,7 @@ function plot_absolute_phase_time_series(phase_series_by_file, file_list, agents
                 h = plot(ax, series_entry.time, series_entry.absolute_phase, ...
                     'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
                 line_handles = [line_handles; h]; %#ok<AGROW>
-                agent_legend = [agent_legend; {sprintf('Agent %d', ag)}]; %#ok<AGROW>
+                agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}]; %#ok<AGROW>
             end
 
             format_absolute_phase_axis(ax, y_label_str, max_plot_time);
@@ -662,6 +666,10 @@ function format_absolute_phase_axis(ax, y_label_str, max_plot_time)
     xlim(ax, [0, max_plot_time]);
     xlabel(ax, 'Time (s)','Interpreter','latex');
     grid(ax, 'on');
+end
+
+function display_id = displayed_agent_id(agent_id, offset)
+    display_id = agent_id + offset;
 end
 
 function phase_for_plot = break_wrapped_phase_jumps(phase_for_plot)

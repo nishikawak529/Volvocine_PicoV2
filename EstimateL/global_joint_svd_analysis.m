@@ -28,7 +28,7 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
     % =========================================================================
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStick');
+        round_dir = fullfile('EstimateL', 'Round');
     end
     if nargin < 2 || isempty(M)
         M = 10;
