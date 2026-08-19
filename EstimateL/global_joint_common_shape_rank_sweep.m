@@ -24,7 +24,7 @@ function rank_sweep_results = global_joint_common_shape_rank_sweep(round_dir, M,
 %   RandomSeed = 0
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'Round6');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -238,6 +238,7 @@ function rank_sweep_results = global_joint_common_shape_rank_sweep(round_dir, M,
     rank_sweep_results.rank1_comparison = rank1_comparison;
     rank_sweep_results.synthetic_validation = synthetic_validation;
     rank_sweep_results.unique_agents = unique_agents;
+    rank_sweep_results.round_dir = round_dir;
     rank_sweep_results.output_dir = output_dir;
     rank_sweep_results.output_files = output_files;
     rank_sweep_results.total_runtime_seconds = toc(total_timer);
@@ -1496,7 +1497,7 @@ function save_rank_sweep_outputs(results, opts)
     max_rank_fit = fits(end);
     fig_graph = create_influence_graph(max_rank_fit.w, ...
         results.interaction_meta, results.unique_agents, ...
-        max_rank_fit.rank, figure_visibility);
+        max_rank_fit.rank, figure_visibility, results.round_dir);
     saveas(fig_graph, paths.influence_graph_png);
     savefig(fig_graph, paths.influence_graph_fig);
 
@@ -1541,7 +1542,10 @@ function cmap = make_diverging_colormap(n_colors)
 end
 
 function fig = create_influence_graph( ...
-        weights, interaction_meta, unique_agents, rank_value, visibility)
+        weights, interaction_meta, unique_agents, rank_value, visibility, round_dir)
+    if nargin < 6
+        round_dir = '';
+    end
     clim_limit = 0.06;
     linewidth_limit = 0.06;
     P = numel(interaction_meta);
@@ -1558,7 +1562,7 @@ function fig = create_influence_graph( ...
     target_names = arrayfun(@(id) sprintf('%d', id), target_ids, ...
         'UniformOutput', false);
     graph_data = digraph(source_names, target_names, weights(:), node_names);
-    [x_data, y_data] = get_preferred_node_positions(graph_data);
+    [x_data, y_data] = get_preferred_node_positions(graph_data, round_dir);
     fig = figure('Color', 'w', 'Visible', visibility, ...
         'Position', [100, 100, 520, 450], ...
         'Name', sprintf('Common Shape Rank-%d Influence Graph', rank_value));
@@ -1568,8 +1572,14 @@ function fig = create_influence_graph( ...
         'MarkerSize', 8, 'NodeColor', [0.15, 0.15, 0.15], ...
         'EdgeColor', [0.0, 0.4470, 0.7410]);
     axis(ax, 'equal');
-    xlim(ax, [0.6, 2.4]);
-    ylim(ax, [0.6, 2.4]);
+    margin = 0.45;
+    rx = max(x_data, [], 'omitnan') - min(x_data, [], 'omitnan') + 2*margin;
+    ry = max(y_data, [], 'omitnan') - min(y_data, [], 'omitnan') + 2*margin;
+    max_r = max(rx, ry);
+    cx = (min(x_data, [], 'omitnan') + max(x_data, [], 'omitnan')) / 2;
+    cy = (min(y_data, [], 'omitnan') + max(y_data, [], 'omitnan')) / 2;
+    xlim(ax, [cx - max_r/2, cx + max_r/2]);
+    ylim(ax, [cy - max_r/2, cy + max_r/2]);
     title(ax, sprintf(['Rank-%d Common-Shape Directed Influence ', ...
         'Graph (one w_p per direction)'], rank_value));
     if numedges(graph_data) > 0
@@ -1586,15 +1596,33 @@ function fig = create_influence_graph( ...
     draw_node_labels(ax, graph_data, x_data, y_data);
 end
 
-function [x_data, y_data] = get_preferred_node_positions(G)
+function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
     node_names = G.Nodes.Name;
     if isstring(node_names), node_names = cellstr(node_names); end
     node_ids = cellfun(@str2double, node_names);
     x_data = nan(1, numnodes(G));
     y_data = nan(1, numnodes(G));
-    preferred_ids = [8, 10, 7, 9];
-    preferred_x = [1, 2, 1, 2];
-    preferred_y = [2, 2, 1, 1];
+
+    is_round6 = (nargin >= 2 && contains(lower(round_dir), 'round6')) || ...
+        all(ismember([7, 8, 9, 10, 11, 12], node_ids));
+
+    if is_round6
+        % Hexagonal arrangement for Round 6 (7..12):
+        %    9   12
+        %  8        11
+        %    7   10
+        preferred_ids = [7, 8, 9, 10, 11, 12];
+        preferred_x   = [1.5, 1.0, 1.5, 2.5, 3.0, 2.5];
+        preferred_y   = [1.0, 2.0, 3.0, 1.0, 2.0, 3.0];
+    else
+        % Standard 4-agent layout (7, 8, 9, 10):
+        % 8  10
+        % 7   9
+        preferred_ids = [8, 10, 7, 9];
+        preferred_x   = [1, 2, 1, 2];
+        preferred_y   = [2, 2, 1, 1];
+    end
+
     for k = 1:numel(preferred_ids)
         idx = find(node_ids == preferred_ids(k), 1, 'first');
         if ~isempty(idx)
@@ -1605,8 +1633,12 @@ function [x_data, y_data] = get_preferred_node_positions(G)
     missing = ~isfinite(x_data) | ~isfinite(y_data);
     if any(missing)
         angles = linspace(0, 2*pi, nnz(missing)+1);
-        x_data(missing) = 1.5 + 0.75*cos(angles(1:end-1));
-        y_data(missing) = 1.5 + 0.75*sin(angles(1:end-1));
+        cx = mean(x_data(~missing), 'omitnan');
+        cy = mean(y_data(~missing), 'omitnan');
+        if ~isfinite(cx), cx = 2.0; end
+        if ~isfinite(cy), cy = 2.0; end
+        x_data(missing) = cx + 1.0*cos(angles(1:end-1));
+        y_data(missing) = cy + 1.0*sin(angles(1:end-1));
     end
 end
 

@@ -578,11 +578,12 @@ function series_by_agent = load_agent_series_from_csv(csv_path, requested_agents
     end
 
     T.time_pc_sec_abs = double(T.time_pc_sec_abs);
+    t_overflow = 2^32 / 1e6;
     if ismember('chunk_id', T.Properties.VariableNames)
-        t_overflow = 2^32 / 1e6;
         T = correct_large_jump_matlab(T, t_overflow - 5.0, t_overflow);
         T = correct_chunk_start_times_matlab(T, 4000.0, t_overflow);
     end
+    T = correct_agent_time_offsets_matlab(T, t_overflow);
 
     all_agents = unique(T.agent_id, 'sorted').';
     requested_agents = requested_agents(:).';
@@ -658,6 +659,32 @@ function T = correct_chunk_start_times_matlab(T, threshold_sec, jump_sec)
         start_time = min(T.time_pc_sec_abs(idx));
         if (start_time - median_start) > threshold_sec
             T.time_pc_sec_abs(idx) = T.time_pc_sec_abs(idx) - jump_sec;
+        end
+    end
+end
+
+function T = correct_agent_time_offsets_matlab(T, t_overflow)
+    if nargin < 2 || isempty(t_overflow)
+        t_overflow = 2^32 / 1e6;
+    end
+    if ~ismember('agent_id', T.Properties.VariableNames)
+        return;
+    end
+    [G, ~] = findgroups(T.agent_id);
+    if max(G) < 2
+        return;
+    end
+    agent_starts = splitapply(@(x) min(x), T.time_pc_sec_abs, G);
+    ref_start = min(agent_starts);
+    for i = 1:max(G)
+        idx = find(G == i);
+        if isempty(idx)
+            continue;
+        end
+        start_time = min(T.time_pc_sec_abs(idx));
+        n_wraps = round((start_time - ref_start) / t_overflow);
+        if n_wraps ~= 0
+            T.time_pc_sec_abs(idx) = T.time_pc_sec_abs(idx) - n_wraps * t_overflow;
         end
     end
 end

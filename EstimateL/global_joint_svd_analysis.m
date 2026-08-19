@@ -624,8 +624,14 @@ function all_global_results = global_joint_svd_analysis(round_dir, M, varargin)
             'ArrowSize', 16, 'ArrowPosition', 0.75, 'MarkerSize', 8, ...
             'NodeColor', [0.15, 0.15, 0.15], 'EdgeColor', [0.0, 0.4470, 0.7410]);
         axis(ax_dig, 'equal');
-        xlim(ax_dig, [0.6, 2.4]);
-        ylim(ax_dig, [0.6, 2.4]);
+        margin = 0.45;
+        rx = max(x_data, [], 'omitnan') - min(x_data, [], 'omitnan') + 2*margin;
+        ry = max(y_data, [], 'omitnan') - min(y_data, [], 'omitnan') + 2*margin;
+        max_r = max(rx, ry);
+        cx = (min(x_data, [], 'omitnan') + max(x_data, [], 'omitnan')) / 2;
+        cy = (min(y_data, [], 'omitnan') + max(y_data, [], 'omitnan')) / 2;
+        xlim(ax_dig, [cx - max_r/2, cx + max_r/2]);
+        ylim(ax_dig, [cy - max_r/2, cy + max_r/2]);
         title(ax_dig, 'Global Joint SVD Directed Influence Graph (Weight R1)', 'Interpreter', 'none');
         
         if numedges(G_dig) > 0
@@ -872,19 +878,26 @@ function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
     x_data = nan(1, numnodes(G));
     y_data = nan(1, numnodes(G));
 
-    if nargin >= 2 && contains(lower(round_dir), 'stick')
-        % Stick layout:
-        % 8  10
-        % 7   9
-        preferred_ids = [8, 10, 7, 9];
+    is_round6 = (nargin >= 2 && contains(lower(round_dir), 'round6')) || ...
+        all(ismember([7, 8, 9, 10, 11, 12], node_ids));
+
+    if is_round6
+        % Hexagonal arrangement for Round 6 (7..12):
+        %    9   12
+        %  8        11
+        %    7   10
+        preferred_ids = [7, 8, 9, 10, 11, 12];
+        preferred_x   = [1.5, 1.0, 1.5, 2.5, 3.0, 2.5];
+        preferred_y   = [1.0, 2.0, 3.0, 1.0, 2.0, 3.0];
     else
-        % Round layout:
+        % Standard 4-agent layout (7, 8, 9, 10):
         % 8  10
         % 7   9
         preferred_ids = [8, 10, 7, 9];
+        preferred_x   = [1, 2, 1, 2];
+        preferred_y   = [2, 2, 1, 1];
     end
-    preferred_x = [1, 2, 1, 2];
-    preferred_y = [2, 2, 1, 1];
+
     for k = 1:numel(preferred_ids)
         idx = find(node_ids == preferred_ids(k), 1, 'first');
         if ~isempty(idx)
@@ -897,8 +910,12 @@ function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
     if any(missing)
         n_missing = nnz(missing);
         angles = linspace(0, 2*pi, n_missing + 1);
-        x_data(missing) = 1.5 + 0.75 * cos(angles(1:end-1));
-        y_data(missing) = 1.5 + 0.75 * sin(angles(1:end-1));
+        cx = mean(x_data(~missing), 'omitnan');
+        cy = mean(y_data(~missing), 'omitnan');
+        if ~isfinite(cx), cx = 2.0; end
+        if ~isfinite(cy), cy = 2.0; end
+        x_data(missing) = cx + 1.0 * cos(angles(1:end-1));
+        y_data(missing) = cy + 1.0 * sin(angles(1:end-1));
     end
 end
 

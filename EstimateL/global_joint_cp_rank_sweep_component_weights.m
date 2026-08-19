@@ -18,13 +18,13 @@ function rank_sweep_results = global_joint_cp_rank_sweep_component_weights( ...
 % Examples:
 %   results = global_joint_cp_rank_sweep_component_weights();
 %   results = global_joint_cp_rank_sweep_component_weights( ...
-%       fullfile('EstimateL','Round'), 10, 'Ranks', 1:10);
+%       fullfile('EstimateL','Round6'), 10, 'Ranks', 1:10);
 %   results = global_joint_cp_rank_sweep_component_weights( ...
-%       fullfile('EstimateL','Round'), 10, ...
+%       fullfile('EstimateL','Round6'), 10, ...
 %       'TensorMatFile', 'path/to/global_joint_cp_rank1_fit.mat');
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStick');
+        round_dir = fullfile('EstimateL', 'Round6');
     end
     if nargin < 2 || isempty(M)
         M = 10;
