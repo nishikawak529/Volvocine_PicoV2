@@ -1,0 +1,8 @@
+[INFO] Component-weight joint CP rank sweep
+  Model: C_fit(:,:,p) = A*diag(W(p,:))*B.'
+  W has size P x R and is real; components are jointly optimized.
+  Data directory: EstimateL\Stick
+  Fourier order M=10; requested ranks=[1 2 3 4 5 6 7 8 9 10]
+  NumStarts=20, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] No tensor MAT file was found. Calling the existing rank-1 function once to construct C_tensor.
