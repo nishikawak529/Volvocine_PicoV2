@@ -1,0 +1,56 @@
+[INFO] Component-weight joint CP rank sweep
+  Model: C_fit(:,:,p) = A*diag(W(p,:))*B.'
+  W has size P x R and is real; components are jointly optimized.
+  Data directory: EstimateL\Round6
+  Fourier order M=10; requested ranks=[1 2 3 4 5 6 7 8 9 10]
+  NumStarts=20, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] C_tensor loaded once: 21 x 21 x 28 (existing rank-1 MAT file).
+[警告: Current tensor has P=28 directions rather than 12.] 
+[> global_joint_cp_rank_sweep_component_weights (行 90) 内] 
+[RANK  1] explained= 66.69996260%, relres=5.770618e-01, J=1.270350e-02, start=0, iter=0
+           W size=28x1, max symmetry A/B=0.000e+00/0.000e+00, status=baseline_retained:common_weight_rank_1
+[RANK  2] explained= 70.35794106%, relres=5.444452e-01, J=1.130803e-02, start=7, iter=54
+           W size=28x2, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_7:converged;weight_solver=normal_equations
+[RANK  3] explained= 73.04791277%, relres=5.191540e-01, J=1.028185e-02, start=17, iter=327
+           W size=28x3, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_17:converged;weight_solver=normal_equations
+[RANK  4] explained= 75.98701642%, relres=4.900304e-01, J=9.160620e-03, start=10, iter=1000
+           W size=28x4, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_10:max_iter;weight_solver=normal_equations
+[RANK  5] explained= 78.34276721%, relres=4.653733e-01, J=8.261934e-03, start=9, iter=1000
+           W size=28x5, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_9:max_iter;weight_solver=normal_equations
+[RANK  6] explained= 80.43685577%, relres=4.423024e-01, J=7.463068e-03, start=6, iter=1000
+           W size=28x6, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_6:max_iter;weight_solver=normal_equations
+[RANK  7] explained= 82.01561397%, relres=4.240800e-01, J=6.860794e-03, start=8, iter=1000
+           W size=28x7, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_8:max_iter;weight_solver=normal_equations
+[RANK  8] explained= 83.57209102%, relres=4.053136e-01, J=6.267019e-03, start=10, iter=1000
+           W size=28x8, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_10:max_iter;weight_solver=normal_equations
+[RANK  9] explained= 84.92154196%, relres=3.883099e-01, J=5.752222e-03, start=1, iter=1000
+           W size=28x9, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_1:max_iter;weight_solver=normal_equations
+[RANK 10] explained= 86.33088728%, relres=3.697176e-01, J=5.214577e-03, start=9, iter=1000
+           W size=28x10, max symmetry A/B=0.000e+00/0.000e+00, status=optimized_start_9:max_iter;weight_solver=normal_equations
+
+[RESULT] Component-weight CP rank sweep
+  R= 1: explained= 66.69996260%, increment=66.69996260 pp, relres=5.770618e-01, J=1.270350e-02, start=0, iter=0, status=baseline_retained:common_weight_rank_1
+  R= 2: explained= 70.35794106%, increment=3.65797846 pp, relres=5.444452e-01, J=1.130803e-02, start=7, iter=54, status=optimized_start_7:converged;weight_solver=normal_equations
+  R= 3: explained= 73.04791277%, increment=2.68997171 pp, relres=5.191540e-01, J=1.028185e-02, start=17, iter=327, status=optimized_start_17:converged;weight_solver=normal_equations
+  R= 4: explained= 75.98701642%, increment=2.93910365 pp, relres=4.900304e-01, J=9.160620e-03, start=10, iter=1000, status=optimized_start_10:max_iter;weight_solver=normal_equations
+  R= 5: explained= 78.34276721%, increment=2.35575079 pp, relres=4.653733e-01, J=8.261934e-03, start=9, iter=1000, status=optimized_start_9:max_iter;weight_solver=normal_equations
+  R= 6: explained= 80.43685577%, increment=2.09408856 pp, relres=4.423024e-01, J=7.463068e-03, start=6, iter=1000, status=optimized_start_6:max_iter;weight_solver=normal_equations
+  R= 7: explained= 82.01561397%, increment=1.57875820 pp, relres=4.240800e-01, J=6.860794e-03, start=8, iter=1000, status=optimized_start_8:max_iter;weight_solver=normal_equations
+  R= 8: explained= 83.57209102%, increment=1.55647704 pp, relres=4.053136e-01, J=6.267019e-03, start=10, iter=1000, status=optimized_start_10:max_iter;weight_solver=normal_equations
+  R= 9: explained= 84.92154196%, increment=1.34945094 pp, relres=3.883099e-01, J=5.752222e-03, start=1, iter=1000, status=optimized_start_1:max_iter;weight_solver=normal_equations
+  R=10: explained= 86.33088728%, increment=1.40934532 pp, relres=3.697176e-01, J=5.214577e-03, start=9, iter=1000, status=optimized_start_9:max_iter;weight_solver=normal_equations
+
+[COMPARISON] Component minus common explained percentage points
+  R= 1:  +0.00000000 pp
+  R= 2:  +2.79304066 pp
+  R= 3:  +5.22621246 pp
+  R= 4:  +7.94271075 pp
+  R= 5: +10.11354036 pp
+  R= 6: +12.10335413 pp
+  R= 7: +13.58907522 pp
+  R= 8: +15.08564767 pp
+  R= 9: +16.39630809 pp
+  R=10: +17.78022259 pp
+
+[INFO] Results saved under EstimateL\Round6\low_rank_analysis\M10\global_joint_cp_component_weights_rank_sweep_R1_R10

@@ -1,0 +1,15 @@
+[INFO] Starting direct joint rank-1 CP analysis
+  Round directory: EstimateL\Stick
+  Output directory: EstimateL\Stick\low_rank_analysis\M10\global_joint_cp_rank1
+  Fourier order: M=10; coefficient order is -M:M
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+  CP multi-starts: 20
+  CP maximum iterations/start: 1000
+  CP relative objective tolerance: 1.000e-10
+  CP random seed: 0
+
+[INFO] Loading Pair 1/6: 7-10
+[INFO] Subtracted self-profile for Agent 7 from s_1.
+[INFO] Subtracted self-profile for Agent 10 from s_2.

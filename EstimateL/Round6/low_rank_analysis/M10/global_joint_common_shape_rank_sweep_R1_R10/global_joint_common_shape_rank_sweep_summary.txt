@@ -1,0 +1,190 @@
+[INFO] Common-shape matrix-rank sweep (not rank-R CP)
+  Data directory: EstimateL\Round6
+  Output directory: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10
+  Fourier order M=10; requested ranks=[1 2 3 4 5 6 7 8 9 10]
+  One shared real weight vector w has size P x 1 at every rank.
+  NumStarts=20, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] Loading Pair 1/14: 10-11
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\10-11\phase_dynamics_cache_bd0b41eb24dc333331d045488b9676a8.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 10, s2 -> 11
+[INFO] omega1 = 7.84992248988 rad/s, omega2 = 7.68986928036 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0142415, s2 = 0.0182504
+[INFO] Loading Pair 2/14: 10-12
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\10-12\phase_dynamics_cache_fc21288fba2beddb7a25fc7f10a4c7f9.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 10, s2 -> 12
+[INFO] omega1 = 7.85003920686 rad/s, omega2 = 7.68994008905 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0164013, s2 = 0.0161193
+[INFO] Loading Pair 3/14: 11-12
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\11-12\phase_dynamics_cache_c0bcb4c759ba4a247d5cce9813b677cf.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 11, s2 -> 12
+[INFO] omega1 = 7.85006409854 rad/s, omega2 = 7.68998727775 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0138095, s2 = 0.0166332
+[INFO] Loading Pair 4/14: 7-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\7-10\phase_dynamics_cache_ac2592f5eb2118d82968f180ac2ea346.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 10
+[INFO] omega1 = 7.8499697079 rad/s, omega2 = 7.69007775024 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0147391, s2 = 0.0158796
+[INFO] Loading Pair 5/14: 7-11
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\7-11\phase_dynamics_cache_72c9a4b89af86cb166ef6b5abc218bd9.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 11
+[INFO] omega1 = 7.68982559363 rad/s, omega2 = 7.84996575902 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0911978, s2 = 0.090938
+[INFO] Loading Pair 6/14: 7-12
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\7-12\phase_dynamics_cache_fcd8422e41ead860b1686a0c4df92511.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 12
+[INFO] omega1 = 7.68992986285 rad/s, omega2 = 7.84984773231 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0152382, s2 = 0.016329
+[INFO] Loading Pair 7/14: 7-8
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\7-8\phase_dynamics_cache_ed1396e23079312158b227ed484de9b2.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 8
+[INFO] omega1 = 7.84996965769 rad/s, omega2 = 7.68998729973 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0142032, s2 = 0.0164408
+[INFO] Loading Pair 8/14: 7-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\7-9\phase_dynamics_cache_9c35ccff47d55bbe7f6ff9d46bfbb6ad.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 7, s2 -> 9
+[INFO] omega1 = 7.8501112692 rad/s, omega2 = 7.69019348396 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0125104, s2 = 0.0152613
+[INFO] Loading Pair 9/14: 8-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\8-10\phase_dynamics_cache_d122e9d8e38de80d41357f712ce3eaaa.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 10
+[INFO] omega1 = 7.85013487201 rad/s, omega2 = 7.68992828638 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0139552, s2 = 0.0150738
+[INFO] Loading Pair 10/14: 8-11
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\8-11\phase_dynamics_cache_931693f5a1aa8a24134c8123e927f5ba.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 11
+[INFO] omega1 = 7.84996393477 rad/s, omega2 = 7.69010530445 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0143165, s2 = 0.0182626
+[INFO] Loading Pair 11/14: 8-9
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\8-9\phase_dynamics_cache_b9dae6f09716da16b7b126025dfbe4fc.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.85010729844 rad/s, omega2 = 7.69000301801 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0143088, s2 = 0.0168647
+[INFO] Loading Pair 12/14: 9-10
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\9-10\phase_dynamics_cache_e342232e8771eb483cc9e501281f2dc7.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 10
+[INFO] omega1 = 7.85004049461 rad/s, omega2 = 7.69005808447 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.012854, s2 = 0.0143265
+[INFO] Loading Pair 13/14: 9-11
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\9-11\phase_dynamics_cache_463c48eb3d653ee563b4d69f544b67a6.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 11
+[INFO] omega1 = 7.84987100602 rad/s, omega2 = 7.69012888781 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0111393, s2 = 0.0145735
+[INFO] Loading Pair 14/14: 9-12
+[INFO] Loaded cached dynamics from C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\Round6\9-12\phase_dynamics_cache_54284234478122933b600c7dc706efca.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 12
+[INFO] omega1 = 7.85004047263 rad/s, omega2 = 7.69019969651 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0133603, s2 = 0.0158887
+[警告: Loaded directions do not form a unique complete digraph.] 
+[> global_joint_common_shape_rank_sweep>build_coefficient_tensor (行 454) 内
+global_joint_common_shape_rank_sweep (行 78) 内] 
+[INFO] C_tensor constructed once with size 21 x 21 x 28.
+[警告: Current tensor has P=28 directions rather than 12.] 
+[> global_joint_common_shape_rank_sweep (行 100) 内] 
+  p= 1: 11 -> 10 (10-11, s1)
+  p= 2: 10 -> 11 (10-11, s2)
+  p= 3: 12 -> 10 (10-12, s1)
+  p= 4: 10 -> 12 (10-12, s2)
+  p= 5: 12 -> 11 (11-12, s1)
+  p= 6: 11 -> 12 (11-12, s2)
+  p= 7: 10 -> 7 (7-10, s1)
+  p= 8: 7 -> 10 (7-10, s2)
+  p= 9: 11 -> 7 (7-11, s1)
+  p=10: 7 -> 11 (7-11, s2)
+  p=11: 12 -> 7 (7-12, s1)
+  p=12: 7 -> 12 (7-12, s2)
+  p=13: 8 -> 7 (7-8, s1)
+  p=14: 7 -> 8 (7-8, s2)
+  p=15: 9 -> 7 (7-9, s1)
+  p=16: 7 -> 9 (7-9, s2)
+  p=17: 10 -> 8 (8-10, s1)
+  p=18: 8 -> 10 (8-10, s2)
+  p=19: 11 -> 8 (8-11, s1)
+  p=20: 8 -> 11 (8-11, s2)
+  p=21: 9 -> 8 (8-9, s1)
+  p=22: 8 -> 9 (8-9, s2)
+  p=23: 10 -> 9 (9-10, s1)
+  p=24: 9 -> 10 (9-10, s2)
+  p=25: 11 -> 9 (9-11, s1)
+  p=26: 9 -> 11 (9-11, s2)
+  p=27: 12 -> 9 (9-12, s1)
+  p=28: 9 -> 12 (9-12, s2)
+
+[INFO] Real-basis transform diagnostics:
+  ||E*T-Psi||_F                  = 1.5480547985216715e-14
+  ||T'*T-I||_F                  = 5.1115654174474540e-15
+  C -> D -> C relative error     = 1.3940039523406728e-15
+  ||imag(D_tensor)||/||D_tensor||= 9.0077261934175253e-16
+
+[INFO] Existing rank-1 result accepted as a read-only baseline.
+  Reference MAT: EstimateL\Round6\low_rank_analysis\M10\global_joint_cp_rank1\global_joint_cp_rank1_fit.mat
+  Tensor mismatch: 0.000e+00
+  Existing objective: 1.2703501939645230e-02
+  Existing explained: 66.6999625955%
+
+[RANK  1] explained=66.69996260%, increment=66.69996260 pp, relres=5.770618e-01, J=1.270350e-02, start=1, iter=1
+          ||G||F=1, symmetry=1.165e-15, maxImag(g)=2.399e-15, componentCheck=7.428e-16, status=optimized_start_1:numerical_objective_floor
+[RANK  2] explained=67.56490040%, increment= 0.86493781 pp, relres=5.695182e-01, J=1.237354e-02, start=3, iter=7
+          ||G||F=1, symmetry=1.151e-15, maxImag(g)=2.530e-15, componentCheck=5.597e-16, status=optimized_start_3:converged
+[RANK  3] explained=67.82170031%, increment= 0.25679991 pp, relres=5.672592e-01, J=1.227557e-02, start=13, iter=7
+          ||G||F=1, symmetry=1.148e-15, maxImag(g)=2.630e-15, componentCheck=5.432e-16, status=optimized_start_13:converged
+[RANK  4] explained=68.04430567%, increment= 0.22260536 pp, relres=5.652937e-01, J=1.219065e-02, start=2, iter=8
+          ||G||F=1, symmetry=1.164e-15, maxImag(g)=2.647e-15, componentCheck=1.064e-15, status=optimized_start_2:converged
+[RANK  5] explained=68.22922685%, increment= 0.18492118 pp, relres=5.636557e-01, J=1.212011e-02, start=4, iter=7
+          ||G||F=1, symmetry=1.168e-15, maxImag(g)=2.531e-15, componentCheck=1.179e-15, status=optimized_start_4:converged
+[RANK  6] explained=68.33350164%, increment= 0.10427479 pp, relres=5.627299e-01, J=1.208033e-02, start=13, iter=8
+          ||G||F=1, symmetry=1.175e-15, maxImag(g)=2.490e-15, componentCheck=7.728e-16, status=optimized_start_13:converged
+[RANK  7] explained=68.42653876%, increment= 0.09303711 pp, relres=5.619027e-01, J=1.204484e-02, start=1, iter=5
+          ||G||F=1, symmetry=1.155e-15, maxImag(g)=2.559e-15, componentCheck=6.767e-16, status=optimized_start_1:converged
+[RANK  8] explained=68.48644334%, increment= 0.05990459 pp, relres=5.613694e-01, J=1.202198e-02, start=16, iter=8
+          ||G||F=1, symmetry=1.164e-15, maxImag(g)=2.546e-15, componentCheck=6.366e-16, status=optimized_start_16:converged
+[RANK  9] explained=68.52523388%, increment= 0.03879053 pp, relres=5.610238e-01, J=1.200719e-02, start=16, iter=9
+          ||G||F=1, symmetry=1.151e-15, maxImag(g)=2.550e-15, componentCheck=7.241e-16, status=optimized_start_16:converged
+[RANK 10] explained=68.55066469%, increment= 0.02543081 pp, relres=5.607971e-01, J=1.199748e-02, start=8, iter=8
+          ||G||F=1, symmetry=1.154e-15, maxImag(g)=2.623e-15, componentCheck=8.449e-16, status=optimized_start_8:converged
+
+[INFO] Rank-1 equivalence comparison on the same C_tensor:
+  Sweep objective:      1.2703501939645199e-02
+  Existing objective:   1.2703501939645230e-02
+  Absolute difference:  3.123e-17
+  Sweep explained:      66.6999625955%
+  Existing explained:   66.6999625955%
+  C_fit relative difference: 2.730e-08
+
+[INFO] Requested-rank summary:
+Rank   Objective      RelResidual    Explained(%)   Increment(pp) Start    Iterations Status
+1      1.270350e-02   5.770618e-01   66.69996260    66.69996260   1        1          optimized_start_1:numerical_objective_floor
+2      1.237354e-02   5.695182e-01   67.56490040    0.86493781    3        7          optimized_start_3:converged
+3      1.227557e-02   5.672592e-01   67.82170031    0.25679991    13       7          optimized_start_13:converged
+4      1.219065e-02   5.652937e-01   68.04430567    0.22260536    2        8          optimized_start_2:converged
+5      1.212011e-02   5.636557e-01   68.22922685    0.18492118    4        7          optimized_start_4:converged
+6      1.208033e-02   5.627299e-01   68.33350164    0.10427479    13       8          optimized_start_13:converged
+7      1.204484e-02   5.619027e-01   68.42653876    0.09303711    1        5          optimized_start_1:converged
+8      1.202198e-02   5.613694e-01   68.48644334    0.05990459    16       8          optimized_start_16:converged
+9      1.200719e-02   5.610238e-01   68.52523388    0.03879053    16       9          optimized_start_16:converged
+10     1.199748e-02   5.607971e-01   68.55066469    0.02543081    8        8          optimized_start_8:converged
+
+[INFO] Saved rank summary CSV: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank_sweep_summary.csv
+[INFO] Saved weights CSV: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_weights_by_rank.csv
+[INFO] Saved per-direction CSV: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_per_direction_metrics_by_rank.csv
+[INFO] Saved explained PNG/FIG: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_explained_vs_rank.png ; EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_explained_vs_rank.fig
+[INFO] Saved weights PNG/FIG: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_weights_vs_rank.png ; EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_weights_vs_rank.fig
+[INFO] Saved per-direction PNG/FIG: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_per_direction_explained_vs_rank.png ; EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_per_direction_explained_vs_rank.fig
+[INFO] Saved maximum-rank graph PNG/FIG: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank10_influence_graph.png ; EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank10_influence_graph.fig
+[INFO] Saved complete MAT results: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank_sweep_results.mat
+[INFO] Total runtime: 17.442 seconds
+[INFO] Rank-sweep analysis completed: EstimateL\Round6\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10
