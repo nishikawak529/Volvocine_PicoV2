@@ -142,8 +142,9 @@ def plot_chunks(file_list):
 
         try:
             df = pd.read_csv(file)
+            cols = [c for c in ["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2", "a3"] if c in df.columns]
             if all(col in df.columns for col in ["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2"]):
-                dfs.append(df[["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2"]])
+                dfs.append(df[cols])
         except Exception as e:
             print(f"[WARN] Failed to load {file}: {e}")
 
@@ -169,9 +170,12 @@ def plot_chunks(file_list):
     if not df_99.empty:
         df_99.loc[df_99["a1"] >= 170, "a1"] -= 255
 
-    # a0/a1/a2 + 位相差 + agent99(あれば) を描く
+    # a0/a1/a2/(a3) + 位相差 + agent99(あれば) を描く
     show_agent99 = not df_99.empty
-    n_axes = 5 if show_agent99 else 4
+    show_a3 = "a3" in df_main.columns
+    n_main_axes = 4 if show_a3 else 3
+    n_axes = n_main_axes + 1 + (1 if show_agent99 else 0)
+
     fig, axs = plt.subplots(n_axes, 1, figsize=(10, 2.0 * n_axes), sharex=True)
     axs = np.atleast_1d(axs)
     colors = {}
@@ -184,11 +188,16 @@ def plot_chunks(file_list):
         axs[0].plot(sub["time_pc_sec_abs"], sub["a0"], color=colors[ag_id])
         axs[1].plot(sub["time_pc_sec_abs"], sub["a1"], color=colors[ag_id])
         axs[2].plot(sub["time_pc_sec_abs"], sub["a2"], color=colors[ag_id])
+        if show_a3 and "a3" in sub.columns:
+            axs[3].plot(sub["time_pc_sec_abs"], sub["a3"], color=colors[ag_id])
 
-    axs[0].set_ylabel("a0")
-    axs[1].set_ylabel("a1")
-    axs[2].set_ylabel("a2")
-    for ax in axs[:3]:
+    axs[0].set_ylabel("a0 (phi)")
+    axs[1].set_ylabel("a1 (power)")
+    axs[2].set_ylabel("a2 (flex)")
+    if show_a3:
+        axs[3].set_ylabel("a3 (light)")
+
+    for ax in axs[:n_main_axes]:
         ax.grid(True)
 
     handles = [plt.Line2D([0], [0], color=color, lw=2, label=f"Agent {ag_id}")
@@ -196,7 +205,7 @@ def plot_chunks(file_list):
     if handles:
         axs[0].legend(handles=handles, title="Agents")
 
-    phase_ax = axs[3]
+    phase_ax = axs[n_main_axes]
     for entry in phase_series:
         agent_id = entry["agent_id"]
         phase_ax.plot(
@@ -223,7 +232,7 @@ def plot_chunks(file_list):
         )
 
     if show_agent99:
-        imu_ax = axs[4]
+        imu_ax = axs[n_main_axes + 1]
         imu_ax.plot(df_99["time_pc_sec_abs"], df_99["a0"], label="Agent 99 a0", color="tab:blue")
         imu_ax.plot(df_99["time_pc_sec_abs"], df_99["a1"], label="Agent 99 a1", color="tab:orange")
         imu_ax.set_ylabel("Agent99\na0/a1")
@@ -271,8 +280,9 @@ def plot_relativePhase(file_list):
 
         try:
             df = pd.read_csv(file)
+            cols = [c for c in ["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2", "a3"] if c in df.columns]
             if all(col in df.columns for col in ["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2"]):
-                dfs.append(df[["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2"]])
+                dfs.append(df[cols])
         except Exception as e:
             print(f"[WARN] Failed to load {file}: {e}")
 

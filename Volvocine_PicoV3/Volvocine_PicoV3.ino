@@ -41,18 +41,19 @@ const int inaSclPin = 7;
 
 Servo myServo;
 
-// 1レコード6バイトの圧縮構造体 (RAM保持用)
+// 1レコード7バイトの圧縮構造体 (RAM保持用)
 #pragma pack(push, 1)
 struct CompressedLogData {
   uint32_t micros24 : 24;  // 3バイト: (micros >> 8)
-  uint8_t  analog0;        // 1バイト
-  uint8_t  analog1;        // 1バイト
-  uint8_t  analog2;        // 1バイト
+  uint8_t  analog0;        // 1バイト: 位相 (phi)
+  uint8_t  analog1;        // 1バイト: 電力 (INA226)
+  uint8_t  analog2;        // 1バイト: 曲げセンサ (GP27)
+  uint8_t  analog3;        // 1バイト: 光センサ (GP28)
 };
 #pragma pack(pop)
 
 #define CONTROL_PERIOD_US 2000 // 制御周期 (μs)
-#define LOG_BUFFER_SIZE   20000
+#define LOG_BUFFER_SIZE   17142 // 17142 * 7バイト = 119,994バイト (約120KB)
 CompressedLogData logBuffer[LOG_BUFFER_SIZE];
 int logIndex = 0;
 bool paused = false;
@@ -347,6 +348,7 @@ void logSensorData() {
 
   int raw1 = readPowerRaw();  // INA226から算出した電力[mW]を0..4095に収める
   int raw2 = analogRead(analogPin2);
+  int raw3 = analogRead(analogPin1); // 光センサ (GP28)
 
   // リングバッファにデータを追加
   raw2Window[raw2Index] = raw2;
@@ -381,6 +383,8 @@ void logSensorData() {
     entry.analog1 = (uint8_t)(raw1 >> 4);
 
     entry.analog2 = (uint8_t)(raw2 >> 4);
+
+    entry.analog3 = (uint8_t)(raw3 >> 4);
 
     // バッファに書き込み
     if (logIndex < LOG_BUFFER_SIZE) {

@@ -1784,11 +1784,76 @@ function save_rank_sweep_outputs(rank_sweep_results, opts)
     saveas(fig_weights,paths.max_rank_weights_png);
     savefig(fig_weights,paths.max_rank_weights_fig);
 
-    save(paths.results_mat,'rank_sweep_results','-v7.3');
+    % Export per-component profile 2-panel plots for maximum rank fit
+    prefix = 'global_joint_cp_component_weights_rank_sweep';
+    phi_grid = rank_sweep_results.phi_grid;
+    interaction_meta = rank_sweep_results.interaction_meta;
+    legend_labels = cell(1, P);
+    for p = 1:P
+        legend_labels{p} = sprintf('%s (%d->%d)', ...
+            interaction_meta(p).pair_name, interaction_meta(p).source_id, ...
+            interaction_meta(p).target_id);
+    end
+
+    fig_comp_list = cell(1, Rmax);
+    for r = 1:Rmax
+        a_r = maximum_fit.a_values(:, r);
+        b_r = maximum_fit.b_values(:, r);
+        W_r = maximum_fit.W(:, r);
+
+        fig_comp = figure('Color', 'w', 'Position', [100, 100, 1000, 460], ...
+            'Visible', figure_visibility);
+        t_lay = tiledlayout(fig_comp, 1, 2, ...
+            'TileSpacing', 'compact', 'Padding', 'compact');
+        title(t_lay, sprintf('Global Joint CP Component %d of %d', r, Rmax), ...
+            'FontWeight', 'bold', 'FontSize', 12);
+
+        ax_in = nexttile(t_lay, 1);
+        hold(ax_in, 'on'); grid(ax_in, 'on'); box(ax_in, 'on');
+        plot(ax_in, phi_grid, a_r, 'LineWidth', 2.8, ...
+            'Color', [0, 0.447, 0.741]);
+        ylabel(ax_in, 'a (Shared Receiver)', 'FontWeight', 'bold');
+        xlabel(ax_in, '\phi_{target} (Receiver Phase)');
+        set_phase_axis(ax_in);
+        legend(ax_in, {sprintf('Shared Receiver Profile a_%d(\\phi)', r)}, ...
+            'Location', 'best', 'FontSize', 8);
+        title(ax_in, sprintf('Shared Receiver Profile a_%d(\\phi)', r));
+
+        ax_out = nexttile(t_lay, 2);
+        hold(ax_out, 'on'); grid(ax_out, 'on'); box(ax_out, 'on');
+        for p = 1:P
+            plot(ax_out, phi_grid, W_r(p) * b_r, ...
+                'LineWidth', 1.5, 'Color', colors(p, :));
+        end
+        mean_weight = mean(abs(W_r));
+        plot(ax_out, phi_grid, mean_weight * b_r, ...
+            'k--', 'LineWidth', 3.0);
+        ylabel(ax_out, 'W_{pr} b_r (Directed Senders)', 'FontWeight', 'bold');
+        xlabel(ax_out, '\phi_{source} (Sender Phase)');
+        set_phase_axis(ax_out);
+        legend(ax_out, [legend_labels, {'Shared Sender (mean |W_{pr}| scale)'}], ...
+            'Location', 'eastoutside', 'FontSize', 7, 'Interpreter', 'none');
+        title(ax_out, sprintf('Direction-scaled Shared Sender Profiles W_{p,%d} b_%d(\\phi)', r, r));
+
+        comp_png = fullfile(rank_sweep_results.output_dir, sprintf( ...
+            '%s_rank%d_component%d_profiles.png', prefix, Rmax, r));
+        comp_fig = fullfile(rank_sweep_results.output_dir, sprintf( ...
+            '%s_rank%d_component%d_profiles.fig', prefix, Rmax, r));
+        saveas(fig_comp, comp_png);
+        savefig(fig_comp, comp_fig);
+        fig_comp_list{r} = fig_comp;
+    end
+
+    save(paths.results_mat, 'rank_sweep_results', '-v7.3');
     if ~opts.keep_figures
         close(fig_summary);
         close(fig_direction);
         close(fig_weights);
+        for r = 1:Rmax
+            if ishandle(fig_comp_list{r})
+                close(fig_comp_list{r});
+            end
+        end
     end
 end
 
@@ -1801,4 +1866,10 @@ function cmap = make_diverging_colormap(number_colors)
         linspace(0.95,0,positive_count).', ...
         linspace(0.95,0,positive_count).'];
     cmap = [negative;positive];
+end
+
+function set_phase_axis(ax)
+    set(ax, 'XTick', [0, pi/2, pi, 3*pi/2, 2*pi]);
+    set(ax, 'XTickLabel', {'0', '\pi/2', '\pi', '3\pi/2', '2\pi'});
+    xlim(ax, [0, 2*pi]);
 end

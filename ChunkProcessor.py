@@ -18,7 +18,7 @@ def build_dataframe_for_chunk(agent_id, chunk_data, chunk_send_micros, chunk_rec
     offset = sum(offsets) / len(offsets)
     print(len(offsets), f"Average offset for agent {agent_id}: {offset:.6f} seconds")
 
-    df = pd.DataFrame(chunk_data, columns=["micros24", "a0", "a1", "a2"])
+    df = pd.DataFrame(chunk_data, columns=["micros24", "a0", "a1", "a2", "a3"])
     
     micros_list = df["micros24"].tolist()
     extended = [0] * len(micros_list)
@@ -46,13 +46,13 @@ def build_dataframe_for_chunk(agent_id, chunk_data, chunk_send_micros, chunk_rec
     filename = os.path.join(SAVE_FOLDER, f"chunk_agent_{agent_id}_{timestamp}.csv")
     save_columns = [
         "time_pc_sec_abs", "micros32", "micros32_raw", "time_local_sec",
-        "a0", "a1", "a2", "agent_id", "chunk_id"
+        "a0", "a1", "a2", "a3", "agent_id", "chunk_id"
     ]
     df.to_csv(filename, index=False, columns=save_columns)
     print(f"[INFO] Agent={agent_id}, chunk size={len(df)} -> Saved to {filename}")
 
     # ファイルパスも返す
-    return df[["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2"]], filename
+    return df[["agent_id", "chunk_id", "time_pc_sec_abs", "a0", "a1", "a2", "a3"]], filename
 
 def merge_and_save_chunks(chunk_files):
     # チャンクファイルが存在しない場合は処理をスキップ

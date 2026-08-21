@@ -20,8 +20,8 @@ SOCKET_TIMEOUT = 1.0
 CHUNK_TIMEOUT = 5.0
 
 
-STRUCT_FORMAT = "<6B"  # micros24 (3バイト), a0, a1, a2
-RECORD_SIZE = struct.calcsize(STRUCT_FORMAT)  # 6 bytes
+STRUCT_FORMAT = "<7B"  # micros24 (3バイト), a0, a1, a2, a3
+RECORD_SIZE = struct.calcsize(STRUCT_FORMAT)  # 7 bytes
 
 SAVE_FOLDER = "saved_chunks"  # 保存用フォルダ名
 MERGED_BASE_FOLDER = "merged_chunks_organized"  # マージファイル保存用ベースフォルダ
@@ -397,10 +397,10 @@ def process_agent_packet(agent_id, data_item):
         
         for i in range(len(raw) // RECORD_SIZE):
             record = raw[i*RECORD_SIZE:(i+1)*RECORD_SIZE]
-            b0, b1, b2, a0, a1, a2 = struct.unpack(STRUCT_FORMAT, record)
+            b0, b1, b2, a0, a1, a2, a3 = struct.unpack(STRUCT_FORMAT, record)
             micros24 = b0 | (b1 << 8) | (b2 << 16)
             micros32 = micros24 & 0xFFFFFF
-            chunk_data.append((micros32, a0, a1, a2))
+            chunk_data.append((micros32, a0, a1, a2, a3))
         
         send_list.append(send_micros)
         recv_list.append(recv_time)
