@@ -53,7 +53,7 @@ struct CompressedLogData {
 #pragma pack(pop)
 
 #define CONTROL_PERIOD_US 2000 // 制御周期 (μs)
-#define LOG_BUFFER_SIZE   17142 // 17142 * 7バイト = 119,994バイト (約120KB)
+#define LOG_BUFFER_SIZE   20000 // 20000 * 7バイト = 140,000バイト (約140KB)
 CompressedLogData logBuffer[LOG_BUFFER_SIZE];
 int logIndex = 0;
 bool paused = false;
