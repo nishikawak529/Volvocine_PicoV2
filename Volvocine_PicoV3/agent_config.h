@@ -6,8 +6,9 @@
 #include <WiFiUdp.h>
 // #pragma once // 通常、インクルードガードがあれば不要、またはファイルの先頭に置く
 
-// サーバから omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds と PRC係数を取得する関数
-void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int serverPort, int agent_id, float monitorVoltageV, float &omega, float &kappa, float &servoCenter, float &servoAmplitude, int &stopAgentId, int &stopDelaySeconds, int &prcHarmonics, float *prcCosCoeffs, float *prcSinCoeffs, int prcMaxHarmonics);
+// サーバから omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio と PRC係数を取得する関数
+void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int serverPort, int agent_id, float monitorVoltageV, float &omega, float &kappa, float &servoCenter, float &servoAmplitude, int &stopAgentId, int &stopDelaySeconds, float &lightFeedbackGain, float &minAmplitudeRatio, int &prcHarmonics, float *prcCosCoeffs, float *prcSinCoeffs, int prcMaxHarmonics);
+
 
 // agent_id をファイルから読み取る関数
 int readAgentIdFromFile();

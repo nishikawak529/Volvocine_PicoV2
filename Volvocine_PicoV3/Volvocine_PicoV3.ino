@@ -85,6 +85,10 @@ float previousFlex = 0.0f; // 前回のフレックスセンサ値
 float servoCenter = 110.0f;    // サーボ中心角度のデフォルト値
 float servoAmplitude = 60.0f; // サーボ振幅のデフォルト値
 
+// 光センサフィードバック用パラメータ
+float lightFeedbackGain = 1.0f;  // 光センサによる減衰ゲイン (0.0〜1.0)
+float minAmplitudeRatio = 0.1f;   // 最小振幅倍率 (元の振幅の10%を下限とする)
+
 // 停止制御用パラメータ (サーバーから受信)
 int stopAgentId = 0; // 停止対象のエージェントID (0は特殊な意味を持つ場合など)
 int stopDelaySeconds = 0; // 停止までの秒数
@@ -363,12 +367,21 @@ void logSensorData() {
   float dflex = (flex - previousFlex)/dt; // 前回との差分
   previousFlex = flex; // 前回の値を更新
 
+  // 光センサ値 (raw3) に応じた振幅の連続線形減衰フィードバック
+  float lightNorm = (float)raw3 / 4095.0f; // 0.0 〜 1.0 に正規化
+  float attenuationFactor = 1.0f - (lightFeedbackGain * lightNorm);
+  if (attenuationFactor < minAmplitudeRatio) {
+    attenuationFactor = minAmplitudeRatio;
+  }
+  float currentAmplitude = servoAmplitude * attenuationFactor;
+
   // サーボ制御
   float psi = (float)elapsed / 1e6f * omega + phi;
   float zPrc = evaluatePRC(psi);
   phi += (kappa_now * zPrc * flex) * (float)dt / 1e6f;
   float currentCos = cosf(psi);
-  myServo.write(servoCenter + servoAmplitude * currentCos); // 変更点: 変数を使用
+  myServo.write(servoCenter + currentAmplitude * currentCos);
+
 
   // データ保存は指定された間隔でのみ実行
   if (loopCounter % saveInterval == 0) {
@@ -475,7 +488,7 @@ void setup() {
   Serial.printf("Loaded agent_id: %d\n", agent_id);
 
   // 最初はメインポート（5000）でパラメータリクエスト
-  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
 
   // パラメータ取得後、専用ポートに切り替え
   serverPort = agentPort;
@@ -574,7 +587,7 @@ void loop() {
       // サーバーにパラメータをリクエスト（一時的にメインポートを使用）
       unsigned int tempPort = serverPort;
       serverPort = 5000; // メインポートに一時切り替え
-      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
       serverPort = tempPort; // 専用ポートに戻す
       lastRequestTime = millis();  // リクエスト送信時刻を記録
     } else{
@@ -596,7 +609,7 @@ void loop() {
     // パラメータリクエスト時は一時的にメインポートを使用
     unsigned int tempPort = serverPort;
     serverPort = 5000; // メインポートに一時切り替え
-    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
     serverPort = tempPort; // 専用ポートに戻す
     lastRequestTime = millis();  // リクエスト送信時刻を更新
   }
