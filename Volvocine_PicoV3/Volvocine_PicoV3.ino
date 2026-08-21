@@ -41,14 +41,16 @@ const int inaSclPin = 7;
 
 Servo myServo;
 
-// 1レコード7バイトの圧縮構造体 (RAM保持用)
+// 1レコード7バイトの圧縮構造体 (RAM保持用 - 明示的1バイトアライメント)
 #pragma pack(push, 1)
 struct CompressedLogData {
-  uint32_t micros24 : 24;  // 3バイト: (micros >> 8)
-  uint8_t  analog0;        // 1バイト: 位相 (phi)
-  uint8_t  analog1;        // 1バイト: 電力 (INA226)
-  uint8_t  analog2;        // 1バイト: 曲げセンサ (GP27)
-  uint8_t  analog3;        // 1バイト: 光センサ (GP28)
+  uint8_t micros24_0;  // タイムスタンプ下位8bit
+  uint8_t micros24_1;  // タイムスタンプ中位8bit
+  uint8_t micros24_2;  // タイムスタンプ上位8bit
+  uint8_t analog0;     // 1バイト: 位相 (phi)
+  uint8_t analog1;     // 1バイト: 電力 (INA226)
+  uint8_t analog2;     // 1バイト: 曲げセンサ (GP27)
+  uint8_t analog3;     // 1バイト: 光センサ (GP28)
 };
 #pragma pack(pop)
 
@@ -292,13 +294,12 @@ void sendLogBuffer() {
           break;
         }
 
-        // タイムスタンプを一時変数経由でコピー
-        uint32_t micros24Value = logBuffer[i].micros24;
-        memcpy(&packet[offset], &micros24Value, 3);
-        offset += 3;
+        uint32_t micros24Value = (uint32_t)logBuffer[i].micros24_0 |
+                                ((uint32_t)logBuffer[i].micros24_1 << 8) |
+                                ((uint32_t)logBuffer[i].micros24_2 << 16);
 
-        memcpy(&packet[offset], &logBuffer[i].analog0, sizeof(CompressedLogData) - 3);
-        offset += sizeof(CompressedLogData) - 3;
+        memcpy(&packet[offset], &logBuffer[i], sizeof(CompressedLogData));
+        offset += sizeof(CompressedLogData);
 
         lastMicros24 = micros24Value;  // 最後の値を保存
         i++;
@@ -373,7 +374,10 @@ void logSensorData() {
   if (loopCounter % saveInterval == 0) {
     // ログ用構造体
     CompressedLogData entry;
-    entry.micros24 = now >> 8;  // 24ビットに圧縮
+    uint32_t m24 = now >> 8;  // 24ビットに圧縮
+    entry.micros24_0 = (uint8_t)(m24 & 0xFF);
+    entry.micros24_1 = (uint8_t)((m24 >> 8) & 0xFF);
+    entry.micros24_2 = (uint8_t)((m24 >> 16) & 0xFF);
 
     // analog0: phiを [0..2π) → 0..255 に圧縮
     float phiMod = fmodf((float)elapsed / 1e6f * omega + phi, 2.0f * (float)M_PI);
