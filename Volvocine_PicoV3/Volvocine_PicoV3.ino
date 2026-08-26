@@ -115,6 +115,21 @@ unsigned long lastInaReadErrorLogMs = 0;
 int lastPowerRaw = 0;
 float lastBusVoltV = 0.0f;
 
+// 電力積算用グローバル変数 (10ms区間内の約2msごとの台形則積分)
+float powerEnergyJAccum = 0.0f;       // 区間内積算エネルギー [J]
+float powerWindowDurationSec = 0.0f;   // 区間内累積時間 [s]
+float previousPowerW = 0.0f;          // 前回の有効測定電力 [W]
+unsigned long prevInaTimeMicros = 0;  // 前回の有効測定時刻 [micros()]
+bool powerAccumValid = false;         // 区間積算が有効か
+
+void resetPowerAccumulator() {
+  powerEnergyJAccum = 0.0f;
+  powerWindowDurationSec = 0.0f;
+  previousPowerW = 0.0f;
+  prevInaTimeMicros = 0;
+  powerAccumValid = false;
+}
+
 bool inaWriteReg16(uint8_t reg, uint16_t value) {
   Wire1.beginTransmission(ina226Addr);
   Wire1.write(reg);
@@ -138,9 +153,27 @@ bool inaReadReg16(uint8_t reg, uint16_t &value) {
   return true;
 }
 
-void initIna226() {
-  // 平均1回、バス/シャント変換140us、連続変換
-  inaWriteReg16(0x00, 0x0007);
+bool initIna226() {
+  // 平均1回 (AVG=1), バス/シャント変換140us (VBUS CT=000, VSH CT=000), 連続変換 (Mode=111) -> 0x0007
+  uint16_t configVal = 0x0007;
+  if (!inaWriteReg16(0x00, configVal)) {
+    Serial.println("[INA226] ERROR: Failed to write config reg 0x00");
+    return false;
+  }
+
+  uint16_t readBack = 0;
+  if (!inaReadReg16(0x00, readBack)) {
+    Serial.println("[INA226] ERROR: Failed to read back config reg 0x00");
+    return false;
+  }
+
+  if (readBack != configVal) {
+    Serial.printf("[INA226] ERROR: Config mismatch! Expected 0x%04X, got 0x%04X\n", configVal, readBack);
+    return false;
+  }
+
+  Serial.println("[INFO] INA226 initialized & config reg 0x00 verified (0x0007)");
+  return true;
 }
 
 bool detectIna226Address() {
@@ -178,6 +211,26 @@ bool readIna226Measurement(float &currentmA, float &busVoltV) {
   currentmA = currentA * 1000.0f;
   busVoltV = (float)busRawU16 * 1.25e-3f;
 
+  return true;
+}
+
+bool readIna226PowerW(float &powerW) {
+  if (!inaReady) {
+    return false;
+  }
+
+  float currentmA = 0.0f;
+  float busVoltV = 0.0f;
+  if (!readIna226Measurement(currentmA, busVoltV)) {
+    return false;
+  }
+
+  lastBusVoltV = busVoltV;
+  float pW = (currentmA / 1000.0f) * busVoltV;
+  if (pW < 0.0f) {
+    pW = 0.0f; // 負電力は0にクランプ
+  }
+  powerW = pW;
   return true;
 }
 
@@ -351,7 +404,28 @@ void logSensorData() {
   unsigned long elapsed = now - startLoggingMicros;
   prevLoopEndTime = now;
 
-  int raw1 = readPowerRaw();  // INA226から算出した電力[mW]を0..4095に収める
+  // INA226からW単位の量子化前電力値を取得し、台形則で積算
+  float currentPowerW = 0.0f;
+  bool inaSuccess = readIna226PowerW(currentPowerW);
+
+  if (inaSuccess) {
+    if (powerAccumValid) {
+      unsigned long dtInaMicros = now - prevInaTimeMicros; // 符号なし減算でオーバーフロー補正
+      float dtInaSec = (float)dtInaMicros / 1e6f;
+      powerEnergyJAccum += 0.5f * (previousPowerW + currentPowerW) * dtInaSec;
+      powerWindowDurationSec += dtInaSec;
+    } else {
+      powerAccumValid = true;
+    }
+    previousPowerW = currentPowerW;
+    prevInaTimeMicros = now;
+  } else {
+    // 読み取り失敗時：無効測定値を積算せず、時刻を更新して失敗期間を積算から除外
+    if (powerAccumValid) {
+      prevInaTimeMicros = now;
+    }
+  }
+
   int raw2 = analogRead(analogPin2);
   int raw3 = analogRead(analogPin1); // 光センサ (GP28)
 
@@ -385,6 +459,25 @@ void logSensorData() {
 
   // データ保存は指定された間隔でのみ実行
   if (loopCounter % saveInterval == 0) {
+    int raw1 = 0;
+    if (powerAccumValid && powerWindowDurationSec > 0.0f) {
+      float averagePowerW = powerEnergyJAccum / powerWindowDurationSec;
+      raw1 = (int)(averagePowerW * POWER_W_TO_RAW + 0.5f);
+      if (raw1 > POWER_RAW_MAX) {
+        raw1 = POWER_RAW_MAX;
+      }
+      if (raw1 < 0) {
+        raw1 = 0;
+      }
+      lastPowerRaw = raw1;
+
+      // 保存区間のリセット（境界の最終測定値previousPowerW/prevInaTimeMicrosは次区間の初期値として引き継ぐ）
+      powerEnergyJAccum = 0.0f;
+      powerWindowDurationSec = 0.0f;
+    } else {
+      raw1 = lastPowerRaw;
+    }
+
     // ログ用構造体
     CompressedLogData entry;
     uint32_t m24 = now >> 8;  // 24ビットに圧縮
@@ -505,6 +598,7 @@ void setup() {
   // 初期状態をオフに設定
   paused = true;
   logIndex = 0;  // バッファインデックスを初期化
+  resetPowerAccumulator();
   sendLogBuffer();
   kappa_now = kappa_init;
   srand(micros());
@@ -519,6 +613,7 @@ void checkControlCommand() {
     udp.read(buf, sizeof(buf) - 1);
     if (strcmp(buf, "START") == 0 && paused == true) {
       paused = false;
+      resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録
       Serial.println("[INFO] Received START command from server.");
@@ -591,6 +686,7 @@ void loop() {
       serverPort = tempPort; // 専用ポートに戻す
       lastRequestTime = millis();  // リクエスト送信時刻を記録
     } else{
+      resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録 
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
