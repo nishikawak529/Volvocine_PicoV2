@@ -490,7 +490,15 @@ void logSensorData() {
     if (phiMod < 0) phiMod += 2.0f * (float)M_PI;
     entry.analog0 = (uint8_t)(phiMod * (255.0f / (2.0f * (float)M_PI)));
 
-    entry.analog1 = (uint8_t)(raw1 >> 4);
+    // analog1: 16mW単位へ四捨五入（最も近い16mW単位へ丸めて0..255に制限）
+    int val16 = (raw1 + 8) >> 4;
+    if (val16 > 255) {
+      val16 = 255;
+    }
+    if (val16 < 0) {
+      val16 = 0;
+    }
+    entry.analog1 = (uint8_t)val16;
 
     entry.analog2 = (uint8_t)(raw2 >> 4);
 
