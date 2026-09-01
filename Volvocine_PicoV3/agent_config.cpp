@@ -38,7 +38,7 @@ int readAgentIdFromFile() {
     return line.toInt(); // ファイルの値をintに変換して返す
 }
 
-void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int serverPort, int agent_id, float monitorVoltageV, float &omega, float &kappa, float &servoCenter, float &servoAmplitude, int &stopAgentId, int &stopDelaySeconds, float &lightFeedbackGain, float &lightFeedbackOmegaGain, float &minAmplitudeRatio, int &prcHarmonics, float *prcCosCoeffs, float *prcSinCoeffs, int prcMaxHarmonics) {
+void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int serverPort, int agent_id, float monitorVoltageV, float &omega, float &kappa, float &servoCenter, float &servoAmplitude, int &stopAgentId, int &stopDelaySeconds, float &feedbackTauSec, float &lightTauSec, float &lightFeedbackGain, float &lightFeedbackOmegaGain, float &minAmplitudeRatio, int &prcHarmonics, float *prcCosCoeffs, float *prcSinCoeffs, int prcMaxHarmonics) {
   // デバッグ情報を含むリクエスト文字列を作成
   char requestBuffer[128]; // バッファサイズを拡張して新しいパラメータに対応
   snprintf(requestBuffer, sizeof(requestBuffer), "REQUEST_PARAMS,id:%d,bus_v:%.3f", agent_id, monitorVoltageV);
@@ -92,6 +92,12 @@ void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int 
           } else if (sscanf(token, "stop_delay:%d", &ival) == 1) {
             stopDelaySeconds = ival;
             parsedBaseFields++;
+          } else if (sscanf(token, "feedback_tau:%f", &fval) == 1 || sscanf(token, "feedback_tau_sec:%f", &fval) == 1) {
+            feedbackTauSec = fval;
+            parsedBaseFields++;
+          } else if (sscanf(token, "light_tau:%f", &fval) == 1 || sscanf(token, "light_tau_sec:%f", &fval) == 1) {
+            lightTauSec = fval;
+            parsedBaseFields++;
           } else if (sscanf(token, "light_gain:%f", &fval) == 1 || sscanf(token, "light_feedback_gain:%f", &fval) == 1) {
             lightFeedbackGain = fval;
             parsedBaseFields++;
@@ -144,7 +150,7 @@ void requestParametersFromServer(WiFiUDP &udp, IPAddress serverIP, unsigned int 
         }
 
         if (parsedBaseFields >= 6) {
-            Serial.printf("[INFO] Received parameters: omega=%.2f, kappa=%.2f, center=%.1f, amplitude=%.1f, stop_id=%d, stop_delay=%d, light_gain=%.2f, light_omega_gain=%.2f, min_amp_ratio=%.2f, prc_n=%d (parsed_prc=%d)\n", omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, parsedPrcFields);
+            Serial.printf("[INFO] Received parameters: omega=%.2f, kappa=%.2f, center=%.1f, amplitude=%.1f, stop_id=%d, stop_delay=%d, feedback_tau=%.3f, light_tau=%.3f, light_gain=%.2f, light_omega_gain=%.2f, min_amp_ratio=%.2f, prc_n=%d (parsed_prc=%d)\n", omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, parsedPrcFields);
             printCurrentPrcSeries(prcHarmonics, prcCosCoeffs, prcSinCoeffs, prcMaxHarmonics);
         } else {
           Serial.printf("[WARN] Failed to parse all base parameters. Received: %s (parsed_base=%d, parsed_prc=%d)\n", originalBuffer, parsedBaseFields, parsedPrcFields);

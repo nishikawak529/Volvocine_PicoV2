@@ -5,20 +5,24 @@ import os
 import re
 
 omega_values = {
-    12: 3.14 * 2.45,    # エージェント1の周波数
+    12: 3.14 * 2.45,    # エージェント12の周波数
 }
 default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
 
+# 光センサ・フィードバック制御パラメータ (全エージェント共通)
+light_tau_sec = 1.0             # 光センサ一次遅れフィルタの時定数 [s] (0.0でフィルタなし)
+light_feedback_gain = 1.0       # 光センサによる振幅減衰ゲイン (0.0〜1.0)
+light_feedback_omega_gain = 0.0 # 光センサによる自然周波数ゲイン (正: 周波数低下, 負: 周波数増加)
+min_amplitude_ratio = 0.5       # 最小振幅倍率 (0.0〜1.0)
+
+feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
 kappa = -0       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
 stop_agent_id = 4      # 停止対象のエージェントID (0の場合はどのも停止しない等を意味づけることも可能)
 stop_delay_seconds = 30000 # 停止までの秒数
-feedback_tau_sec = 1.0  # 一次遅れフィルタの時定数 [s]
-light_feedback_gain = 1.0  # 光センサによる減衰ゲイン (0.0〜1.0)
-light_feedback_omega_gain = 0.0  # 光センサによる自然周波数フィードバックゲイン (正: 周波数低下, 負: 周波数増加)
-min_amplitude_ratio = 0.5  # 最小振幅倍率 (0.0〜1.0)
+
 
 
 
@@ -227,6 +231,7 @@ def handle_parameter_request(sock, data, addr):
                 f"center:{servo_center:.1f},amplitude:{servo_amplitude:.1f},"
                 f"stop_id:{stop_agent_id},stop_delay:{stop_delay_seconds},"
                 f"feedback_tau:{feedback_tau_sec:.3f},"
+                f"light_tau:{light_tau_sec:.3f},"
                 f"light_gain:{light_feedback_gain:.2f},"
                 f"light_omega_gain:{light_feedback_omega_gain:.2f},"
                 f"min_amp_ratio:{min_amplitude_ratio:.2f},"
