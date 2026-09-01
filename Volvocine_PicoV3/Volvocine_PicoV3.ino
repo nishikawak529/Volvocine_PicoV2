@@ -69,7 +69,6 @@ float t_delay;
 unsigned long prevLoopEndTime = 0;
 unsigned long prevLoopEndTime2 = 0;
 float phi = 0;
-float psi = 0; // サーボ制御用全位相積算値
 float omega = 3.0f * 3.14f;
 float kappa = 1.0f;  // フィードバックゲイン
 float kappa_init = 0.0f;
@@ -471,16 +470,14 @@ void logSensorData() {
   }
   float currentAmplitude = servoAmplitude * attenuationFactor;
 
-  // フィルタ後の光センサ値 (filteredLightRaw) に応じた自然周波数のフィードバック (ゲインが負の場合は周波数が増加)
-  float omegaMultiplier = 1.0f - (lightFeedbackOmegaGain * lightNorm);
-  if (omegaMultiplier < 0.0f) {
-    omegaMultiplier = 0.0f; // 負の周波数への反転を予防
-  }
-  float currentOmega = omega * omegaMultiplier;
-
-  // サーボ制御 (位相の積算計算)
+  // サーボ制御 (絶対時刻 elapsed を使用した基準位相 omega*t + 摂動 phi)
+  float psi = (float)elapsed / 1e6f * omega + phi;
   float zPrc = evaluatePRC(psi);
-  psi += (currentOmega + kappa_now * zPrc * flex) * ((float)dt / 1e6f);
+
+  // 摂動 phi の更新 (曲げセンサフィードバックと光センサフィードバックを同列に加算)
+  float lightPhaseEffect = - lightFeedbackOmegaGain * omega * lightNorm;
+  phi += (kappa_now * zPrc * flex + lightPhaseEffect) * ((float)dt / 1e6f);
+
   float currentCos = cosf(psi);
   myServo.write(servoCenter + currentAmplitude * currentCos);
 
@@ -513,8 +510,8 @@ void logSensorData() {
     entry.micros24_1 = (uint8_t)((m24 >> 8) & 0xFF);
     entry.micros24_2 = (uint8_t)((m24 >> 16) & 0xFF);
 
-    // analog0: psiを [0..2π) → 0..255 に圧縮
-    float phiMod = fmodf(psi, 2.0f * (float)M_PI);
+    // analog0: phiを [0..2π) → 0..255 に圧縮
+    float phiMod = fmodf((float)elapsed / 1e6f * omega + phi, 2.0f * (float)M_PI);
     if (phiMod < 0) phiMod += 2.0f * (float)M_PI;
     entry.analog0 = (uint8_t)(phiMod * (255.0f / (2.0f * (float)M_PI)));
 
@@ -652,7 +649,6 @@ void checkControlCommand() {
       resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録
-      psi = 0.0f; // 位相の積算を初期化
       lightFilterInitialized = false; // 光センサフィルタ初期化
       Serial.println("[INFO] Received START command from server.");
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
@@ -727,7 +723,6 @@ void loop() {
       resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録 
-      psi = 0.0f; // 位相の積算を初期化
       lightFilterInitialized = false; // 光センサフィルタ初期化
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
       startLoggingMicros += (unsigned long)(t_delay * 1e6f);
