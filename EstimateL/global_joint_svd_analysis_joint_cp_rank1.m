@@ -33,7 +33,7 @@ function all_global_results = global_joint_svd_analysis_joint_cp_rank1(round_dir
     linewidth_limit = 0.06;
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round6');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;

@@ -1,0 +1,796 @@
+[INFO] Rank-1 Network Sinusoidal-Sender Joint CP rank sweep
+  Model: C_fit(:,:,p) = sum_r Lambda(r)*ReceiverFactor(target(p),r)*SenderFactor(source(p),r)*A_r*B_r.'
+  Sender constraint: b_r(phi) = sqrt(2)*cos(phi - delta_r), delta_r in [0, pi)
+  Data directory: EstimateL\Round6
+  Fourier order M=10; requested ranks=[1 2 3 4 5 6 7 8 9 10]
+  NumStarts=20, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] C_tensor loaded: 21 x 21 x 28 (existing rank-1 MAT file), N=6 agents.
+[INFO] Theoretical Fundamental Mode Ceiling E_ceiling = 0.769702 (76.9702%)
+
+[NOTE] Validation tensor not provided.
+       Increases in training explained fraction cannot be definitively
+       attributed to avoiding overfitting; diagnostics must be evaluated.
+
+[RANK  1] total_exp= 61.451208%, fund_exp= 79.837619%, relres=6.2088e-01, J=1.4706e-02, start=6, iter=10
+[RANK  2] total_exp= 65.385139%, fund_exp= 84.948596%, relres=5.8834e-01, J=1.3205e-02, start=15, iter=87
+[RANK  3] total_exp= 68.677893%, fund_exp= 89.226553%, relres=5.5966e-01, J=1.1949e-02, start=15, iter=269
+[RANK  4] total_exp= 70.468434%, fund_exp= 91.552830%, relres=5.4343e-01, J=1.1266e-02, start=2, iter=297
+[RANK  5] total_exp= 71.854598%, fund_exp= 93.353739%, relres=5.3052e-01, J=1.0737e-02, start=2, iter=1000
+[RANK  6] total_exp= 73.206540%, fund_exp= 95.110187%, relres=5.1762e-01, J=1.0221e-02, start=1, iter=1000
+[RANK  7] total_exp= 74.160577%, fund_exp= 96.349674%, relres=5.0832e-01, J=9.8574e-03, start=7, iter=332
+[RANK  8] total_exp= 74.794227%, fund_exp= 97.172915%, relres=5.0205e-01, J=9.6157e-03, start=10, iter=1000
+[RANK  9] total_exp= 75.329135%, fund_exp= 97.867870%, relres=4.9670e-01, J=9.4116e-03, start=18, iter=583
+[RANK 10] total_exp= 75.862964%, fund_exp= 98.561421%, relres=4.9129e-01, J=9.2079e-03, start=20, iter=757
+
+[RESULT] Rank-1 Network Sinusoidal-Sender CP rank sweep
+  R= 1: total_exp= 61.451208%, fund_exp= 79.837619% (ceiling=76.9702%), increment= 61.4512 pp, relres=6.2088e-01, J=1.4706e-02, max_lambda=0.1741, status=optimized_start_6:converged
+  R= 2: total_exp= 65.385139%, fund_exp= 84.948596% (ceiling=76.9702%), increment=  3.9339 pp, relres=5.8834e-01, J=1.3205e-02, max_lambda=0.1365, status=optimized_start_15:converged
+  R= 3: total_exp= 68.677893%, fund_exp= 89.226553% (ceiling=76.9702%), increment=  3.2928 pp, relres=5.5966e-01, J=1.1949e-02, max_lambda=0.1543, status=optimized_start_15:converged
+  R= 4: total_exp= 70.468434%, fund_exp= 91.552830% (ceiling=76.9702%), increment=  1.7905 pp, relres=5.4343e-01, J=1.1266e-02, max_lambda=0.1530, status=optimized_start_2:converged
+  R= 5: total_exp= 71.854598%, fund_exp= 93.353739% (ceiling=76.9702%), increment=  1.3862 pp, relres=5.3052e-01, J=1.0737e-02, max_lambda=0.1902, status=optimized_start_2:max_iter
+  R= 6: total_exp= 73.206540%, fund_exp= 95.110187% (ceiling=76.9702%), increment=  1.3519 pp, relres=5.1762e-01, J=1.0221e-02, max_lambda=0.4879, status=optimized_start_1:max_iter
+  R= 7: total_exp= 74.160577%, fund_exp= 96.349674% (ceiling=76.9702%), increment=  0.9540 pp, relres=5.0832e-01, J=9.8574e-03, max_lambda=0.9042, status=optimized_start_7:objective_increase_rejected:2.162e-02
+  R= 8: total_exp= 74.794227%, fund_exp= 97.172915% (ceiling=76.9702%), increment=  0.6337 pp, relres=5.0205e-01, J=9.6157e-03, max_lambda=0.4423, status=optimized_start_10:max_iter
+  R= 9: total_exp= 75.329135%, fund_exp= 97.867870% (ceiling=76.9702%), increment=  0.5349 pp, relres=4.9670e-01, J=9.4116e-03, max_lambda=0.9546, status=optimized_start_18:objective_increase_rejected:2.505e-02
+  R=10: total_exp= 75.862964%, fund_exp= 98.561421% (ceiling=76.9702%), increment=  0.5338 pp, relres=4.9129e-01, J=9.2079e-03, max_lambda=0.3945, status=optimized_start_20:objective_increase_rejected:4.095e-02
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.49)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.63)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.43)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.63)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.64)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.43)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.61)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.60)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.58)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 3.13)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.59)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.62)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.56)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 0.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 2.95)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.57)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.65)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.61)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 0.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 2.92)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_6(\\phi) = \\sqrt{2}\\cos(\\phi - 2.97)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 3.02)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.68)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.69)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 0.76)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 1.26)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_6(\\phi) = \\sqrt{2}\\cos(\\phi - 3.14)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_7(\\phi) = \\sqrt{2}\\cos(\\phi - 3.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.47)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.72)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.88)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 1.05)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 2.92)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_6(\\phi) = \\sqrt{2}\\cos(\\phi - 0.24)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_7(\\phi) = \\sqrt{2}\\cos(\\phi - 0.08)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_8(\\phi) = \\sqrt{2}\\cos(\\phi - 0.72)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 2.36)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 1.57)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 0.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 0.54)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 2.22)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_6(\\phi) = \\sqrt{2}\\cos(\\phi - 0.63)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_7(\\phi) = \\sqrt{2}\\cos(\\phi - 0.63)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_8(\\phi) = \\sqrt{2}\\cos(\\phi - 0.90)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_9(\\phi) = \\sqrt{2}\\cos(\\phi - 0.46)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.83)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.88)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_3(\\phi) = \\sqrt{2}\\cos(\\phi - 2.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_4(\\phi) = \\sqrt{2}\\cos(\\phi - 0.00)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_5(\\phi) = \\sqrt{2}\\cos(\\phi - 0.25)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_6(\\phi) = \\sqrt{2}\\cos(\\phi - 2.34)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_7(\\phi) = \\sqrt{2}\\cos(\\phi - 0.66)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_8(\\phi) = \\sqrt{2}\\cos(\\phi - 0.51)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_9(\\phi) = \\sqrt{2}\\cos(\\phi - 0.83)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_10(\\phi) = \\sqrt{2}\\cos(\\phi - 0.64)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+
+[INFO] Results and figures saved under EstimateL\Round6\low_rank_analysis\M10\global_joint_cp_sinusoidal_sender_rank1_network_R1_R10
+
+=========================================================================
+       SUMMARY REPORT: RANK-1 NETWORK SINUSOIDAL-SENDER JOINT CP FIT
+=========================================================================
+
+1. EXPLAINED ENERGY & NETWORK CONSTRAINT LOSS:
+   - Theoretical Fundamental Mode Ceiling E_ceiling = 76.97%
+   - Rank-1 Network Model Rank-10 Explained Energy = 75.86%
+   - Fundamental Subspace Explained Energy E_R^{(1)} = 98.56%
+   - Free Network Model Rank-10 Explained Energy = 76.52%
+   - Loss due to Rank-1 Network Outer Product Constraint = 0.66 pp
+
+2. RANK SWEEP TRAJECTORY:
+   - Rank 1 Explained Energy: 61.45%
+   - Rank 10 Explained Energy: 75.86% (+14.41 pp total gain)
+     * Rank  1 ->  2: +3.9339 pp
+     * Rank  2 ->  3: +3.2928 pp
+     * Rank  3 ->  4: +1.7905 pp
+     * Rank  4 ->  5: +1.3862 pp
+     * Rank  5 ->  6: +1.3519 pp
+     * Rank  6 ->  7: +0.9540 pp
+     * Rank  7 ->  8: +0.6337 pp
+     * Rank  8 ->  9: +0.5349 pp
+     * Rank  9 -> 10: +0.5338 pp
+
+3. MAXIMUM RANK (R=10) COMPONENT PARAMETERS:
+   - Component  1: \lambda_r = 0.1116, \delta_r =  47.6 deg, max_pair=10-11, N_eff^{edge}=8.17, N_eff^{recv}=2.54, N_eff^{send}=3.87
+   - Component  2: \lambda_r = 0.0694, \delta_r =  50.3 deg, max_pair=8-9, N_eff^{edge}=2.77, N_eff^{recv}=1.30, N_eff^{send}=2.99
+   - Component  3: \lambda_r = 0.0385, \delta_r = 114.4 deg, max_pair=10-12, N_eff^{edge}=17.81, N_eff^{recv}=4.25, N_eff^{send}=4.39
+   - Component  4: \lambda_r = 0.3553, \delta_r =   0.0 deg, max_pair=7-11, N_eff^{edge}=1.79, N_eff^{recv}=1.19, N_eff^{send}=1.53
+   - Component  5: \lambda_r = 0.1124, \delta_r =  14.2 deg, max_pair=7-10, N_eff^{edge}=5.27, N_eff^{recv}=1.39, N_eff^{send}=4.50
+   - Component  6: \lambda_r = 0.1246, \delta_r = 133.8 deg, max_pair=7-11, N_eff^{edge}=1.24, N_eff^{recv}=2.01, N_eff^{send}=1.09
+   - Component  7: \lambda_r = 0.1327, \delta_r =  37.9 deg, max_pair=7-10, N_eff^{edge}=5.79, N_eff^{recv}=1.80, N_eff^{send}=4.18
+   - Component  8: \lambda_r = 0.3945, \delta_r =  29.4 deg, max_pair=7-11, N_eff^{edge}=1.36, N_eff^{recv}=1.68, N_eff^{send}=1.26
+   - Component  9: \lambda_r = 0.2231, \delta_r =  47.6 deg, max_pair=7-11, N_eff^{edge}=1.36, N_eff^{recv}=1.39, N_eff^{send}=1.88
+   - Component 10: \lambda_r = 0.0726, \delta_r =  36.9 deg, max_pair=8-9, N_eff^{edge}=4.89, N_eff^{recv}=1.66, N_eff^{send}=4.13
+
+4. RECOMMENDED MODEL ORDER & RATIONALE:
+   - Recommended CP Rank R = 6
+   - Rationale: R=6 balances explained energy (73.21%) with incremental gain (1.35 pp) and parameter parsimony.
+
+=========================================================================
+

@@ -24,7 +24,7 @@ function rank_sweep_results = global_joint_cp_rank_sweep_component_weights( ...
 %       'TensorMatFile', 'path/to/global_joint_cp_rank1_fit.mat');
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round6');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -1586,6 +1586,10 @@ function paths = make_output_paths(output_dir, maximum_rank)
         '%s_rank%d_weights_heatmap.png', prefix, maximum_rank));
     paths.max_rank_weights_fig = fullfile(output_dir, sprintf( ...
         '%s_rank%d_weights_heatmap.fig', prefix, maximum_rank));
+    paths.network_all_png = fullfile(output_dir, sprintf( ...
+        '%s_rank%d_all_components_network.png', prefix, maximum_rank));
+    paths.network_all_fig = fullfile(output_dir, sprintf( ...
+        '%s_rank%d_all_components_network.fig', prefix, maximum_rank));
 end
 
 function save_rank_sweep_outputs(rank_sweep_results, opts)
@@ -1768,26 +1772,14 @@ function save_rank_sweep_outputs(rank_sweep_results, opts)
     saveas(fig_direction,paths.per_direction_png);
     savefig(fig_direction,paths.per_direction_fig);
 
-    fig_weights = figure('Color','w','Position',[100,100,950,650], ...
-        'Visible',figure_visibility);
-    ax = axes(fig_weights);
-    imagesc(ax,maximum_fit.W);
-    colormap(ax,make_diverging_colormap(256));
-    colorbar(ax);
-    xlabel(ax,'Component (ordered by ||W(:,r)||_2)');
-    ylabel(ax,'Directed interaction');
-    xticks(ax,1:Rmax);
-    yticks(ax,1:P);
-    yticklabels(ax,labels);
-    title(ax,{sprintf('Rank-%d component-specific direction weights',Rmax), ...
-        'Component signs and permutations are intrinsically non-identifiable'});
-    saveas(fig_weights,paths.max_rank_weights_png);
-    savefig(fig_weights,paths.max_rank_weights_fig);
-
-    % Export per-component profile 2-panel plots for maximum rank fit
+    % Export figures for ALL fitted ranks in the sweep
     prefix = 'global_joint_cp_component_weights_rank_sweep';
+    output_dir = rank_sweep_results.output_dir;
     phi_grid = rank_sweep_results.phi_grid;
     interaction_meta = rank_sweep_results.interaction_meta;
+    unique_agents = rank_sweep_results.unique_agents;
+    round_dir = round_dir_from_results(rank_sweep_results);
+
     legend_labels = cell(1, P);
     for p = 1:P
         legend_labels{p} = sprintf('%s (%d->%d)', ...
@@ -1795,65 +1787,283 @@ function save_rank_sweep_outputs(rank_sweep_results, opts)
             interaction_meta(p).target_id);
     end
 
-    fig_comp_list = cell(1, Rmax);
-    for r = 1:Rmax
-        a_r = maximum_fit.a_values(:, r);
-        b_r = maximum_fit.b_values(:, r);
-        W_r = maximum_fit.W(:, r);
+    for k = 1:numel(fits)
+        current_fit = fits(k);
+        R = current_fit.rank;
 
-        fig_comp = figure('Color', 'w', 'Position', [100, 100, 1000, 460], ...
-            'Visible', figure_visibility);
-        t_lay = tiledlayout(fig_comp, 1, 2, ...
-            'TileSpacing', 'compact', 'Padding', 'compact');
-        title(t_lay, sprintf('Global Joint CP Component %d of %d', r, Rmax), ...
-            'FontWeight', 'bold', 'FontSize', 12);
+        % 1) Direction weights heatmap for Rank R
+        fig_weights = figure('Color','w','Position',[100,100,950,650], ...
+            'Visible',figure_visibility);
+        ax_w = axes(fig_weights);
+        imagesc(ax_w, current_fit.W);
+        colormap(ax_w, make_diverging_colormap(256));
+        colorbar(ax_w);
+        xlabel(ax_w, 'Component (ordered by ||W(:,r)||_2)');
+        ylabel(ax_w, 'Directed interaction');
+        xticks(ax_w, 1:R);
+        yticks(ax_w, 1:P);
+        yticklabels(ax_w, labels);
+        title(ax_w, {sprintf('Rank-%d component-specific direction weights', R), ...
+            'Component signs and permutations are intrinsically non-identifiable'});
 
-        ax_in = nexttile(t_lay, 1);
-        hold(ax_in, 'on'); grid(ax_in, 'on'); box(ax_in, 'on');
-        plot(ax_in, phi_grid, a_r, 'LineWidth', 2.8, ...
-            'Color', [0, 0.447, 0.741]);
-        ylabel(ax_in, 'a (Shared Receiver)', 'FontWeight', 'bold');
-        xlabel(ax_in, '\phi_{target} (Receiver Phase)');
-        set_phase_axis(ax_in);
-        legend(ax_in, {sprintf('Shared Receiver Profile a_%d(\\phi)', r)}, ...
-            'Location', 'best', 'FontSize', 8);
-        title(ax_in, sprintf('Shared Receiver Profile a_%d(\\phi)', r));
-
-        ax_out = nexttile(t_lay, 2);
-        hold(ax_out, 'on'); grid(ax_out, 'on'); box(ax_out, 'on');
-        for p = 1:P
-            plot(ax_out, phi_grid, W_r(p) * b_r, ...
-                'LineWidth', 1.5, 'Color', colors(p, :));
+        weights_png = fullfile(output_dir, sprintf('%s_rank%d_weights_heatmap.png', prefix, R));
+        weights_fig = fullfile(output_dir, sprintf('%s_rank%d_weights_heatmap.fig', prefix, R));
+        saveas(fig_weights, weights_png);
+        savefig(fig_weights, weights_fig);
+        if ~opts.keep_figures
+            close(fig_weights);
         end
-        mean_weight = mean(abs(W_r));
-        plot(ax_out, phi_grid, mean_weight * b_r, ...
-            'k--', 'LineWidth', 3.0);
-        ylabel(ax_out, 'W_{pr} b_r (Directed Senders)', 'FontWeight', 'bold');
-        xlabel(ax_out, '\phi_{source} (Sender Phase)');
-        set_phase_axis(ax_out);
-        legend(ax_out, [legend_labels, {'Shared Sender (mean |W_{pr}| scale)'}], ...
-            'Location', 'eastoutside', 'FontSize', 7, 'Interpreter', 'none');
-        title(ax_out, sprintf('Direction-scaled Shared Sender Profiles W_{p,%d} b_%d(\\phi)', r, r));
 
-        comp_png = fullfile(rank_sweep_results.output_dir, sprintf( ...
-            '%s_rank%d_component%d_profiles.png', prefix, Rmax, r));
-        comp_fig = fullfile(rank_sweep_results.output_dir, sprintf( ...
-            '%s_rank%d_component%d_profiles.fig', prefix, Rmax, r));
-        saveas(fig_comp, comp_png);
-        savefig(fig_comp, comp_fig);
-        fig_comp_list{r} = fig_comp;
+        % 2) All-components Network Summary Figure for Rank R
+        fig_net_all = figure('Color', 'w', ...
+            'Position', [100, 100, 1000, max(360, 340 * ceil(R/2))], ...
+            'Visible', figure_visibility);
+        n_rows_net = ceil(R / 2);
+        n_cols_net = min(R, 2);
+        t_lay_net = tiledlayout(fig_net_all, n_rows_net, n_cols_net, ...
+            'TileSpacing', 'compact', 'Padding', 'compact');
+        title(t_lay_net, sprintf('Rank-%d Fit: Network Graphs per Component', R), ...
+            'FontWeight', 'bold', 'FontSize', 13);
+
+        for r = 1:R
+            ax_net_single = nexttile(t_lay_net, r);
+            W_r = current_fit.W(:, r);
+            plot_component_network_graph(ax_net_single, interaction_meta, ...
+                W_r, r, unique_agents, round_dir);
+        end
+        net_all_png = fullfile(output_dir, sprintf('%s_rank%d_all_components_network.png', prefix, R));
+        net_all_fig = fullfile(output_dir, sprintf('%s_rank%d_all_components_network.fig', prefix, R));
+        saveas(fig_net_all, net_all_png);
+        savefig(fig_net_all, net_all_fig);
+        if ~opts.keep_figures
+            close(fig_net_all);
+        end
+
+        % 3) Individual 3-Panel Component Plots (a_r, W_{pr}b_r, Network Graph) for Rank R
+        for r = 1:R
+            a_r = current_fit.a_values(:, r);
+            b_r = current_fit.b_values(:, r);
+            W_r = current_fit.W(:, r);
+
+            fig_comp = figure('Color', 'w', 'Position', [100, 100, 1400, 420], ...
+                'Visible', figure_visibility);
+            t_lay = tiledlayout(fig_comp, 1, 3, ...
+                'TileSpacing', 'compact', 'Padding', 'compact');
+            title(t_lay, sprintf('Global Joint CP Component %d of %d (Rank-%d Fit)', ...
+                r, R, R), 'FontWeight', 'bold', 'FontSize', 12);
+
+            % Panel 1: Shared Receiver Profile a_r(phi)
+            ax_in = nexttile(t_lay, 1);
+            hold(ax_in, 'on'); grid(ax_in, 'on'); box(ax_in, 'on');
+            plot(ax_in, phi_grid, a_r, 'LineWidth', 2.8, ...
+                'Color', [0, 0.447, 0.741]);
+            ylabel(ax_in, 'a (Shared Receiver)', 'FontWeight', 'bold');
+            xlabel(ax_in, '\phi_{target} (Receiver Phase)');
+            set_phase_axis(ax_in);
+            legend(ax_in, {sprintf('Shared Receiver Profile a_%d(\\phi)', r)}, ...
+                'Location', 'best', 'FontSize', 8);
+            title(ax_in, sprintf('Shared Receiver Profile a_%d(\\phi)', r));
+
+            % Panel 2: Direction-scaled Shared Sender Profiles W_{pr} b_r(phi)
+            ax_out = nexttile(t_lay, 2);
+            hold(ax_out, 'on'); grid(ax_out, 'on'); box(ax_out, 'on');
+            for p = 1:P
+                plot(ax_out, phi_grid, W_r(p) * b_r, ...
+                    'LineWidth', 1.5, 'Color', colors(p, :));
+            end
+            mean_weight = mean(abs(W_r));
+            plot(ax_out, phi_grid, mean_weight * b_r, ...
+                'k--', 'LineWidth', 3.0);
+            ylabel(ax_out, 'W_{pr} b_r (Directed Senders)', 'FontWeight', 'bold');
+            xlabel(ax_out, '\phi_{source} (Sender Phase)');
+            set_phase_axis(ax_out);
+            legend(ax_out, [legend_labels, {'Shared Sender (mean |W_{pr}| scale)'}], ...
+                'Location', 'eastoutside', 'FontSize', 7, 'Interpreter', 'none');
+            title(ax_out, sprintf('Direction-scaled Shared Sender W_{p,%d} b_%d(\\phi)', r, r));
+
+            % Panel 3: Network Graph for Component r
+            ax_net = nexttile(t_lay, 3);
+            plot_component_network_graph(ax_net, interaction_meta, ...
+                W_r, r, unique_agents, round_dir);
+
+            comp_png = fullfile(output_dir, sprintf( ...
+                '%s_rank%d_component%d_profiles.png', prefix, R, r));
+            comp_fig = fullfile(output_dir, sprintf( ...
+                '%s_rank%d_component%d_profiles.fig', prefix, R, r));
+            saveas(fig_comp, comp_png);
+            savefig(fig_comp, comp_fig);
+            if ~opts.keep_figures
+                close(fig_comp);
+            end
+        end
     end
 
     save(paths.results_mat, 'rank_sweep_results', '-v7.3');
     if ~opts.keep_figures
         close(fig_summary);
         close(fig_direction);
-        close(fig_weights);
-        for r = 1:Rmax
-            if ishandle(fig_comp_list{r})
-                close(fig_comp_list{r});
-            end
+    end
+end
+
+function round_dir = round_dir_from_results(rank_sweep_results)
+    round_dir = '';
+    if isfield(rank_sweep_results, 'output_dir') && ~isempty(rank_sweep_results.output_dir)
+        round_dir = rank_sweep_results.output_dir;
+    elseif isfield(rank_sweep_results, 'options') && isfield(rank_sweep_results.options, 'cache_dir')
+        round_dir = rank_sweep_results.options.cache_dir;
+    end
+end
+
+function plot_component_network_graph(ax, interaction_meta, W_r, r, unique_agents, round_dir)
+    % PLOT_COMPONENT_NETWORK_GRAPH Plot directed network graph for component r matching common-shape style
+    P = numel(interaction_meta);
+    source_ids = zeros(P, 1);
+    target_ids = zeros(P, 1);
+    for p = 1:P
+        source_ids(p) = interaction_meta(p).source_id;
+        target_ids(p) = interaction_meta(p).target_id;
+    end
+
+    node_names = arrayfun(@(id) sprintf('%d', id), unique_agents(:), ...
+        'UniformOutput', false);
+    source_names = arrayfun(@(id) sprintf('%d', id), source_ids, ...
+        'UniformOutput', false);
+    target_names = arrayfun(@(id) sprintf('%d', id), target_ids, ...
+        'UniformOutput', false);
+
+    graph_data = digraph(source_names, target_names, W_r(:), node_names);
+    [x_data, y_data] = get_preferred_node_positions(graph_data, round_dir);
+
+    graph_plot = plot(ax, graph_data, 'XData', x_data, 'YData', y_data, ...
+        'NodeLabel', {}, 'ArrowSize', 16, 'ArrowPosition', 0.75, ...
+        'MarkerSize', 8, 'NodeColor', [0.15, 0.15, 0.15], ...
+        'EdgeColor', [0.0, 0.4470, 0.7410]);
+
+    axis(ax, 'equal');
+    margin = 0.45;
+    rx = max(x_data, [], 'omitnan') - min(x_data, [], 'omitnan') + 2*margin;
+    ry = max(y_data, [], 'omitnan') - min(y_data, [], 'omitnan') + 2*margin;
+    max_r = max(rx, ry);
+    cx = (min(x_data, [], 'omitnan') + max(x_data, [], 'omitnan')) / 2;
+    cy = (min(y_data, [], 'omitnan') + max(y_data, [], 'omitnan')) / 2;
+    xlim(ax, [cx - max_r/2, cx + max_r/2]);
+    ylim(ax, [cy - max_r/2, cy + max_r/2]);
+
+    title(ax, sprintf('Component %d Network (W_{p,%d})', r, r), ...
+        'FontSize', 10, 'FontWeight', 'bold');
+
+    if numedges(graph_data) > 0
+        max_abs_w = max(abs(graph_data.Edges.Weight));
+        clim_limit = max(0.1, max_abs_w);
+        linewidth_limit = max(0.06, max_abs_w);
+
+        graph_plot.LineWidth = scale_edge_width( ...
+            abs(graph_data.Edges.Weight), linewidth_limit);
+        graph_plot.EdgeCData = graph_data.Edges.Weight;
+        graph_plot.EdgeColor = 'flat';
+        clim(ax, [-clim_limit, clim_limit]);
+        colormap(ax, make_diverging_colormap(256));
+        cb = colorbar(ax);
+        cb.Label.String = sprintf('W_{p,%d}', r);
+    end
+
+    draw_edge_labels(ax, graph_data, x_data, y_data);
+    draw_node_labels(ax, graph_data, x_data, y_data);
+    axis(ax, 'off');
+end
+
+function [x_data, y_data] = get_preferred_node_positions(G, round_dir)
+    node_names = G.Nodes.Name;
+    if isstring(node_names), node_names = cellstr(node_names); end
+    node_ids = cellfun(@str2double, node_names);
+    x_data = nan(1, numnodes(G));
+    y_data = nan(1, numnodes(G));
+
+    is_round6 = (nargin >= 2 && contains(lower(round_dir), 'round6')) || ...
+        all(ismember([7, 8, 9, 10, 11, 12], node_ids));
+
+    if is_round6
+        % Hexagonal arrangement for Round 6 (7..12):
+        %    9   12
+        %  8        11
+        %    7   10
+        preferred_ids = [7, 8, 9, 10, 11, 12];
+        preferred_x   = [1.5, 1.0, 1.5, 2.5, 3.0, 2.5];
+        preferred_y   = [1.0, 2.0, 3.0, 1.0, 2.0, 3.0];
+    else
+        % Standard 4-agent layout (7, 8, 9, 10):
+        % 8  10
+        % 7   9
+        preferred_ids = [8, 10, 7, 9];
+        preferred_x   = [1, 2, 1, 2];
+        preferred_y   = [2, 2, 1, 1];
+    end
+
+    for k = 1:numel(preferred_ids)
+        idx = find(node_ids == preferred_ids(k), 1, 'first');
+        if ~isempty(idx)
+            x_data(idx) = preferred_x(k);
+            y_data(idx) = preferred_y(k);
         end
+    end
+    missing = ~isfinite(x_data) | ~isfinite(y_data);
+    if any(missing)
+        angles = linspace(0, 2*pi, nnz(missing)+1);
+        cx = mean(x_data(~missing), 'omitnan');
+        cy = mean(y_data(~missing), 'omitnan');
+        if ~isfinite(cx), cx = 2.0; end
+        if ~isfinite(cy), cy = 2.0; end
+        x_data(missing) = cx + 1.0*cos(angles(1:end-1));
+        y_data(missing) = cy + 1.0*sin(angles(1:end-1));
+    end
+end
+
+function widths = scale_edge_width(weights, max_limit)
+    clamped = min(max(double(weights(:)), 0), max_limit);
+    widths = 1.0 + 5.0 * clamped / max_limit;
+end
+
+function draw_edge_labels(ax, G, x_data, y_data)
+    offset = 0.08;
+    for edge = 1:numedges(G)
+        source = G.Edges.EndNodes{edge, 1};
+        target = G.Edges.EndNodes{edge, 2};
+        source_idx = find(strcmp(G.Nodes.Name, source), 1);
+        target_idx = find(strcmp(G.Nodes.Name, target), 1);
+        dx = x_data(target_idx) - x_data(source_idx);
+        dy = y_data(target_idx) - y_data(source_idx);
+        edge_length = hypot(dx, dy);
+        if edge_length > 0
+            x_label = x_data(source_idx) + 0.35*dx + offset*dy/edge_length;
+            y_label = y_data(source_idx) + 0.35*dy - offset*dx/edge_length;
+        else
+            x_label = x_data(source_idx);
+            y_label = y_data(source_idx) + offset;
+        end
+        text(ax, x_label, y_label, sprintf('%.3g', G.Edges.Weight(edge)), ...
+            'FontSize', 9, 'Color', [0.1, 0.1, 0.1], ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+            'BackgroundColor', 'w', 'Margin', 1);
+    end
+end
+
+function draw_node_labels(ax, G, x_data, y_data)
+    node_offset = 0.12;
+    for node = 1:numnodes(G)
+        dx = x_data(node) - 1.5;
+        dy = y_data(node) - 1.5;
+        radial_length = hypot(dx, dy);
+        if radial_length > 0
+            x_label = x_data(node) + node_offset*dx/radial_length;
+            y_label = y_data(node) + node_offset*dy/radial_length;
+        else
+            x_label = x_data(node);
+            y_label = y_data(node) + node_offset;
+        end
+        text(ax, x_label, y_label, G.Nodes.Name{node}, ...
+            'FontSize', 12, 'FontWeight', 'bold', ...
+            'Color', [0.15, 0.15, 0.15], ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
     end
 end
 

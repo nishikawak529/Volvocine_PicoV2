@@ -24,7 +24,7 @@ function rank_sweep_results = global_joint_common_shape_rank_sweep(round_dir, M,
 %   RandomSeed = 0
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round6');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;

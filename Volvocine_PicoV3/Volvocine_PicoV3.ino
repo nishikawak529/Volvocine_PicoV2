@@ -69,6 +69,7 @@ float t_delay;
 unsigned long prevLoopEndTime = 0;
 unsigned long prevLoopEndTime2 = 0;
 float phi = 0;
+float psi = 0; // サーボ制御用全位相積算値
 float omega = 3.0f * 3.14f;
 float kappa = 1.0f;  // フィードバックゲイン
 float kappa_init = 0.0f;
@@ -86,8 +87,10 @@ float servoCenter = 110.0f;    // サーボ中心角度のデフォルト値
 float servoAmplitude = 60.0f; // サーボ振幅のデフォルト値
 
 // 光センサフィードバック用パラメータ
-float lightFeedbackGain = 1.0f;  // 光センサによる減衰ゲイン (0.0〜1.0)
-float minAmplitudeRatio = 0.1f;   // 最小振幅倍率 (元の振幅の10%を下限とする)
+float lightFeedbackGain = 1.0f;       // 光センサによる振幅減衰ゲイン (0.0〜1.0)
+float lightFeedbackOmegaGain = 0.0f;  // 光センサによる自然周波数フィードバックゲイン (正: 周波数低下, 負: 周波数増加)
+float minAmplitudeRatio = 0.1f;        // 最小振幅倍率 (元の振幅の10%を下限とする)
+
 
 // 停止制御用パラメータ (サーバーから受信)
 int stopAgentId = 0; // 停止対象のエージェントID (0は特殊な意味を持つ場合など)
@@ -449,10 +452,16 @@ void logSensorData() {
   }
   float currentAmplitude = servoAmplitude * attenuationFactor;
 
-  // サーボ制御
-  float psi = (float)elapsed / 1e6f * omega + phi;
+  // 光センサ値 (raw3) に応じた自然周波数のフィードバック (ゲインが負の場合は周波数が増加)
+  float omegaMultiplier = 1.0f - (lightFeedbackOmegaGain * lightNorm);
+  if (omegaMultiplier < 0.0f) {
+    omegaMultiplier = 0.0f; // 負の周波数への反転を予防
+  }
+  float currentOmega = omega * omegaMultiplier;
+
+  // サーボ制御 (位相の積算計算)
   float zPrc = evaluatePRC(psi);
-  phi += (kappa_now * zPrc * flex) * (float)dt / 1e6f;
+  psi += (currentOmega + kappa_now * zPrc * flex) * ((float)dt / 1e6f);
   float currentCos = cosf(psi);
   myServo.write(servoCenter + currentAmplitude * currentCos);
 
@@ -485,8 +494,8 @@ void logSensorData() {
     entry.micros24_1 = (uint8_t)((m24 >> 8) & 0xFF);
     entry.micros24_2 = (uint8_t)((m24 >> 16) & 0xFF);
 
-    // analog0: phiを [0..2π) → 0..255 に圧縮
-    float phiMod = fmodf((float)elapsed / 1e6f * omega + phi, 2.0f * (float)M_PI);
+    // analog0: psiを [0..2π) → 0..255 に圧縮
+    float phiMod = fmodf(psi, 2.0f * (float)M_PI);
     if (phiMod < 0) phiMod += 2.0f * (float)M_PI;
     entry.analog0 = (uint8_t)(phiMod * (255.0f / (2.0f * (float)M_PI)));
 
@@ -589,7 +598,7 @@ void setup() {
   Serial.printf("Loaded agent_id: %d\n", agent_id);
 
   // 最初はメインポート（5000）でパラメータリクエスト
-  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
 
   // パラメータ取得後、専用ポートに切り替え
   serverPort = agentPort;
@@ -624,6 +633,7 @@ void checkControlCommand() {
       resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録
+      psi = 0.0f; // 位相の積算を初期化
       Serial.println("[INFO] Received START command from server.");
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
       startLoggingMicros += (unsigned long)(t_delay * 1e6f);
@@ -690,13 +700,14 @@ void loop() {
       // サーバーにパラメータをリクエスト（一時的にメインポートを使用）
       unsigned int tempPort = serverPort;
       serverPort = 5000; // メインポートに一時切り替え
-      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
       serverPort = tempPort; // 専用ポートに戻す
       lastRequestTime = millis();  // リクエスト送信時刻を記録
     } else{
       resetPowerAccumulator();
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録 
+      psi = 0.0f; // 位相の積算を初期化
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
       startLoggingMicros += (unsigned long)(t_delay * 1e6f);
     }
@@ -713,7 +724,7 @@ void loop() {
     // パラメータリクエスト時は一時的にメインポートを使用
     unsigned int tempPort = serverPort;
     serverPort = 5000; // メインポートに一時切り替え
-    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
     serverPort = tempPort; // 専用ポートに戻す
     lastRequestTime = millis();  // リクエスト送信時刻を更新
   }

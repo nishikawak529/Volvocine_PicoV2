@@ -1,0 +1,2 @@
+CompRank,CompIndex,LambdaVal,DeltaRad,DeltaDeg,ComponentEnergyFraction,DropOneMetric,RecvLocalization,RecvEffectiveAgents,SendLocalization,SendEffectiveAgents,MaxDirectionShare,EffectiveDirections,DominantInteractionIndex,DominantPairName,DominantSourceID,DominantTargetID
+1,1,0.174146590884523,0.489106009865164,28.0237100997579,0.614512082143047,0.614512082143046,0.301208822070051,5.15055369186596,0.277345210749016,5.14217740394052,0.090731169797681,21.8230310067483,8,7-10,7,10

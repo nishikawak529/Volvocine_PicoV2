@@ -1,0 +1,85 @@
+[INFO] Sinusoidal-Sender Joint CP rank sweep
+  Model: C_fit(:,:,p) = sum_r W(p,r) * A_r * B_r.'
+  Sender constraint: b_r(phi) = sqrt(2)*cos(phi - delta_r), delta_r in [0, pi)
+  Data directory: EstimateL\Round6
+  Fourier order M=10; requested ranks=[1 2]
+  NumStarts=2, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] C_tensor loaded: 21 x 21 x 28 (existing rank-1 MAT file).
+[INFO] Theoretical Fundamental Mode Ceiling E_ceiling = 0.769702 (76.9702%)
+
+[NOTE] Validation tensor not provided.
+       Increases in training explained fraction cannot be definitively
+       attributed to avoiding overfitting; diagnostics (numerical degeneracy,
+       localization, cancellation, start dependency) must be evaluated.
+
+[RANK  1] total_exp= 64.456628%, fund_exp= 83.742271%, relres=5.9618e-01, J=1.3559e-02, start=1, iter=3
+[RANK  2] total_exp= 68.082061%, fund_exp= 88.452445%, relres=5.6496e-01, J=1.2176e-02, start=2, iter=272
+
+[RESULT] Sinusoidal-Sender CP rank sweep
+  R= 1: total_exp= 64.456628%, fund_exp= 83.742271% (ceiling=76.9702%), increment= 64.4566 pp, relres=5.9618e-01, J=1.3559e-02, max|W|=0.05, rcond=1.00e+00, status=optimized_start_1:converged;weight_solver=normal_equations
+  R= 2: total_exp= 68.082061%, fund_exp= 88.452445% (ceiling=76.9702%), increment=  3.6254 pp, relres=5.6496e-01, J=1.2176e-02, max|W|=0.05, rcond=2.12e-01, status=optimized_start_2:converged;weight_solver=normal_equations
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.51)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration/ColorBar/get.Label 内
+global_joint_cp_rank_sweep_sinusoidal_sender>plot_component_network_graph (行 1778) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>save_rank_sweep_outputs_sinusoidal (行 1668) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 218) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.44)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration/ColorBar/get.Label 内
+global_joint_cp_rank_sweep_sinusoidal_sender>plot_component_network_graph (行 1778) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>save_rank_sweep_outputs_sinusoidal (行 1668) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 218) 内] 
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_2(\\phi) = \\sqrt{2}\\cos(\\phi - 0.71)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration/ColorBar/get.Label 内
+global_joint_cp_rank_sweep_sinusoidal_sender>plot_component_network_graph (行 1778) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>save_rank_sweep_outputs_sinusoidal (行 1668) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 218) 内] 
+
+[INFO] Results and figures saved under EstimateL\Round6\low_rank_analysis\M10\global_joint_cp_sinusoidal_sender_rank_sweep_R1_R2
+
+=========================================================================
+           SUMMARY REPORT: SINUSOIDAL-SENDER JOINT CP FIT
+=========================================================================
+
+1. EXPLAINED ENERGY LOSS FROM SINUSOIDAL SENDER CONSTRAINT:
+   - Theoretical Fundamental Mode Ceiling E_ceiling = 76.97%
+   - Constrained Sinusoidal Model Rank-2 Explained Energy = 68.08%
+   - Fundamental Subspace Explained Energy E_R^{(1)} = 88.45%
+   - Remaining gap to theoretical fundamental ceiling = 8.89 pp
+
+2. RANK SWEEP IMPROVEMENT TRAJECTORY:
+   - Rank 1 Explained Energy: 64.46%
+   - Rank 2 Explained Energy: 68.08% (+3.63 pp total gain)
+     * Rank  1 ->  2: +3.6254 pp
+
+3. COMPONENT DIRECTIONAL LOCALIZATION & SHARE:
+   - Component  1: max_share=14.81% (7-10 7->10), N_eff=13.52, \delta_r=25.4 deg
+   - Component  2: max_share=23.23% (7-10 10->7), N_eff=9.10, \delta_r=40.7 deg
+   -> Observation: Components are distributed across multiple interactions (mean N_eff = 11.31).
+
+4. CONDITIONING, LARGE WEIGHTS & COMPONENT CANCELLATION:
+   - Max |W_{pr}| = 0.05, ||W||_F = 0.15
+   - Gram Matrix rcond(D^T D) = 2.12e-01
+   - Max Atom Pair Similarity = 0.6506
+   - Cancellation Index \kappa_{cancel} = 0.81
+   -> Observation: Model parameters are well-conditioned without severe cancellation.
+
+5. INDEPENDENT VALIDATION EVALUATION:
+   - No independent validation tensor provided.
+   -> Note: Training explained energy gains cannot guarantee lack of overfitting.
+            Rely on diagnostics (Gram rcond, atom similarity, cancellation) to select rank.
+
+=========================================================================
+

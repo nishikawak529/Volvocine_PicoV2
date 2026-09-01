@@ -118,5 +118,5 @@ Rank   Objective      RelResidual    Explained(%)   Increment(pp) Start    Itera
 [INFO] Saved per-direction PNG/FIG: EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_per_direction_explained_vs_rank.png ; EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_per_direction_explained_vs_rank.fig
 [INFO] Saved maximum-rank graph PNG/FIG: EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank10_influence_graph.png ; EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank10_influence_graph.fig
 [INFO] Saved complete MAT results: EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10\global_joint_common_shape_rank_sweep_results.mat
-[INFO] Total runtime: 13.388 seconds
+[INFO] Total runtime: 6.840 seconds
 [INFO] Rank-sweep analysis completed: EstimateL\SStick\low_rank_analysis\M10\global_joint_common_shape_rank_sweep_R1_R10

@@ -17,7 +17,9 @@ stop_agent_id = 4      # 停止対象のエージェントID (0の場合はど�
 stop_delay_seconds = 30000 # 停止までの秒数
 feedback_tau_sec = 1.0  # 一次遅れフィルタの時定数 [s]
 light_feedback_gain = 1.0  # 光センサによる減衰ゲイン (0.0〜1.0)
+light_feedback_omega_gain = 0.0  # 光センサによる自然周波数フィードバックゲイン (正: 周波数低下, 負: 周波数増加)
 min_amplitude_ratio = 0.5  # 最小振幅倍率 (0.0〜1.0)
+
 
 
 # PRCのフーリエ係数（0..prc_harmonics を使用）
@@ -226,6 +228,7 @@ def handle_parameter_request(sock, data, addr):
                 f"stop_id:{stop_agent_id},stop_delay:{stop_delay_seconds},"
                 f"feedback_tau:{feedback_tau_sec:.3f},"
                 f"light_gain:{light_feedback_gain:.2f},"
+                f"light_omega_gain:{light_feedback_omega_gain:.2f},"
                 f"min_amp_ratio:{min_amplitude_ratio:.2f},"
                 f"{build_prc_payload()}"
             )

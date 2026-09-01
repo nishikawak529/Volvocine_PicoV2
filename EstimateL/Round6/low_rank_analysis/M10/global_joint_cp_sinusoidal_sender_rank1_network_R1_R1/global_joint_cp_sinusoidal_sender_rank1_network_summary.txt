@@ -1,0 +1,58 @@
+[INFO] Rank-1 Network Sinusoidal-Sender Joint CP rank sweep
+  Model: C_fit(:,:,p) = sum_r Lambda(r)*ReceiverFactor(target(p),r)*SenderFactor(source(p),r)*A_r*B_r.'
+  Sender constraint: b_r(phi) = sqrt(2)*cos(phi - delta_r), delta_r in [0, pi)
+  Data directory: EstimateL\Round6
+  Fourier order M=10; requested ranks=1
+  NumStarts=20, MaxIter=1000, Tol=1.000e-10, RandomSeed=0
+
+[INFO] C_tensor loaded: 21 x 21 x 28 (existing rank-1 MAT file), N=6 agents.
+[INFO] Theoretical Fundamental Mode Ceiling E_ceiling = 0.769702 (76.9702%)
+
+[NOTE] Validation tensor not provided.
+       Increases in training explained fraction cannot be definitively
+       attributed to avoiding overfitting; diagnostics must be evaluated.
+
+[RANK  1] total_exp= 61.451208%, fund_exp= 79.837619%, relres=6.2088e-01, J=1.4706e-02, start=6, iter=10
+
+[RESULT] Rank-1 Network Sinusoidal-Sender CP rank sweep
+  R= 1: total_exp= 61.451208%, fund_exp= 79.837619% (ceiling=76.9702%), increment= 61.4512 pp, relres=6.2088e-01, J=1.4706e-02, max_lambda=0.1741, status=optimized_start_6:converged
+[警告: SceneNode の状態にエラーがあります。
+string スカラーまたは文字ベクトルには有効なインタープリター構文がなければなりません:
+Shared Sender Profile b_1(\\phi) = \\sqrt{2}\\cos(\\phi - 0.49)
+] 
+[> defaulterrorcallback (行 12) 内
+matlab.graphics.illustration.ColorBar.get.Label 内
+matlab.graphics.illustration/ColorBar/get.YLabel 内
+labelcheck (行 82) 内
+xyzlabel (行 4) 内
+ylabel (行 7) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>plot_component_network_graph (行 2031) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network>save_rank_sweep_outputs_rank1_network (行 1923) 内
+global_joint_cp_rank_sweep_sinusoidal_sender_rank1_network (行 220) 内] 
+
+[INFO] Results and figures saved under EstimateL\Round6\low_rank_analysis\M10\global_joint_cp_sinusoidal_sender_rank1_network_R1_R1
+
+=========================================================================
+       SUMMARY REPORT: RANK-1 NETWORK SINUSOIDAL-SENDER JOINT CP FIT
+=========================================================================
+
+1. EXPLAINED ENERGY & NETWORK CONSTRAINT LOSS:
+   - Theoretical Fundamental Mode Ceiling E_ceiling = 76.97%
+   - Rank-1 Network Model Rank-1 Explained Energy = 61.45%
+   - Fundamental Subspace Explained Energy E_R^{(1)} = 79.84%
+   - Free Network Model Rank-1 Explained Energy = 76.52%
+   - Loss due to Rank-1 Network Outer Product Constraint = 15.07 pp
+
+2. RANK SWEEP TRAJECTORY:
+   - Rank 1 Explained Energy: 61.45%
+   - Rank 1 Explained Energy: 61.45% (+0.00 pp total gain)
+
+3. MAXIMUM RANK (R=1) COMPONENT PARAMETERS:
+   - Component  1: \lambda_r = 0.1741, \delta_r =  28.0 deg, max_pair=7-10, N_eff^{edge}=21.82, N_eff^{recv}=5.15, N_eff^{send}=5.14
+
+4. RECOMMENDED MODEL ORDER & RATIONALE:
+   - Recommended CP Rank R = 1
+   - Rationale: R=1 balances explained energy (61.45%) with incremental gain (61.45 pp) and parameter parsimony.
+
+=========================================================================
+
