@@ -95,6 +95,20 @@ float feedbackTauSec = 1.0f;           // (その他/元々の) 一次遅れフ�
 float filteredLightRaw = 0.0f;         // フィルタ処理後の光センサ値
 bool lightFilterInitialized = false;   // フィルタ初期化フラグ
 
+// 初期位相設定 (サーバーから取得)
+float initialPhase = 0.0f;             // 指定初期位相 [rad]
+bool isRandomInitialPhase = true;      // ランダムモードフラグ
+
+void applyInitialPhase() {
+  if (isRandomInitialPhase) {
+    phi = (rand() / (float)RAND_MAX) * 2.0f * (float)M_PI;
+    Serial.printf("[INFO] Applied random initial phase: phi=%.3f rad\n", phi);
+  } else {
+    phi = initialPhase;
+    Serial.printf("[INFO] Applied specified initial phase: phi=%.3f rad\n", phi);
+  }
+}
+
 
 // 停止制御用パラメータ (サーバーから受信)
 int stopAgentId = 0; // 停止対象のエージェントID (0は特殊な意味を持つ場合など)
@@ -614,7 +628,7 @@ void setup() {
   Serial.printf("Loaded agent_id: %d\n", agent_id);
 
   // 最初はメインポート（5000）でパラメータリクエスト
-  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
 
   // パラメータ取得後、専用ポートに切り替え
   serverPort = agentPort;
@@ -650,6 +664,7 @@ void checkControlCommand() {
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録
       lightFilterInitialized = false; // 光センサフィルタ初期化
+      applyInitialPhase(); // 初期位相を設定
       Serial.println("[INFO] Received START command from server.");
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
       startLoggingMicros += (unsigned long)(t_delay * 1e6f);
@@ -716,7 +731,7 @@ void loop() {
       // サーバーにパラメータをリクエスト（一時的にメインポートを使用）
       unsigned int tempPort = serverPort;
       serverPort = 5000; // メインポートに一時切り替え
-      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
       serverPort = tempPort; // 専用ポートに戻す
       lastRequestTime = millis();  // リクエスト送信時刻を記録
     } else{
@@ -724,6 +739,7 @@ void loop() {
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録 
       lightFilterInitialized = false; // 光センサフィルタ初期化
+      applyInitialPhase(); // 初期位相を設定
       t_delay = (rand() / (float)RAND_MAX) * wait_max;
       startLoggingMicros += (unsigned long)(t_delay * 1e6f);
     }
@@ -740,7 +756,7 @@ void loop() {
     // パラメータリクエスト時は一時的にメインポートを使用
     unsigned int tempPort = serverPort;
     serverPort = 5000; // メインポートに一時切り替え
-    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
     serverPort = tempPort; // 専用ポートに戻す
     lastRequestTime = millis();  // リクエスト送信時刻を更新
   }

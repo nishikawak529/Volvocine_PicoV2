@@ -15,6 +15,13 @@ light_feedback_gain = 1.0       # 光センサによる振幅減衰ゲイン (0.
 light_feedback_omega_gain = 0.0 # 光センサによる自然周波数ゲイン (正: 周波数低下, 負: 周波数増加)
 min_amplitude_ratio = 0.5       # 最小振幅倍率 (0.0〜1.0)
 
+# 初期位相設定 (エージェントIDごとに指定可能: "random" または 0.0〜6.28 などのラジアン数値)
+initial_phase_values = {
+    # 12: 0.0,      # エージェント12の初期位相 [rad]
+    # 1: "random",  # エージェント1はランダム
+}
+default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
+
 feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
 kappa = -0       # フィードバックゲイン
 alpha = -3.14*1.0
@@ -185,6 +192,12 @@ def get_omega_for_agent(agent_id):
     """
     return omega_values.get(agent_id, default_omega)
 
+def get_initial_phase_for_agent(agent_id):
+    """
+    エージェントIDに応じた初期位相設定 ("random" または 数値 [rad]) を取得する関数
+    """
+    return initial_phase_values.get(agent_id, default_initial_phase)
+
 def handle_handshake(sock, data, addr):
     """
     クライアントからのハンドシェイクメッセージに応答する関数。
@@ -222,8 +235,10 @@ def handle_parameter_request(sock, data, addr):
             if agent_id is None:
                 raise ValueError("missing id")
 
-            # エージェントIDに応じたomega値を取得
+            # エージェントIDに応じたomega値および初期位相を取得
             omega = get_omega_for_agent(agent_id)
+            init_phase_val = get_initial_phase_for_agent(agent_id)
+            init_phase_str = str(init_phase_val).strip()
 
             # サーバー側のパラメータを送信
             response = (
@@ -235,6 +250,7 @@ def handle_parameter_request(sock, data, addr):
                 f"light_gain:{light_feedback_gain:.2f},"
                 f"light_omega_gain:{light_feedback_omega_gain:.2f},"
                 f"min_amp_ratio:{min_amplitude_ratio:.2f},"
+                f"init_phase:{init_phase_str},"
                 f"{build_prc_payload()}"
             )
 
