@@ -5,15 +5,15 @@ import os
 import re
 
 omega_values = {
-    12: 3.14 * 2.45,    # エージェント12の周波数
+    12: 3.14 * 2.50,    # エージェント12の周波数
 }
 default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
 
 # 光センサ・フィードバック制御パラメータ (全エージェント共通)
-light_tau_sec = 1.0             # 光センサ一次遅れフィルタの時定数 [s] (0.0でフィルタなし)
-light_feedback_gain = 1.0       # 光センサによる振幅減衰ゲイン (0.0〜1.0)
-light_feedback_omega_gain = 0.0 # 光センサによる自然周波数ゲイン (正: 周波数低下, 負: 周波数増加)
-min_amplitude_ratio = 0.5       # 最小振幅倍率 (0.0〜1.0)
+light_tau_sec = 0.0             # 光センサ一次遅れフィルタの時定数 [s] (0.0でフィルタなし)
+light_feedback_gain = 2.0       # 光センサによる振幅減衰ゲイン (0.0〜1.0)
+light_feedback_omega_gain = -0.0 # 光センサによる自然周波数ゲイン (正: 周波数低下, 負: 周波数増加)
+min_amplitude_ratio = 0.6       # 最小振幅倍率 (0.0〜1.0)
 
 # 初期位相設定 (エージェントIDごとに指定可能: "random" または 0.0〜6.28 などのラジアン数値)
 initial_phase_values = {
@@ -23,7 +23,7 @@ initial_phase_values = {
 default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
 
 feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
-kappa = -0       # フィードバックゲイン
+kappa = 10       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
