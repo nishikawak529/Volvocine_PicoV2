@@ -46,7 +46,7 @@ PRC_SOURCE_DIR = os.environ.get(
     "PRC_SOURCE_DIR",
     os.path.join("gamma_exports")
 )
-PRC_SOURCE_FILE = "prc_snippet_ref_cos.txt"
+PRC_SOURCE_FILE = "prc_snippet_target_optimal_z.txt"
 
 
 def load_prc_from_directory(source_dir, source_file=PRC_SOURCE_FILE):

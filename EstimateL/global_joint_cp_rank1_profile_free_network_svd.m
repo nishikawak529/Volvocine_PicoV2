@@ -20,7 +20,7 @@ function results = global_joint_cp_rank1_profile_free_network_svd(round_dir, M, 
 %   4. rank1_profile_free_network_collective_signals.png (if phase time series available)
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round6');
+        round_dir = fullfile('EstimateL', 'Round');
     end
     if nargin < 2 || isempty(M)
         M = 10;
@@ -117,9 +117,10 @@ function results = global_joint_cp_rank1_profile_free_network_svd(round_dir, M, 
     results.output_dir = output_dir;
     results.runtime_seconds = toc(total_timer);
 
-    % 7. Save PNG outputs and optional compact MAT
+    % 7. Save PNG outputs, CSV summary tables, and optional compact MAT
     if opts.SaveOutputs
         save_all_figures(results, phase_signals, opts);
+        save_analysis_csv_files(results, output_dir, opts);
         if isfield(opts, 'SaveCompactMat') && opts.SaveCompactMat
             save_compact_mat_file(results, output_dir, opts);
         end
@@ -589,6 +590,75 @@ function save_compact_mat_file(results, output_dir, opts)
     );
 
     save(mat_path, '-struct', 'compact_struct', '-v7.3');
+end
+
+% =========================================================================
+% DETAILED CSV EXPORTER FOR DOWNSTREAM ANALYSIS (a(phi), delta, u, v, W)
+% =========================================================================
+
+function save_analysis_csv_files(results, output_dir, opts)
+    fit_R1 = results.fit_R1;
+    svd_res = results.svd;
+    agent_ids = results.agent_ids(:);
+    N = numel(agent_ids);
+
+    try
+        % 1. Target Receiver Profile a(phi)
+        phi_grid = fit_R1.phi_grid(:);
+        a_phi = real(exp(1i * phi_grid * (-results.M : results.M)) * fit_R1.A(:, 1));
+        t_a = table(phi_grid, a_phi, 'VariableNames', {'phi', 'a_phi'});
+        writetable(t_a, fullfile(output_dir, 'target_receiver_profile_a_phi.csv'));
+
+        % 2. Sender Phase Shift delta
+        delta_rad = fit_R1.delta(1);
+        delta_deg = rad2deg(delta_rad);
+        delta_over_pi = delta_rad / pi;
+        t_delta = table(delta_rad, delta_deg, delta_over_pi, 'VariableNames', {'delta_rad', 'delta_deg', 'delta_over_pi'});
+        writetable(t_delta, fullfile(output_dir, 'sender_phase_shift_delta.csv'));
+
+        % 3. Network SVD Modes Summary
+        mode_l = (1:N).';
+        singular_value_sigma = svd_res.singular_values;
+        energy_share_eta = svd_res.singular_value_energy_share;
+        cum_energy_share = svd_res.cumulative_singular_value_energy_share;
+        t_modes = table(mode_l, singular_value_sigma, energy_share_eta, cum_energy_share, ...
+            'VariableNames', {'mode_l', 'singular_value_sigma', 'energy_share_eta', 'cum_energy_share'});
+        writetable(t_modes, fullfile(output_dir, 'network_svd_modes_summary.csv'));
+
+        % 4. Agent SVD Contributions (Sender v_l & Receiver u_l)
+        t_agent = table(agent_ids, 'VariableNames', {'agent_id'});
+        for l = 1:N
+            t_agent.(sprintf('receiver_u_mode%d', l)) = svd_res.U(:, l);
+            t_agent.(sprintf('sender_v_mode%d', l))   = svd_res.V(:, l);
+        end
+        t_agent.receiver_mode1_weighted = svd_res.singular_values(1) * abs(svd_res.U(:, 1));
+        t_agent.sender_mode1_weighted   = svd_res.singular_values(1) * abs(svd_res.V(:, 1));
+        t_agent.receiver_total_weight   = sqrt(sum(results.W.^2, 2)); % Incoming coupling norm
+        t_agent.sender_total_weight     = sqrt(sum(results.W.^2, 1)).'; % Outgoing coupling norm
+
+        writetable(t_agent, fullfile(output_dir, 'agent_svd_contributions.csv'));
+
+        % 5. Network Coupling Matrix W (Row: Receiver, Column: Sender)
+        W_mat = results.W;
+        col_names = arrayfun(@(a) sprintf('sender_agent_%d', a), agent_ids, 'UniformOutput', false);
+        row_names = arrayfun(@(a) sprintf('receiver_agent_%d', a), agent_ids, 'UniformOutput', false);
+        t_W = table(row_names, 'VariableNames', {'receiver_agent'});
+        for j = 1:N
+            t_W.(col_names{j}) = W_mat(:, j);
+        end
+        writetable(t_W, fullfile(output_dir, 'network_coupling_matrix_W.csv'));
+
+        % 6. Fourier Coefficients Vector A
+        m_vals = (-results.M : results.M).';
+        A_vec = fit_R1.A(:, 1);
+        t_A = table(m_vals, real(A_vec), imag(A_vec), abs(A_vec), angle(A_vec), ...
+            'VariableNames', {'m', 'Re_A', 'Im_A', 'Abs_A', 'Angle_A'});
+        writetable(t_A, fullfile(output_dir, 'fourier_coefficients_A.csv'));
+
+        fprintf('[INFO] Saved detailed analysis CSV files to:\n  %s\n', output_dir);
+    catch ME
+        fprintf('[WARNING] Failed to save CSV files: %s\n', ME.message);
+    end
 end
 
 % =========================================================================
