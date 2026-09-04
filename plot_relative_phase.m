@@ -32,18 +32,18 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     %   - 2-column matrix: [real_id1, mode_id1; real_id2, mode_id2; ...] (e.g., [1, 7; 2, 8; 3, 9; 4, 10])
     %   - containers.Map:  containers.Map([7, 8, 9, 10], [7, 8, 9, 10])
     %   - empty []:        direct 1-to-1 matching (real_id == mode_id)
-    agent_id_map = [7,7; 8,8; 9,9; 10,10]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
+    agent_id_map = [9,8; 8,10; 11,7; 12,9]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
 
     if nargin < 1 || isempty(dirpath)
-        dirpath = fullfile('merged_chunks_organized','2026-07-13');
+        dirpath = fullfile('merged_chunks_organized','2026-09-04');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 2;
+        csv_rank_from_latest = 1;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
-        n_seconds_to_cut = 5.1;
+        n_seconds_to_cut = 0.1;
     end
     if nargin < 4 || isempty(plot_duration)
         plot_duration = 105.1;

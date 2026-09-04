@@ -7,7 +7,7 @@ import re
 omega_values = {
     2: 3.14 * 3.0,    # エージェント12の周波数
 }
-default_omega = 3.14 * 2.0 # デフォルト周波数（未定義IDの場合）
+default_omega = 3.14 * 2.5 # デフォルト周波数（未定義IDの場合）
 
 # 光センサ・フィードバック制御パラメータ (全エージェント共通)
 light_tau_sec = 0.0             # 光センサ一次遅れフィルタの時定数 [s] (0.0でフィルタなし)
@@ -22,8 +22,8 @@ initial_phase_values = {
 }
 default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
 
-feedback_tau_sec = 0.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
-kappa = 3       # フィードバックゲイン
+feedback_tau_sec = 2.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
+kappa = 7       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
@@ -37,7 +37,8 @@ stop_delay_seconds = 30000 # 停止までの秒数
 #   "file"      : gamma_exports の snippet から読み込む
 #   "sin_alpha" : sin(theta + alpha) のフーリエ係数を alpha から生成する
 # ここを書き換えてモードを切り替える。
-PRC_MODE = "file"
+PRC_MODE = "sin_alpha"
+#PRC_MODE = "file"
 PRC_SIN_ALPHA_HARMONICS = 10
 PRC_SOURCE_DIR = os.environ.get(
     "PRC_SOURCE_DIR",
