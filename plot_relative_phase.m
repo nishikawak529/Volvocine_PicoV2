@@ -365,6 +365,8 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     if plot_order_parameter
         plot_weighted_order_parameter_time_series(phase_series_by_file, file_list, agents_to_plot, ...
             max_plot_time, overlay_mode, line_style, svd_weights_file, agent_id_map, agent_display_offset);
+        plot_agent_weighted_input_amplitude_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+            max_plot_time, overlay_mode, line_style, svd_weights_file, agent_id_map, agent_display_offset);
     end
 
     if nargout >= 1
@@ -616,22 +618,17 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
     end
 
     var_names = weights_table.Properties.VariableNames;
-    sender_cols = var_names(startsWith(var_names, 'sender_v_mode'));
-    receiver_cols = var_names(startsWith(var_names, 'receiver_u_mode'));
-
-    if isempty(sender_cols) && isempty(receiver_cols)
-        warning('No sender_v_mode or receiver_u_mode columns found in %s', svd_weights_file);
+    mode_cols = var_names(startsWith(var_names, 'sender_v_mode'));
+    if isempty(mode_cols)
+        warning('No sender_v_mode columns found in %s', svd_weights_file);
         return;
     end
 
-    n_sender_modes = numel(sender_cols);
-    n_receiver_modes = numel(receiver_cols);
-    fprintf('[INFO] Loaded SVD weights from %s (Sender modes: %d, Receiver modes: %d).\n', ...
-        svd_weights_file, n_sender_modes, n_receiver_modes);
+    n_modes = numel(mode_cols);
+    fprintf('[INFO] Loaded SVD weights from %s (%d sender modes).\n', svd_weights_file, n_modes);
 
     N_agents = numel(agents_to_plot);
-    v_weights = zeros(N_agents, n_sender_modes);
-    u_weights = zeros(N_agents, n_receiver_modes);
+    v_weights = zeros(N_agents, n_modes);
 
     for a_idx = 1:N_agents
         real_ag = agents_to_plot(a_idx);
@@ -643,34 +640,22 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
             continue;
         end
 
-        for m = 1:n_sender_modes
-            v_weights(a_idx, m) = weights_table.(sender_cols{m})(row_mask);
-        end
-        for m = 1:n_receiver_modes
-            u_weights(a_idx, m) = weights_table.(receiver_cols{m})(row_mask);
+        for m = 1:n_modes
+            v_weights(a_idx, m) = weights_table.(mode_cols{m})(row_mask);
         end
     end
 
-    y_label_sender = '$$|Z_l^{(sender)}(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$';
-    y_label_receiver = '$$|Z_l^{(receiver)}(t)| = \left|\sum_i u_{il} e^{i \phi_i(t)}\right|$$';
+    y_label_str = '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$';
 
     if overlay_mode
         figure('Visible','on');
-        set(gcf, 'Name', 'Weighted Order Parameters |Z_l(t)| (Overlay)');
+        ax = axes('Parent', gcf);
+        hold(ax,'on');
+        set(gcf, 'Name', 'Weighted Order Parameter |Z_l(t)| (Overlay)');
 
-        % --- Sender Subplot ---
-        ax1 = subplot(2, 1, 1);
-        hold(ax1, 'on');
-        colors_s = lines(n_sender_modes);
-        mode_legend_s = cell(n_sender_modes, 1);
-        line_handles_s = gobjects(n_sender_modes, 1);
-
-        % --- Receiver Subplot ---
-        ax2 = subplot(2, 1, 2);
-        hold(ax2, 'on');
-        colors_r = lines(n_receiver_modes);
-        mode_legend_r = cell(n_receiver_modes, 1);
-        line_handles_r = gobjects(n_receiver_modes, 1);
+        colors = lines(n_modes);
+        mode_legend = cell(n_modes, 1);
+        line_handles = gobjects(n_modes, 1);
 
         for f = 1:numel(file_list)
             series_struct = phase_series_by_file{f};
@@ -678,48 +663,27 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
                 continue;
             end
 
-            [t_common, Z_sender_abs, Z_receiver_abs] = compute_order_parameters_for_file( ...
-                series_struct, agents_to_plot, v_weights, u_weights);
+            [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes);
             if isempty(t_common)
                 continue;
             end
 
-            if n_sender_modes > 0
-                for m = 1:n_sender_modes
-                    h = plot(ax1, t_common, Z_sender_abs(:, m), ...
-                        'Color', colors_s(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
-                    if ~isgraphics(line_handles_s(m))
-                        line_handles_s(m) = h;
-                        mode_legend_s{m} = sprintf('Sender Mode %d', m);
-                    end
-                end
-            end
-
-            if n_receiver_modes > 0
-                for m = 1:n_receiver_modes
-                    h = plot(ax2, t_common, Z_receiver_abs(:, m), ...
-                        'Color', colors_r(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
-                    if ~isgraphics(line_handles_r(m))
-                        line_handles_r(m) = h;
-                        mode_legend_r{m} = sprintf('Receiver Mode %d', m);
-                    end
+            for m = 1:n_modes
+                h = plot(ax, t_common, Z_abs(:, m), ...
+                    'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                if ~isgraphics(line_handles(m))
+                    line_handles(m) = h;
+                    mode_legend{m} = sprintf('Sender Mode %d', m);
                 end
             end
         end
 
-        format_order_parameter_axis(ax1, y_label_sender, max_plot_time, 'Sender Modes');
-        hold(ax1, 'off');
-        valid_hs = isgraphics(line_handles_s);
-        if any(valid_hs)
-            legend(ax1, line_handles_s(valid_hs), mode_legend_s(valid_hs), ...
-                'Location','eastoutside','Interpreter','latex');
-        end
+        format_order_parameter_axis(ax, y_label_str, max_plot_time);
+        hold(ax,'off');
 
-        format_order_parameter_axis(ax2, y_label_receiver, max_plot_time, 'Receiver Modes');
-        hold(ax2, 'off');
-        valid_hr = isgraphics(line_handles_r);
-        if any(valid_hr)
-            legend(ax2, line_handles_r(valid_hr), mode_legend_r(valid_hr), ...
+        valid_h = isgraphics(line_handles);
+        if any(valid_h)
+            legend(ax, line_handles(valid_h), mode_legend(valid_h), ...
                 'Location','eastoutside','Interpreter','latex');
         end
 
@@ -734,55 +698,32 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
                 continue;
             end
 
-            [t_common, Z_sender_abs, Z_receiver_abs] = compute_order_parameters_for_file( ...
-                series_struct, agents_to_plot, v_weights, u_weights);
+            [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes);
             if isempty(t_common)
                 continue;
             end
 
             figure('Visible','on');
+            ax = axes('Parent', gcf);
+            hold(ax,'on');
             [~, file_label] = fileparts(file_list{f});
-            set(gcf, 'Name', sprintf('Weighted Order Parameters: %s', file_label));
+            set(gcf, 'Name', sprintf('Weighted Order Parameter: %s', file_label));
 
-            % --- Sender Subplot ---
-            ax1 = subplot(2, 1, 1);
-            hold(ax1, 'on');
-            colors_s = lines(n_sender_modes);
-            line_handles_s = gobjects(n_sender_modes, 1);
-            mode_legend_s = cell(n_sender_modes, 1);
+            colors = lines(n_modes);
+            line_handles = gobjects(n_modes, 1);
+            mode_legend = cell(n_modes, 1);
 
-            for m = 1:n_sender_modes
-                line_handles_s(m) = plot(ax1, t_common, Z_sender_abs(:, m), ...
-                    'Color', colors_s(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
-                mode_legend_s{m} = sprintf('Sender Mode %d', m);
+            for m = 1:n_modes
+                line_handles(m) = plot(ax, t_common, Z_abs(:, m), ...
+                    'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                mode_legend{m} = sprintf('Sender Mode %d', m);
             end
 
-            format_order_parameter_axis(ax1, y_label_sender, max_plot_time, 'Sender Modes');
-            hold(ax1, 'off');
-            if n_sender_modes > 0
-                legend(ax1, line_handles_s, mode_legend_s, ...
-                    'Location','eastoutside','Interpreter','latex');
-            end
+            format_order_parameter_axis(ax, y_label_str, max_plot_time);
+            hold(ax,'off');
 
-            % --- Receiver Subplot ---
-            ax2 = subplot(2, 1, 2);
-            hold(ax2, 'on');
-            colors_r = lines(n_receiver_modes);
-            line_handles_r = gobjects(n_receiver_modes, 1);
-            mode_legend_r = cell(n_receiver_modes, 1);
-
-            for m = 1:n_receiver_modes
-                line_handles_r(m) = plot(ax2, t_common, Z_receiver_abs(:, m), ...
-                    'Color', colors_r(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
-                mode_legend_r{m} = sprintf('Receiver Mode %d', m);
-            end
-
-            format_order_parameter_axis(ax2, y_label_receiver, max_plot_time, 'Receiver Modes');
-            hold(ax2, 'off');
-            if n_receiver_modes > 0
-                legend(ax2, line_handles_r, mode_legend_r, ...
-                    'Location','eastoutside','Interpreter','latex');
-            end
+            legend(ax, line_handles, mode_legend, ...
+                'Location','eastoutside','Interpreter','latex');
 
             if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
                 tuneFigure();
@@ -791,10 +732,9 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
     end
 end
 
-function [t_common, Z_sender_abs, Z_receiver_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, u_weights)
+function [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes)
     t_common = [];
-    Z_sender_abs = [];
-    Z_receiver_abs = [];
+    Z_abs = [];
 
     N_agents = numel(agents_to_plot);
     phase_matrix = [];
@@ -819,23 +759,16 @@ function [t_common, Z_sender_abs, Z_receiver_abs] = compute_order_parameters_for
         return;
     end
 
-    if ~isempty(v_weights) && size(v_weights, 2) > 0
-        Z_sender_abs = abs(exp(1i * phase_matrix) * v_weights);
-    end
-    if ~isempty(u_weights) && size(u_weights, 2) > 0
-        Z_receiver_abs = abs(exp(1i * phase_matrix) * u_weights);
-    end
+    Z_complex = exp(1i * phase_matrix) * v_weights;
+    Z_abs = abs(Z_complex);
 end
 
-function format_order_parameter_axis(ax, y_label_str, max_plot_time, title_str)
+function format_order_parameter_axis(ax, y_label_str, max_plot_time)
     ylabel(ax, y_label_str,'Interpreter','latex');
     set(ax,'TickLabelInterpreter','latex');
     xlim(ax, [0, max_plot_time]);
     xlabel(ax, 'Time (s)','Interpreter','latex');
     grid(ax, 'on');
-    if nargin >= 4 && ~isempty(title_str)
-        title(ax, title_str, 'Interpreter', 'latex');
-    end
 end
 
 function mode_ag = get_mapped_agent_id(real_ag, agent_id_map)
@@ -963,4 +896,265 @@ function series_entry = get_agent_series_entry(series_struct, agent_id)
         return;
     end
     series_entry = series_struct(match_idx);
+end
+
+function plot_agent_weighted_input_amplitude_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+    max_plot_time, overlay_mode, line_style, svd_weights_file, agent_id_map, agent_display_offset)
+
+    if ~exist(svd_weights_file, 'file')
+        if isfolder(svd_weights_file)
+            candidate = fullfile(svd_weights_file, 'agent_svd_contributions.csv');
+            if exist(candidate, 'file')
+                svd_weights_file = candidate;
+            else
+                warning('SVD weights CSV not found in folder: %s', svd_weights_file);
+                return;
+            end
+        else
+            warning('SVD weights file not found: %s', svd_weights_file);
+            return;
+        end
+    end
+
+    [svd_dir, ~, ~] = fileparts(svd_weights_file);
+    summary_file = fullfile(svd_dir, 'network_svd_modes_summary.csv');
+    if ~exist(summary_file, 'file')
+        warning('SVD summary CSV (network_svd_modes_summary.csv) not found in directory: %s', svd_dir);
+        return;
+    end
+
+    try
+        weights_table = readtable(svd_weights_file);
+        summary_table = readtable(summary_file);
+    catch ME
+        warning('Failed to read SVD files: %s', ME.message);
+        return;
+    end
+
+    % Extract mode columns for receiver (u) and sender (v)
+    var_names = weights_table.Properties.VariableNames;
+    u_col_info = struct('col_name', {}, 'mode_num', {});
+    v_col_info = struct('col_name', {}, 'mode_num', {});
+
+    for k = 1:numel(var_names)
+        tok_u = regexp(var_names{k}, '^receiver_u_mode(\d+)$', 'tokens');
+        if ~isempty(tok_u)
+            u_col_info(end+1) = struct('col_name', var_names{k}, 'mode_num', str2double(tok_u{1}{1})); %#ok<AGROW>
+        end
+        tok_v = regexp(var_names{k}, '^sender_v_mode(\d+)$', 'tokens');
+        if ~isempty(tok_v)
+            v_col_info(end+1) = struct('col_name', var_names{k}, 'mode_num', str2double(tok_v{1}{1})); %#ok<AGROW>
+        end
+    end
+
+    if isempty(u_col_info) || isempty(v_col_info)
+        warning('Missing receiver_u_mode or sender_v_mode columns in %s', svd_weights_file);
+        return;
+    end
+
+    % Sort modes numerically
+    [~, idx_u] = sort([u_col_info.mode_num]);
+    u_col_info = u_col_info(idx_u);
+
+    [~, idx_v] = sort([v_col_info.mode_num]);
+    v_col_info = v_col_info(idx_v);
+
+    u_modes = [u_col_info.mode_num];
+    v_modes = [v_col_info.mode_num];
+
+    if ~isequal(u_modes, v_modes)
+        warning('Receiver and Sender mode numbers do not match in %s', svd_weights_file);
+        return;
+    end
+
+    if ~all(ismember({'mode_l', 'singular_value_sigma'}, summary_table.Properties.VariableNames))
+        warning('Required columns (mode_l, singular_value_sigma) missing in %s', summary_file);
+        return;
+    end
+
+    summary_modes = summary_table.mode_l(:).';
+    if ~all(ismember(u_modes, summary_modes))
+        warning('Mode numbers in SVD contributions table do not match network_svd_modes_summary.csv.');
+        return;
+    end
+
+    L = numel(u_modes);
+    sigma = zeros(L, 1);
+    for l = 1:L
+        m_num = u_modes(l);
+        row_s = (summary_table.mode_l == m_num);
+        if ~any(row_s)
+            warning('Mode %d not found in %s', m_num, summary_file);
+            return;
+        end
+        sigma(l) = summary_table.singular_value_sigma(row_s);
+    end
+
+    N = numel(agents_to_plot);
+    U = zeros(N, L);
+    V = zeros(N, L);
+
+    for i = 1:N
+        real_ag = agents_to_plot(i);
+        mode_ag = get_mapped_agent_id(real_ag, agent_id_map);
+
+        row_w = (weights_table.agent_id == mode_ag);
+        if ~any(row_w)
+            warning('Agent ID %d (mapped from real ID %d) not found in SVD weights table %s.', ...
+                mode_ag, real_ag, svd_weights_file);
+            return;
+        end
+
+        for l = 1:L
+            U(i, l) = weights_table.(u_col_info(l).col_name)(row_w);
+            V(i, l) = weights_table.(v_col_info(l).col_name)(row_w);
+        end
+    end
+
+    % Numerical verification of reconstructed matrix W = U * diag(sigma) * V'
+    W_reconstructed = U * diag(sigma) * V.';
+    test_phasors = exp(1i * 2 * pi * rand(10, N));
+    G_test_modes = (test_phasors * V .* sigma.') * U.';
+    G_test_direct = test_phasors * W_reconstructed.';
+    diff_norm = norm(G_test_modes - G_test_direct, 'fro');
+    ref_norm = norm(G_test_direct, 'fro');
+    rel_err = diff_norm / max(ref_norm, eps);
+    if rel_err > 1e-9
+        warning('Numerical verification failed! Relative error between mode sum and direct W product = %.2e', rel_err);
+    else
+        fprintf('[INFO] Numerical verification passed: mode-sum vs direct W product rel. error = %.2e\n', rel_err);
+    end
+
+    y_label_str = '$|G_i(t)|=\left|\sum_{\ell}\sigma_{\ell}u_{i\ell}Z_{\ell}(t)\right|$';
+
+    if overlay_mode
+        figure('Visible','on');
+        ax = axes('Parent', gcf);
+        hold(ax, 'on');
+        set(gcf, 'Name', 'Agent-wise Weighted Input Amplitude (Overlay)');
+
+        colors = lines(N);
+        line_handles = gobjects(N, 1);
+        agent_legend = cell(N, 1);
+
+        for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, G_abs] = compute_agent_weighted_input_amplitude_for_file( ...
+                series_struct, agents_to_plot, U, V, sigma);
+            if isempty(t_common)
+                continue;
+            end
+
+            for i = 1:N
+                ag = agents_to_plot(i);
+                h = plot(ax, t_common, G_abs(:, i), ...
+                    'Color', colors(i,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                if f == 1
+                    line_handles(i) = h;
+                    disp_id = displayed_agent_id(ag, agent_display_offset);
+                    agent_legend{i} = sprintf('Agent %d', disp_id);
+                end
+            end
+        end
+
+        format_weighted_input_amplitude_axis(ax, y_label_str, max_plot_time);
+        hold(ax, 'off');
+
+        valid_h = isgraphics(line_handles);
+        if any(valid_h)
+            legend(ax, line_handles(valid_h), agent_legend(valid_h), ...
+                'Location','eastoutside','Interpreter','latex');
+        end
+
+        if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+            tuneFigure();
+        end
+
+    else
+        for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, G_abs] = compute_agent_weighted_input_amplitude_for_file( ...
+                series_struct, agents_to_plot, U, V, sigma);
+            if isempty(t_common)
+                continue;
+            end
+
+            figure('Visible','on');
+            ax = axes('Parent', gcf);
+            hold(ax, 'on');
+            [~, file_label] = fileparts(file_list{f});
+            set(gcf, 'Name', sprintf('Agent-wise Weighted Input Amplitude: %s', file_label));
+
+            colors = lines(N);
+            line_handles = gobjects(N, 1);
+            agent_legend = cell(N, 1);
+
+            for i = 1:N
+                ag = agents_to_plot(i);
+                line_handles(i) = plot(ax, t_common, G_abs(:, i), ...
+                    'Color', colors(i,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                disp_id = displayed_agent_id(ag, agent_display_offset);
+                agent_legend{i} = sprintf('Agent %d', disp_id);
+            end
+
+            format_weighted_input_amplitude_axis(ax, y_label_str, max_plot_time);
+            hold(ax, 'off');
+
+            legend(ax, line_handles, agent_legend, ...
+                'Location','eastoutside','Interpreter','latex');
+
+            if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+                tuneFigure();
+            end
+        end
+    end
+end
+
+function [t_common, G_abs] = compute_agent_weighted_input_amplitude_for_file(series_struct, agents_to_plot, U, V, sigma)
+    t_common = [];
+    G_abs = [];
+
+    N = numel(agents_to_plot);
+    phase_matrix = [];
+
+    for a_idx = 1:N
+        ag = agents_to_plot(a_idx);
+        series_entry = get_agent_series_entry(series_struct, ag);
+        if isempty(series_entry) || isempty(series_entry.time) || ...
+                ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+            return;
+        end
+
+        if isempty(t_common)
+            t_common = series_entry.time(:);
+            phase_matrix = zeros(numel(t_common), N);
+        end
+
+        phase_matrix(:, a_idx) = series_entry.absolute_phase(:);
+    end
+
+    if isempty(t_common)
+        return;
+    end
+
+    phase_phasors = exp(1i * phase_matrix);      % T x N
+    Z_complex = phase_phasors * V;              % T x L
+    G_complex = (Z_complex .* sigma.') * U.';   % T x N
+    G_abs = abs(G_complex);                     % T x N
+end
+
+function format_weighted_input_amplitude_axis(ax, y_label_str, max_plot_time)
+    ylabel(ax, y_label_str, 'Interpreter', 'latex');
+    set(ax, 'TickLabelInterpreter', 'latex');
+    xlim(ax, [0, max_plot_time]);
+    xlabel(ax, 'Time (s)', 'Interpreter', 'latex');
+    grid(ax, 'on');
 end
