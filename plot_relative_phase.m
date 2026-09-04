@@ -1,10 +1,10 @@
-function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode, plot_phase_timeseries)
+function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode, plot_order_parameter)
 % Phase-relationship time evolution from one selected CSV in a directory
 %
 % Usage:
 %   plot_relative_phase()
 %   plot_relative_phase(dirpath, csv_rank_from_latest)
-%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode, plot_phase_timeseries)
+%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode, plot_order_parameter)
 %
 % Defaults:
 %   dirpath = 'merged_chunks_organized/2026-07-13'
@@ -16,11 +16,23 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 %   do_save_figure = false
 %   sample_window = [50, 60]
 %   overlay_mode = false
-%   plot_phase_timeseries = true
+%   plot_order_parameter = true
 
     % --- Display-only agent ID offset for publication plots ---
     % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
     agent_display_offset = -0;
+
+    % --- SVD Mode weights & Agent ID mapping settings ---
+    % File or directory path containing agent SVD contributions (sender_v_mode1, sender_v_mode2, ...)
+    svd_weights_file = fullfile('EstimateL', 'SStick', 'low_rank_analysis', 'M10', ...
+        'global_joint_cp_rank1_profile_free_network_svd', 'agent_svd_contributions.csv');
+
+    % Mapping from real robot agent_id (in experiment CSV) to agent_id used in SVD mode calculation.
+    % Format options:
+    %   - 2-column matrix: [real_id1, mode_id1; real_id2, mode_id2; ...] (e.g., [1, 7; 2, 8; 3, 9; 4, 10])
+    %   - containers.Map:  containers.Map([7, 8, 9, 10], [7, 8, 9, 10])
+    %   - empty []:        direct 1-to-1 matching (real_id == mode_id)
+    agent_id_map = [7,7; 8,8; 9,9; 10,10]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
 
     if nargin < 1 || isempty(dirpath)
         dirpath = fullfile('merged_chunks_organized','2026-07-13');
@@ -57,8 +69,8 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     if nargin < 11 || isempty(overlay_mode)
         overlay_mode = false;
     end
-    if nargin < 12 || isempty(plot_phase_timeseries)
-        plot_phase_timeseries = true;
+    if nargin < 12 || isempty(plot_order_parameter)
+        plot_order_parameter = true;
     end
 
     if ~isnumeric(csv_rank_from_latest) || ~isscalar(csv_rank_from_latest) || ...
@@ -350,9 +362,9 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         saveFigure();
     end
 
-    if plot_phase_timeseries
-        plot_absolute_phase_time_series(phase_series_by_file, file_list, agents_to_plot, ...
-            max_plot_time, overlay_mode, line_style);
+    if plot_order_parameter
+        plot_weighted_order_parameter_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+            max_plot_time, overlay_mode, line_style, svd_weights_file, agent_id_map, agent_display_offset);
     end
 
     if nargout >= 1
@@ -578,77 +590,138 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
     end
 end
 
-function plot_absolute_phase_time_series(phase_series_by_file, file_list, agents_to_plot, max_plot_time, overlay_mode, line_style)
-    y_label_str = '$$\phi_j$$';
+function plot_weighted_order_parameter_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+    max_plot_time, overlay_mode, line_style, svd_weights_file, agent_id_map, agent_display_offset)
+
+    if ~exist(svd_weights_file, 'file')
+        if isfolder(svd_weights_file)
+            candidate = fullfile(svd_weights_file, 'agent_svd_contributions.csv');
+            if exist(candidate, 'file')
+                svd_weights_file = candidate;
+            else
+                warning('SVD weights CSV not found in folder: %s', svd_weights_file);
+                return;
+            end
+        else
+            warning('SVD weights file not found: %s', svd_weights_file);
+            return;
+        end
+    end
+
+    try
+        weights_table = readtable(svd_weights_file);
+    catch ME
+        warning('Failed to read SVD weights file %s: %s', svd_weights_file, ME.message);
+        return;
+    end
+
+    var_names = weights_table.Properties.VariableNames;
+    mode_cols = var_names(startsWith(var_names, 'sender_v_mode'));
+    if isempty(mode_cols)
+        warning('No sender_v_mode columns found in %s', svd_weights_file);
+        return;
+    end
+
+    n_modes = numel(mode_cols);
+    fprintf('[INFO] Loaded SVD weights from %s (%d sender modes).\n', svd_weights_file, n_modes);
+
+    N_agents = numel(agents_to_plot);
+    v_weights = zeros(N_agents, n_modes);
+
+    for a_idx = 1:N_agents
+        real_ag = agents_to_plot(a_idx);
+        mode_ag = get_mapped_agent_id(real_ag, agent_id_map);
+
+        row_mask = (weights_table.agent_id == mode_ag);
+        if ~any(row_mask)
+            warning('Agent ID %d (mapped from real ID %d) not found in SVD weights table.', mode_ag, real_ag);
+            continue;
+        end
+
+        for m = 1:n_modes
+            v_weights(a_idx, m) = weights_table.(mode_cols{m})(row_mask);
+        end
+    end
+
+    y_label_str = '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$';
 
     if overlay_mode
         figure('Visible','on');
         ax = axes('Parent', gcf);
         hold(ax,'on');
-        colors = lines(numel(agents_to_plot));
-        agent_legend = {};
-        line_handles = [];
+        set(gcf, 'Name', 'Weighted Order Parameter |Z_l(t)| (Overlay)');
 
-        for p = 1:numel(agents_to_plot)
-            ag = agents_to_plot(p);
-            for f = 1:numel(file_list)
-                series_entry = get_agent_series_entry(phase_series_by_file{f}, ag);
-                if isempty(series_entry) || isempty(series_entry.time) || ...
-                        ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
-                    continue;
-                end
-                h = plot(ax, series_entry.time, series_entry.absolute_phase, ...
-                    'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
-                if f == 1
-                    line_handles = [line_handles; h]; %#ok<AGROW>
-                    agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}]; %#ok<AGROW>
+        colors = lines(n_modes);
+        mode_legend = cell(n_modes, 1);
+        line_handles = gobjects(n_modes, 1);
+
+        for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes);
+            if isempty(t_common)
+                continue;
+            end
+
+            for m = 1:n_modes
+                h = plot(ax, t_common, Z_abs(:, m), ...
+                    'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                if ~isgraphics(line_handles(m))
+                    line_handles(m) = h;
+                    mode_legend{m} = sprintf('Sender Mode %d', m);
                 end
             end
         end
 
-        format_absolute_phase_axis(ax, y_label_str, max_plot_time);
+        format_order_parameter_axis(ax, y_label_str, max_plot_time);
         hold(ax,'off');
 
-        if ~isempty(line_handles)
-            legend(ax, line_handles, agent_legend, ...
+        valid_h = isgraphics(line_handles);
+        if any(valid_h)
+            legend(ax, line_handles(valid_h), mode_legend(valid_h), ...
                 'Location','eastoutside','Interpreter','latex');
         end
 
         if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
             tuneFigure();
         end
+
     else
         for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes);
+            if isempty(t_common)
+                continue;
+            end
+
             figure('Visible','on');
             ax = axes('Parent', gcf);
             hold(ax,'on');
             [~, file_label] = fileparts(file_list{f});
-            set(gcf, 'Name', sprintf('Phase time series: %s', file_label));
+            set(gcf, 'Name', sprintf('Weighted Order Parameter: %s', file_label));
 
-            colors = lines(numel(agents_to_plot));
-            agent_legend = {};
-            line_handles = [];
+            colors = lines(n_modes);
+            line_handles = gobjects(n_modes, 1);
+            mode_legend = cell(n_modes, 1);
 
-            for p = 1:numel(agents_to_plot)
-                ag = agents_to_plot(p);
-                series_entry = get_agent_series_entry(phase_series_by_file{f}, ag);
-                if isempty(series_entry) || isempty(series_entry.time) || ...
-                        ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
-                    continue;
-                end
-                h = plot(ax, series_entry.time, series_entry.absolute_phase, ...
-                    'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
-                line_handles = [line_handles; h]; %#ok<AGROW>
-                agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}]; %#ok<AGROW>
+            for m = 1:n_modes
+                line_handles(m) = plot(ax, t_common, Z_abs(:, m), ...
+                    'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                mode_legend{m} = sprintf('Sender Mode %d', m);
             end
 
-            format_absolute_phase_axis(ax, y_label_str, max_plot_time);
+            format_order_parameter_axis(ax, y_label_str, max_plot_time);
             hold(ax,'off');
 
-            if ~isempty(line_handles)
-                legend(ax, line_handles, agent_legend, ...
-                    'Location','eastoutside','Interpreter','latex');
-            end
+            legend(ax, line_handles, mode_legend, ...
+                'Location','eastoutside','Interpreter','latex');
 
             if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
                 tuneFigure();
@@ -657,15 +730,68 @@ function plot_absolute_phase_time_series(phase_series_by_file, file_list, agents
     end
 end
 
-function format_absolute_phase_axis(ax, y_label_str, max_plot_time)
+function [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, agents_to_plot, v_weights, n_modes)
+    t_common = [];
+    Z_abs = [];
+
+    N_agents = numel(agents_to_plot);
+    phase_matrix = [];
+
+    for a_idx = 1:N_agents
+        ag = agents_to_plot(a_idx);
+        series_entry = get_agent_series_entry(series_struct, ag);
+        if isempty(series_entry) || isempty(series_entry.time) || ...
+                ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+            return;
+        end
+
+        if isempty(t_common)
+            t_common = series_entry.time(:);
+            phase_matrix = zeros(numel(t_common), N_agents);
+        end
+
+        phase_matrix(:, a_idx) = series_entry.absolute_phase(:);
+    end
+
+    if isempty(t_common)
+        return;
+    end
+
+    Z_complex = exp(1i * phase_matrix) * v_weights;
+    Z_abs = abs(Z_complex);
+end
+
+function format_order_parameter_axis(ax, y_label_str, max_plot_time)
     ylabel(ax, y_label_str,'Interpreter','latex');
-    ylim(ax, [0, 2*pi]);
-    yticks(ax, [0, pi, 2*pi]);
-    yticklabels(ax, {'0','\pi','2\pi'});
     set(ax,'TickLabelInterpreter','latex');
     xlim(ax, [0, max_plot_time]);
     xlabel(ax, 'Time (s)','Interpreter','latex');
     grid(ax, 'on');
+end
+
+function mode_ag = get_mapped_agent_id(real_ag, agent_id_map)
+    mode_ag = real_ag;
+    if isempty(agent_id_map)
+        return;
+    end
+
+    if isnumeric(agent_id_map) && size(agent_id_map, 2) == 2
+        idx = find(agent_id_map(:, 1) == real_ag, 1);
+        if ~isempty(idx)
+            mode_ag = agent_id_map(idx, 2);
+        end
+    elseif isa(agent_id_map, 'containers.Map')
+        if isKey(agent_id_map, real_ag)
+            mode_ag = agent_id_map(real_ag);
+        end
+    elseif isa(agent_id_map, 'function_handle')
+        mode_ag = agent_id_map(real_ag);
+    elseif isstruct(agent_id_map) && isfield(agent_id_map, 'real_id') && isfield(agent_id_map, 'mode_id')
+        idx = find([agent_id_map.real_id] == real_ag, 1);
+        if ~isempty(idx)
+            mode_ag = agent_id_map(idx).mode_id;
+        end
+    end
 end
 
 function display_id = displayed_agent_id(agent_id, offset)

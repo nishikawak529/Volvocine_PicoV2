@@ -20,7 +20,7 @@ function results = global_joint_cp_rank1_profile_free_network_svd(round_dir, M, 
 %   4. rank1_profile_free_network_collective_signals.png (if phase time series available)
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'Round');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
     if nargin < 2 || isempty(M)
         M = 10;
