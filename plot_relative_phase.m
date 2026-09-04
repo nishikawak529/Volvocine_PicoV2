@@ -742,8 +742,15 @@ function [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, ag
     for a_idx = 1:N_agents
         ag = agents_to_plot(a_idx);
         series_entry = get_agent_series_entry(series_struct, ag);
-        if isempty(series_entry) || isempty(series_entry.time) || ...
-                ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+        if isempty(series_entry) || isempty(series_entry.time)
+            return;
+        end
+
+        if isfield(series_entry, 'absolute_phase_unwrapped') && ~isempty(series_entry.absolute_phase_unwrapped)
+            ag_phase = series_entry.absolute_phase_unwrapped(:);
+        elseif isfield(series_entry, 'absolute_phase') && ~isempty(series_entry.absolute_phase)
+            ag_phase = series_entry.absolute_phase(:);
+        else
             return;
         end
 
@@ -752,7 +759,7 @@ function [t_common, Z_abs] = compute_order_parameters_for_file(series_struct, ag
             phase_matrix = zeros(numel(t_common), N_agents);
         end
 
-        phase_matrix(:, a_idx) = series_entry.absolute_phase(:);
+        phase_matrix(:, a_idx) = ag_phase;
     end
 
     if isempty(t_common)
@@ -1128,8 +1135,15 @@ function [t_common, G_abs] = compute_agent_weighted_input_amplitude_for_file(ser
     for a_idx = 1:N
         ag = agents_to_plot(a_idx);
         series_entry = get_agent_series_entry(series_struct, ag);
-        if isempty(series_entry) || isempty(series_entry.time) || ...
-                ~isfield(series_entry, 'absolute_phase') || isempty(series_entry.absolute_phase)
+        if isempty(series_entry) || isempty(series_entry.time)
+            return;
+        end
+
+        if isfield(series_entry, 'absolute_phase_unwrapped') && ~isempty(series_entry.absolute_phase_unwrapped)
+            ag_phase = series_entry.absolute_phase_unwrapped(:);
+        elseif isfield(series_entry, 'absolute_phase') && ~isempty(series_entry.absolute_phase)
+            ag_phase = series_entry.absolute_phase(:);
+        else
             return;
         end
 
@@ -1138,7 +1152,7 @@ function [t_common, G_abs] = compute_agent_weighted_input_amplitude_for_file(ser
             phase_matrix = zeros(numel(t_common), N);
         end
 
-        phase_matrix(:, a_idx) = series_entry.absolute_phase(:);
+        phase_matrix(:, a_idx) = ag_phase;
     end
 
     if isempty(t_common)
