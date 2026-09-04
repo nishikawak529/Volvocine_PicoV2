@@ -1,0 +1,36 @@
+# Auto-generated from target_equilibrium_optimal_z_analysis
+# Target equilibrium point (mode phase difference): psi_d = 2.38761042 rad (psi_d/pi = 0.76)
+# Target equilibrium point (physical sensor phase): psi_phys_d = 2.80312213 rad (psi_phys_d/pi = 0.892261486)
+# Parameters: nu = 0, power = 3.14159265, delta/pi = 0.132261486
+#
+target_psi_d_rad = 2.3876104167
+target_psi_d_over_pi = 0.7600000000
+target_psi_phys_d_rad = 2.8031221301
+target_psi_phys_d_over_pi = 0.8922614862
+
+prc_harmonics = 10
+prc_a = [0.0] * (prc_harmonics + 1)
+prc_b = [0.0] * (prc_harmonics + 1)
+
+prc_a[0] = 0.0145127885
+prc_b[0] = 0.0000000000
+prc_a[1] = 0.3192368443
+prc_b[1] = 0.7602773508
+prc_a[2] = -0.1842994630
+prc_b[2] = -0.1044328752
+prc_a[3] = -0.4053987114
+prc_b[3] = -0.2134780530
+prc_a[4] = 0.1576353661
+prc_b[4] = -0.0284080453
+prc_a[5] = 0.1775900085
+prc_b[5] = 0.0063315235
+prc_a[6] = -0.0592517855
+prc_b[6] = 0.0195455219
+prc_a[7] = -0.0471617774
+prc_b[7] = 0.0189279493
+prc_a[8] = 0.0253460050
+prc_b[8] = 0.0086462410
+prc_a[9] = -0.0040546461
+prc_b[9] = -0.0083723674
+prc_a[10] = -0.0138174872
+prc_b[10] = -0.0080498884

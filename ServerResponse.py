@@ -5,13 +5,13 @@ import os
 import re
 
 omega_values = {
-    12: 3.14 * 2.50,    # エージェント12の周波数
+    2: 3.14 * 3.0,    # エージェント12の周波数
 }
-default_omega = 3.14 * 2.50 # デフォルト周波数（未定義IDの場合）
+default_omega = 3.14 * 2.0 # デフォルト周波数（未定義IDの場合）
 
 # 光センサ・フィードバック制御パラメータ (全エージェント共通)
 light_tau_sec = 0.0             # 光センサ一次遅れフィルタの時定数 [s] (0.0でフィルタなし)
-light_feedback_gain = 2.0       # 光センサによる振幅減衰ゲイン (0.0〜1.0)
+light_feedback_gain = 0.0       # 光センサによる振幅減衰ゲイン (0.0〜1.0)
 light_feedback_omega_gain = -0.0 # 光センサによる自然周波数ゲイン (正: 周波数低下, 負: 周波数増加)
 min_amplitude_ratio = 0.6       # 最小振幅倍率 (0.0〜1.0)
 
@@ -22,16 +22,13 @@ initial_phase_values = {
 }
 default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
 
-feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
-kappa = 10       # フィードバックゲイン
+feedback_tau_sec = 0.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
+kappa = 3       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
 stop_agent_id = 4      # 停止対象のエージェントID (0の場合はどのも停止しない等を意味づけることも可能)
 stop_delay_seconds = 30000 # 停止までの秒数
-
-
-
 
 # PRCのフーリエ係数（0..prc_harmonics を使用）
 # z(psi) = Σ [ prc_a[n] * cos(n*psi) + prc_b[n] * sin(n*psi) ]
@@ -40,13 +37,13 @@ stop_delay_seconds = 30000 # 停止までの秒数
 #   "file"      : gamma_exports の snippet から読み込む
 #   "sin_alpha" : sin(theta + alpha) のフーリエ係数を alpha から生成する
 # ここを書き換えてモードを切り替える。
-PRC_MODE = "sin_alpha"
+PRC_MODE = "file"
 PRC_SIN_ALPHA_HARMONICS = 10
 PRC_SOURCE_DIR = os.environ.get(
     "PRC_SOURCE_DIR",
     os.path.join("gamma_exports")
 )
-PRC_SOURCE_FILE = "prc_snippet_target_optimal_z.txt"
+PRC_SOURCE_FILE = "prc_snippet_target_optimal_z_psid_0.76pi.txt"
 
 
 def load_prc_from_directory(source_dir, source_file=PRC_SOURCE_FILE):
