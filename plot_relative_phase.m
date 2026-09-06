@@ -37,18 +37,18 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     agent_id_map = [9,8; 8,10; 11,7; 12,9]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
 
     if nargin < 1 || isempty(dirpath)
-        dirpath = fullfile('merged_chunks_organized','2026-09-04');
+        dirpath = fullfile('merged_chunks_organized','2026-09-06');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 3;
+        csv_rank_from_latest = 1;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
         n_seconds_to_cut = 5.1;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration = 55.1;
+        plot_duration = 35.1;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;
