@@ -1,10 +1,11 @@
-function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode, plot_order_parameter)
+function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, apply_filter, filter_window_size, do_save_figure, n_sync, m_sync, sample_window, overlay_mode, plot_order_parameter, plot_cumulative_energy)
 % Phase-relationship time evolution from one selected CSV in a directory
 %
 % Usage:
 %   plot_relative_phase()
 %   plot_relative_phase(dirpath, csv_rank_from_latest)
-%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode, plot_order_parameter)
+%   plot_relative_phase(dirpath, csv_rank_from_latest, n_seconds_to_cut, plot_duration, [], [], [], [], [], [], overlay_mode, plot_order_parameter, plot_cumulative_energy)
+%   [cluster_info, phase_series, energy_info] = plot_relative_phase(...)
 %
 % Defaults:
 %   dirpath = 'merged_chunks_organized/2026-07-13'
@@ -17,6 +18,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 %   sample_window = [50, 60]
 %   overlay_mode = false
 %   plot_order_parameter = true
+%   plot_cumulative_energy = true
 
     % --- Display-only agent ID offset for publication plots ---
     % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
@@ -40,13 +42,13 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 1;
+        csv_rank_from_latest = 3;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
-        n_seconds_to_cut = 0.1;
+        n_seconds_to_cut = 5.1;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration = 105.1;
+        plot_duration = 55.1;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;
@@ -71,6 +73,9 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     end
     if nargin < 12 || isempty(plot_order_parameter)
         plot_order_parameter = true;
+    end
+    if nargin < 13 || isempty(plot_cumulative_energy)
+        plot_cumulative_energy = true;
     end
 
     if ~isnumeric(csv_rank_from_latest) || ~isscalar(csv_rank_from_latest) || ...
@@ -162,7 +167,11 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
             warning('Skipping %s: no valid agents after filtering spurious ones.', file_list{i});
             continue;
         end
-        file_tables{i} = T(:,{'time_pc_sec_abs','a0','agent_id','chunk_id'});
+        cols_to_keep = {'time_pc_sec_abs','a0','agent_id','chunk_id'};
+        if ismember('a1', T.Properties.VariableNames)
+            cols_to_keep = [cols_to_keep, {'a1'}];
+        end
+        file_tables{i} = T(:, cols_to_keep);
         % Apply overflow / chunk-start corrections per-file (same logic as original)
         file_tables{i} = correct_large_jump_matlab(file_tables{i}, threshold_sec, jump_sec);
         file_tables{i} = correct_chunk_start_times_matlab(file_tables{i}, 4000.0, T_OVERFLOW);
@@ -358,6 +367,14 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 
     cluster_info = cluster_phase_window_means(phase_series_by_file, agents_for_cluster, sample_window, CLUSTER_VAR_THRESHOLD);
 
+    % --- Compute and display energy consumption in plotted range ---
+    energy_info = compute_and_display_energy(phase_series_by_file, file_list, agents_to_plot, max_plot_time, agent_display_offset);
+
+    if plot_cumulative_energy
+        plot_cumulative_energy_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+            max_plot_time, overlay_mode, line_style, agent_display_offset);
+    end
+
     if do_save_figure && (exist('saveFigure', 'file') == 2 || exist('saveFigure', 'builtin'))
         saveFigure();
     end
@@ -374,6 +391,9 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     end
     if nargout >= 2
         varargout{2} = phase_series_by_file;
+    end
+    if nargout >= 3
+        varargout{3} = energy_info;
     end
 end
 
@@ -556,7 +576,15 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
         if apply_filter
             interp_a0 = movmean(interp_a0, filter_window_size, 'omitnan');
         end
-        interpolated_data(agent_id) = struct('a0', interp_a0);
+        if ismember('a1', sub.Properties.VariableNames)
+            interp_a1 = nan(size(new_time_series));
+            interp_a1(valid_mask) = interp1(sub.time_pc_sec_abs - start_time_abs, double(sub.a1), new_time_series(valid_mask), 'linear', 'extrap');
+            % INA226 power conversion: 1 LSB = 16 mW = 0.016 W
+            interp_power_w = interp_a1 * 0.016;
+        else
+            interp_power_w = [];
+        end
+        interpolated_data(agent_id) = struct('a0', interp_a0, 'power_w', interp_power_w);
     end
 
     base_agent_a0 = interpolated_data(base_agent_id).a0;
@@ -584,6 +612,7 @@ function series_struct = compute_phase_series_for_file(df_all, base_agent_id, n_
         series_struct(i).time = new_time_series;
         series_struct(i).absolute_phase = absolute_phase;
         series_struct(i).absolute_phase_unwrapped = absolute_phase_unwrapped;
+        series_struct(i).power_w = interpolated_data(agent_id).power_w;
         if agent_id == base_agent_id
             series_struct(i).phase = zeros(size(new_time_series));
         else
@@ -820,12 +849,12 @@ end
 
 function series_struct = empty_phase_series_struct()
     series_struct = struct('agent_id', {}, 'time', {}, 'phase', {}, ...
-        'absolute_phase', {}, 'absolute_phase_unwrapped', {});
+        'absolute_phase', {}, 'absolute_phase_unwrapped', {}, 'power_w', {});
 end
 
 function series_entry = empty_phase_series_entry()
     series_entry = struct('agent_id', [], 'time', [], 'phase', [], ...
-        'absolute_phase', [], 'absolute_phase_unwrapped', []);
+        'absolute_phase', [], 'absolute_phase_unwrapped', [], 'power_w', []);
 end
 
 function corrected_phase = correct_phase_discontinuity(phase_data)
@@ -1167,6 +1196,294 @@ end
 
 function format_weighted_input_amplitude_axis(ax, y_label_str, max_plot_time)
     ylabel(ax, y_label_str, 'Interpreter', 'latex');
+    set(ax, 'TickLabelInterpreter', 'latex');
+    xlim(ax, [0, max_plot_time]);
+    xlabel(ax, 'Time (s)', 'Interpreter', 'latex');
+    grid(ax, 'on');
+end
+
+function energy_info = compute_and_display_energy(phase_series_by_file, file_list, agents_to_plot, max_plot_time, agent_display_offset)
+    % Compute and display energy consumption in the plotted time range [0, max_plot_time]
+    %
+    % Energy calculation rationale:
+    %   1. Microcontroller (Volvocine_PicoV3.ino):
+    %      - INA226 measures power (W) via shunt resistor (0.056 ohm) and bus voltage every 2 ms.
+    %      - Power is integrated via trapezoidal rule: powerEnergyJAccum += 0.5 * (P_prev + P_curr) * dt.
+    %      - Every saveInterval (5 loops = ~10 ms), the window-averaged power (averagePowerW) is calculated.
+    %      - averagePowerW is converted to mW (raw1 = averagePowerW * 1000) and quantized into 16 mW steps:
+    %          val16 = (raw1 + 8) >> 4   (i.e. round(raw1 / 16))
+    %          entry.analog1 = (uint8_t)val16
+    %      - Therefore, each LSB of column 'a1' represents exactly 16 mW = 0.016 W.
+    %   2. Server (ServerTest.py / ChunkProcessor.py):
+    %      - Compressed packets are received over UDP and saved into CSV with column 'a1'.
+    %   3. Energy Consumption Calculation:
+    %      - Power P(t) [W] = a1(t) * 0.016
+    %      - Within plotted time range [0, max_plot_time], total energy E [J] for each agent is:
+    %          E = \int_0^{max_plot_time} P(t) dt  (computed via trapezoidal integration trapz)
+    %      - Energy in mWh = E / 3.6  (since 1 Wh = 3600 J)
+    %      - Mean Power P_mean [W] = E / duration
+
+    energy_info = repmat(struct('file', '', 'time_range', [], 'duration_sec', 0, ...
+        'agents', struct('agent_id', {}, 'display_id', {}, 'energy_J', {}, 'energy_mWh', {}, 'mean_power_W', {}, 'mean_power_mW', {}), ...
+        'total_energy_J', 0, 'total_energy_mWh', 0, 'total_mean_power_W', 0, 'total_mean_power_mW', 0), ...
+        numel(file_list), 1);
+
+    for f = 1:numel(file_list)
+        [~, file_label] = fileparts(file_list{f});
+        series_struct = phase_series_by_file{f};
+        if isempty(series_struct)
+            continue;
+        end
+
+        energy_info(f).file = file_list{f};
+        energy_info(f).time_range = [0, max_plot_time];
+
+        agent_results = struct('agent_id', {}, 'display_id', {}, 'energy_J', {}, 'energy_mWh', {}, 'mean_power_W', {}, 'mean_power_mW', {});
+        total_energy_J = 0;
+        total_mean_power_W = 0;
+        has_power_data = false;
+        actual_duration = 0;
+
+        for ag = agents_to_plot(:).'
+            series_entry = get_agent_series_entry(series_struct, ag);
+            if isempty(series_entry) || isempty(series_entry.time) || ...
+                    ~isfield(series_entry, 'power_w') || isempty(series_entry.power_w)
+                continue;
+            end
+
+            t = series_entry.time;
+            p = series_entry.power_w;
+
+            % Select plotted time range [0, max_plot_time]
+            mask = (t >= 0) & (t <= max_plot_time) & ~isnan(t) & ~isnan(p);
+            t_plot = t(mask);
+            p_plot = p(mask);
+
+            if numel(t_plot) < 2
+                continue;
+            end
+
+            has_power_data = true;
+            energy_J = trapz(t_plot, p_plot);
+            dur_sec = t_plot(end) - t_plot(1);
+            if dur_sec > actual_duration
+                actual_duration = dur_sec;
+            end
+            mean_p_W = energy_J / max(dur_sec, eps);
+            mean_p_mW = mean_p_W * 1000;
+            energy_mWh = energy_J / 3.6;
+
+            total_energy_J = total_energy_J + energy_J;
+            total_mean_power_W = total_mean_power_W + mean_p_W;
+
+            disp_id = displayed_agent_id(ag, agent_display_offset);
+            agent_results(end+1) = struct( ...
+                'agent_id', ag, ...
+                'display_id', disp_id, ...
+                'energy_J', energy_J, ...
+                'energy_mWh', energy_mWh, ...
+                'mean_power_W', mean_p_W, ...
+                'mean_power_mW', mean_p_mW); %#ok<AGROW>
+        end
+
+        energy_info(f).duration_sec = actual_duration;
+        energy_info(f).agents = agent_results;
+        energy_info(f).total_energy_J = total_energy_J;
+        energy_info(f).total_energy_mWh = total_energy_J / 3.6;
+        energy_info(f).total_mean_power_W = total_mean_power_W;
+        energy_info(f).total_mean_power_mW = total_mean_power_W * 1000;
+
+        if ~has_power_data
+            fprintf('[INFO] No power (a1) data found in %s for energy calculation.\n', file_label);
+            continue;
+        end
+
+        % Display formatted energy table in command window
+        fprintf('\n========================================================================================\n');
+        fprintf('[ENERGY] Energy Consumption in Plotted Range [0.00 s - %.2f s] (Duration: %.2f s)\n', ...
+            max_plot_time, actual_duration);
+        fprintf('         File: %s\n', file_label);
+        fprintf('----------------------------------------------------------------------------------------\n');
+        fprintf('  Agent ID (Disp ID) |  Energy [J]  |  Energy [mWh] |  Mean Power [W] |  Mean Power [mW]\n');
+        fprintf('----------------------------------------------------------------------------------------\n');
+        for k = 1:numel(agent_results)
+            ar = agent_results(k);
+            fprintf('  Agent %2d (%2d)       | %11.3f J | %12.3f mWh | %13.4f W | %14.2f mW\n', ...
+                ar.agent_id, ar.display_id, ar.energy_J, ar.energy_mWh, ar.mean_power_W, ar.mean_power_mW);
+        end
+        fprintf('----------------------------------------------------------------------------------------\n');
+        fprintf('  Total              | %11.3f J | %12.3f mWh | %13.4f W | %14.2f mW\n', ...
+            total_energy_J, total_energy_J / 3.6, total_mean_power_W, total_mean_power_W * 1000);
+        fprintf('========================================================================================\n\n');
+    end
+end
+
+function plot_cumulative_energy_time_series(phase_series_by_file, file_list, agents_to_plot, ...
+    max_plot_time, overlay_mode, line_style, agent_display_offset)
+
+    N = numel(agents_to_plot);
+    colors = lines(N);
+
+    if overlay_mode
+        figure('Visible', 'on');
+        ax = axes('Parent', gcf);
+        hold(ax, 'on');
+        set(gcf, 'Name', 'Cumulative Energy Consumption (Overlay)');
+
+        line_handles = gobjects(N + 1, 1);
+        legend_labels = cell(N + 1, 1);
+
+        for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, cum_energies, total_cum_energy] = compute_cumulative_energy_for_file( ...
+                series_struct, agents_to_plot, max_plot_time);
+            if isempty(t_common)
+                continue;
+            end
+
+            for i = 1:N
+                h = plot(ax, t_common, cum_energies(:, i), ...
+                    'Color', colors(i,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                if f == 1
+                    line_handles(i) = h;
+                    disp_id = displayed_agent_id(agents_to_plot(i), agent_display_offset);
+                    legend_labels{i} = sprintf('Agent %d', disp_id);
+                end
+            end
+
+            h_tot = plot(ax, t_common, total_cum_energy, ...
+                'Color', [0.15 0.15 0.15], 'LineWidth', 1.8, 'LineStyle', '--');
+            if f == 1
+                line_handles(N + 1) = h_tot;
+                legend_labels{N + 1} = 'Total';
+            end
+        end
+
+        format_cumulative_energy_axis(ax, max_plot_time);
+        hold(ax, 'off');
+
+        valid_h = isgraphics(line_handles);
+        if any(valid_h)
+            legend(ax, line_handles(valid_h), legend_labels(valid_h), ...
+                'Location', 'eastoutside', 'Interpreter', 'latex');
+        end
+
+        if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+            tuneFigure();
+        end
+
+    else
+        for f = 1:numel(file_list)
+            series_struct = phase_series_by_file{f};
+            if isempty(series_struct)
+                continue;
+            end
+
+            [t_common, cum_energies, total_cum_energy] = compute_cumulative_energy_for_file( ...
+                series_struct, agents_to_plot, max_plot_time);
+            if isempty(t_common)
+                continue;
+            end
+
+            figure('Visible', 'on');
+            ax = axes('Parent', gcf);
+            hold(ax, 'on');
+            [~, file_label] = fileparts(file_list{f});
+            set(gcf, 'Name', sprintf('Cumulative Energy: %s', file_label));
+
+            line_handles = gobjects(N + 1, 1);
+            legend_labels = cell(N + 1, 1);
+
+            for i = 1:N
+                ag = agents_to_plot(i);
+                line_handles(i) = plot(ax, t_common, cum_energies(:, i), ...
+                    'Color', colors(i,:), 'LineWidth', 1.2, 'LineStyle', line_style);
+                disp_id = displayed_agent_id(ag, agent_display_offset);
+                legend_labels{i} = sprintf('Agent %d', disp_id);
+            end
+
+            line_handles(N + 1) = plot(ax, t_common, total_cum_energy, ...
+                'Color', [0.15 0.15 0.15], 'LineWidth', 1.8, 'LineStyle', '--');
+            legend_labels{N + 1} = sprintf('Total (%.1f J)', total_cum_energy(end));
+
+            format_cumulative_energy_axis(ax, max_plot_time);
+            hold(ax, 'off');
+
+            valid_h = isgraphics(line_handles);
+            if any(valid_h)
+                legend(ax, line_handles(valid_h), legend_labels(valid_h), ...
+                    'Location', 'eastoutside', 'Interpreter', 'latex');
+            end
+
+            if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+                tuneFigure();
+            end
+        end
+    end
+end
+
+function [t_common, cum_energies, total_cum_energy] = compute_cumulative_energy_for_file(series_struct, agents_to_plot, max_plot_time)
+    t_common = [];
+    cum_energies = [];
+    total_cum_energy = [];
+
+    N = numel(agents_to_plot);
+    if N == 0 || isempty(series_struct)
+        return;
+    end
+
+    % Check if power_w exists
+    has_power = false;
+    for i = 1:numel(series_struct)
+        if isfield(series_struct(i), 'power_w') && ~isempty(series_struct(i).power_w)
+            has_power = true;
+            break;
+        end
+    end
+    if ~has_power
+        return;
+    end
+
+    % Determine common time vector in [0, max_plot_time]
+    for i = 1:N
+        ag = agents_to_plot(i);
+        series_entry = get_agent_series_entry(series_struct, ag);
+        if isempty(series_entry) || isempty(series_entry.time)
+            return;
+        end
+        if isempty(t_common)
+            t = series_entry.time(:);
+            mask = (t >= 0) & (t <= max_plot_time);
+            t_common = t(mask);
+            if isempty(t_common)
+                return;
+            end
+            cum_energies = zeros(numel(t_common), N);
+        end
+    end
+
+    for i = 1:N
+        ag = agents_to_plot(i);
+        series_entry = get_agent_series_entry(series_struct, ag);
+        if isfield(series_entry, 'power_w') && ~isempty(series_entry.power_w)
+            t = series_entry.time(:);
+            p = series_entry.power_w(:);
+            mask = (t >= 0) & (t <= max_plot_time);
+            p_plot = p(mask);
+            p_plot(isnan(p_plot)) = 0;
+            cum_energies(:, i) = cumtrapz(t_common, p_plot);
+        end
+    end
+
+    total_cum_energy = sum(cum_energies, 2);
+end
+
+function format_cumulative_energy_axis(ax, max_plot_time)
+    ylabel(ax, 'Cumulative Energy (J)', 'Interpreter', 'latex');
     set(ax, 'TickLabelInterpreter', 'latex');
     xlim(ax, [0, max_plot_time]);
     xlabel(ax, 'Time (s)', 'Interpreter', 'latex');
