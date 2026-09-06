@@ -22,8 +22,8 @@ initial_phase_values = {
 }
 default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
 
-feedback_tau_sec = 2.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
-kappa = 7       # フィードバックゲイン
+feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
+kappa = -6       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
