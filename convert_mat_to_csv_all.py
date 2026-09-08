@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 base_dir = r"D:\codes\Volvocine_PicoV2\VolBotVideo"
-conditions = ['baseline', 'sinz', 'msinz', 'moptz']
+conditions = ['baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz']
 
 converted = 0
 for cond in conditions:

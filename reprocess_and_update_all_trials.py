@@ -95,7 +95,8 @@ def main():
                 'max_raw': max_raw,
                 'max_sg': max_sg,
                 'over_400': (df_analyzed['speed_raw_px_s'] > 400).sum(),
-                'over_200': (df_analyzed['speed_raw_px_s'] > 200).sum()
+                'over_200': (df_analyzed['speed_raw_px_s'] > 200).sum(),
+                'over_100': (df_analyzed['speed_raw_px_s'] > 100).sum()
             })
             
             print(f"[{cond}] {t_name}: Mean = {mean_sg:.2f} px/s, Max Raw = {max_raw:.1f} px/s, Max SG = {max_sg:.1f} px/s")
@@ -105,8 +106,7 @@ def main():
     print("  SUMMARY OF UPDATED VELOCITY METRICS ACROSS ALL 57 TRIALS")
     print("=" * 80)
     print(f"Total trials processed: {len(df_summary)}")
-    print(f"Trials with speed_raw > 400: {(df_summary['over_400'] > 0).sum()}")
-    print(f"Trials with speed_raw > 200: {(df_summary['over_200'] > 0).sum()}")
+    print(f"Trials with speed_raw > 100: {(df_summary['over_100'] > 0).sum()}")
     print(f"Maximum raw instantaneous speed across ALL trials: {df_summary['max_raw'].max():.1f} px/s")
     print(f"Maximum stroke-filtered SG speed across ALL trials: {df_summary['max_sg'].max():.1f} px/s")
 

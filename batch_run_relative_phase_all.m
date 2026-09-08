@@ -2,7 +2,7 @@ addpath('D:\codes\Volvocine_PicoV2');
 cd('D:\codes\Volvocine_PicoV2');
 
 base_dir = fullfile('VolBotVideo');
-conditions = {'baseline', 'sinz', 'msinz', 'moptz'};
+conditions = {'baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz'};
 
 % Load SVD weights once
 svd_weights_file = fullfile('EstimateL', 'SStick', 'low_rank_analysis', 'M10', ...

@@ -94,7 +94,26 @@ def track_robot_trajectory(
     print(f"[INFO] Tracking range: {start_sec:.2f}s - {end_sec:.2f}s ({start_frame} - {end_frame} frames, Total: {total_process_frames})")
 
     bg_gray = cv2.cvtColor(bg_image, cv2.COLOR_BGR2GRAY)
-    xmin, ymin, xmax, ymax = pool_roi
+    scale = video_w / 3840.0
+
+    # Scale pool_roi and parameters to current video resolution
+    if pool_roi is not None:
+        ref_xmin, ref_ymin, ref_xmax, ref_ymax = pool_roi
+        xmin = int(round(ref_xmin * scale))
+        ymin = int(round(ref_ymin * scale))
+        xmax = int(round(ref_xmax * scale))
+        ymax = int(round(ref_ymax * scale))
+    else:
+        xmin, ymin, xmax, ymax = 0, 0, video_w, video_h
+
+    cur_search_margin = int(round(search_margin * scale))
+    min_area = int(round(3000 * (scale**2)))
+    max_area_lim = int(round(45000 * (scale**2)))
+    min_dt = 12.0 * scale
+    min_bm_m00 = 30.0 * (scale**2)
+    # Frame-to-frame jump limit: at 60 fps 4K, max travel is 10 px. Adjust for scale and fps
+    max_jump_px = 10.0 * scale * (60.0 / fps)
+    max_jump_d = max_jump_px ** 2
 
     # Pool mask
     pool_mask = np.zeros((video_h, video_w), dtype=np.uint8)
@@ -130,10 +149,10 @@ def track_robot_trajectory(
             cur_xmin, cur_ymin, cur_xmax, cur_ymax = xmin, ymin, xmax, ymax
         else:
             px, py = prev_center
-            cur_xmin = max(xmin, int(px - search_margin))
-            cur_xmax = min(xmax, int(px + search_margin))
-            cur_ymin = max(ymin, int(py - search_margin))
-            cur_ymax = min(ymax, int(py + search_margin))
+            cur_xmin = max(xmin, int(px - cur_search_margin))
+            cur_xmax = min(xmax, int(px + cur_search_margin))
+            cur_ymin = max(ymin, int(py - cur_search_margin))
+            cur_ymax = min(ymax, int(py + cur_search_margin))
 
         # Crop local search area
         frame_crop = frame[cur_ymin:cur_ymax, cur_xmin:cur_xmax]
@@ -157,7 +176,7 @@ def track_robot_trajectory(
 
         for c in contours:
             area = cv2.contourArea(c)
-            if 3000 < area < 45000:
+            if min_area < area < max_area_lim:
                 # Extract core body centroid via Distance Transform to reject arm/reflection shifts
                 bx, by, bw, bh = cv2.boundingRect(c)
                 roi_mask = np.zeros((bh, bw), dtype=np.uint8)
@@ -166,8 +185,8 @@ def track_robot_trajectory(
                 dt_roi = cv2.distanceTransform(roi_mask, cv2.DIST_L2, 5)
                 max_dt = float(np.max(dt_roi))
                 
-                if max_dt > 12:
-                    core = (dt_roi >= 0.55 * max_dt).astype(np.uint8)
+                if max_dt > min_dt:
+                    core = (dt_roi >= 0.65 * max_dt).astype(np.uint8)
                     Mc = cv2.moments(core)
                     if Mc["m00"] > 0:
                         cx = (Mc["m10"] / Mc["m00"]) + bx + cur_xmin
@@ -187,8 +206,8 @@ def track_robot_trajectory(
                         best_c = (cx, cy, area, c)
                 else:
                     d = (cx - prev_center[0])**2 + (cy - prev_center[1])**2
-                    # Reject sudden jumps > 25 pixels in a single frame (prevents hopping to reflections/hands)
-                    if d < 625 and d < best_dist:
+                    # Reject sudden jumps
+                    if d < max_jump_d and d < best_dist:
                         best_dist = d
                         best_c = (cx, cy, area, c)
 
@@ -203,21 +222,22 @@ def track_robot_trajectory(
             hsv_crop = cv2.cvtColor(frame_crop, cv2.COLOR_BGR2HSV)
             blue_mask = cv2.inRange(hsv_crop, np.array([90, 100, 100]), np.array([135, 255, 255]))
             bm = cv2.moments(blue_mask)
-            if bm["m00"] > 30:
+            if bm["m00"] > min_bm_m00:
                 bx = (bm["m10"] / bm["m00"]) + cur_xmin
                 by = (bm["m01"] / bm["m00"]) + cur_ymin
                 theta = np.arctan2(by - cy, bx - cx)
             else:
                 bx, by, theta = np.nan, np.nan, np.nan
 
+            # Standardize coordinates to 4K reference pixel space (3840x2160)
             records.append({
                 "frame": f_idx,
                 "time_sec": t_sec,
-                "x": cx,
-                "y": cy,
-                "area": area,
-                "blue_x": bx,
-                "blue_y": by,
+                "x": cx / scale,
+                "y": cy / scale,
+                "area": area / (scale**2),
+                "blue_x": bx / scale if not np.isnan(bx) else np.nan,
+                "blue_y": by / scale if not np.isnan(by) else np.nan,
                 "theta_rad": theta,
                 "status": "detected"
             })
@@ -302,32 +322,45 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     t = df['time_sec'].to_numpy()
 
     # 0. Clean position outliers (Hampel filter / median deviation)
-    # Replaces single/double frame glitches (specular reflections, bubble shadows)
-    w_med = 11
-    pad_w = w_med // 2
-    for _ in range(2):
+    # Multi-pass Hampel filter with expanding windows to catch single-frame and multi-frame (0.05-0.25s)
+    # Scale filter window length dynamically based on fps
+    base_windows = [(15, 2.5), (21, 2.0), (11, 1.5)]
+    fps_scale = fps / 60.0
+    for w_med_base, th in base_windows:
+        w_med = max(3, int(round(w_med_base * fps_scale)))
+        if w_med % 2 == 0:
+            w_med += 1
+        pad_w = w_med // 2
         x_pad = np.pad(x, pad_w, mode='edge')
         y_pad = np.pad(y, pad_w, mode='edge')
         x_med = signal.medfilt(x_pad, kernel_size=w_med)[pad_w:-pad_w]
         y_med = signal.medfilt(y_pad, kernel_size=w_med)[pad_w:-pad_w]
         dev = np.sqrt((x - x_med)**2 + (y - y_med)**2)
-        outliers = dev > 3.5  # Jump > 3.5 px in 0.18s is non-physical (> 210 px/s)
+        outliers = dev > th
         x[outliers] = x_med[outliers]
         y[outliers] = y_med[outliers]
 
     # 1. Instantaneous swimming velocity
-    # Uses short-window Savitzky-Golay (0.15s = 9 frames) to capture genuine intra-stroke oscillations
-    # while eliminating single-frame camera digitizing noise
-    vx_raw = signal.savgol_filter(x, window_length=9, polyorder=2, deriv=1, delta=dt)
-    vy_raw = signal.savgol_filter(y, window_length=9, polyorder=2, deriv=1, delta=dt)
+    # Uses short-window Savitzky-Golay (~0.18s) to capture genuine intra-stroke oscillations
+    # while eliminating high-frequency digitizing jitter
+    inst_win = max(5, int(round(0.18 * fps)))
+    if inst_win % 2 == 0:
+        inst_win += 1
+    if inst_win >= len(x):
+        inst_win = max(3, len(x) if len(x) % 2 == 1 else len(x) - 1)
+    vx_raw = signal.savgol_filter(x, window_length=inst_win, polyorder=2, deriv=1, delta=dt)
+    vy_raw = signal.savgol_filter(y, window_length=inst_win, polyorder=2, deriv=1, delta=dt)
     speed_raw = np.sqrt(vx_raw**2 + vy_raw**2)
 
-    # Suppress any residual non-physical spikes above 150 px/s (robot peak stroke speed is ~80-100 px/s)
-    spikes = speed_raw > 150.0
+    # Suppress non-physical spikes above 90 px/s (robot peak physical stroke speed is ~60-80 px/s, mean ~40 px/s)
+    spikes = speed_raw > 90.0
     if np.any(spikes):
-        spd_med = signal.medfilt(speed_raw, kernel_size=7)
-        speed_raw[spikes] = np.minimum(speed_raw[spikes], np.maximum(spd_med[spikes], 90.0))
-        speed_raw = np.clip(speed_raw, 0, 180.0)
+        med_k = max(3, int(round(9 * fps_scale)))
+        if med_k % 2 == 0:
+            med_k += 1
+        spd_med = signal.medfilt(speed_raw, kernel_size=med_k)
+        speed_raw[spikes] = np.minimum(speed_raw[spikes], np.maximum(spd_med[spikes], 65.0))
+        speed_raw = np.clip(speed_raw, 0, 95.0)
 
     # 2. Savitzky-Golay filter (Stroke-cycle averaged Position & Velocity derivative)
     x_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2)
@@ -335,6 +368,8 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     vx_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
     vy_sg = signal.savgol_filter(y, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
     speed_sg = np.sqrt(vx_sg**2 + vy_sg**2)
+    # Prevent boundary polynomial extrapolation divergence at sequence edges
+    speed_sg = np.clip(speed_sg, 0, np.maximum(speed_raw, 80.0))
 
     # 3. Moving average velocity
     speed_ma = pd.Series(speed_raw).rolling(window=window_frames, center=True, min_periods=1).mean().to_numpy()
@@ -346,6 +381,8 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     vx_butter = signal.filtfilt(b, a, vx_raw)
     vy_butter = signal.filtfilt(b, a, vy_raw)
     speed_butter = np.sqrt(vx_butter**2 + vy_butter**2)
+    # Prevent transient ringing divergence at edges
+    speed_butter = np.clip(speed_butter, 0, np.maximum(speed_raw, 80.0))
 
     # Robot Heading & Surge / Sway velocity decomposition
     theta = df['theta_rad'].interpolate(method='linear').bfill().ffill().to_numpy()

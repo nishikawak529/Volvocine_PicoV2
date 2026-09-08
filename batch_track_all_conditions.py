@@ -17,7 +17,7 @@ sys.path.append(r"D:\codes\Volvocine_PicoV2")
 from track_robot import generate_background, track_robot_trajectory, compute_filtered_velocity, plot_swimming_results
 
 BASE_DIR = r"D:\codes\Volvocine_PicoV2\VolBotVideo"
-CONDITIONS = ['baseline', 'sinz', 'msinz', 'moptz']
+CONDITIONS = ['baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz', 'msinz']
 
 
 def get_all_trials():
@@ -193,7 +193,7 @@ def main():
     trials = get_all_trials()
     print(f"Found total {len(trials)} trials across conditions: {CONDITIONS}")
     
-    max_workers = 4
+    max_workers = 6
     print(f"Starting parallel tracking across {max_workers} worker processes...")
     results = []
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
