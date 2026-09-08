@@ -1,0 +1,524 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Robot Swimming Trajectory & Velocity Tracker (Volvocine PicoV2)
+==============================================================
+定点カメラ動画からロボットの遊泳軌跡を抽出し、
+水かき周期（約1.25Hz）の窓フィルターを適用して遊泳速度を解析・可視化するスクリプト。
+
+主な機能:
+1. 高精度・高速トラッキング:
+   - メディアン合成による静止プール背景画像の自動生成
+   - 背景差分と局所探索窓（Adaptive ROI）によるノイズ耐性（底面タイルや壁汚れの完全除去）
+   - サブピクセル精度の重心座標 (x, y) 算出
+   - 青色マーカー検出によるロボットの姿勢角 (theta) の算出
+2. 1.25Hz 窓フィルターと速度解析:
+   - Savitzky-Golay フィルター（窓長 ≈ 0.8秒 / 約49フレーム）による平滑化 & 解析的微分速度
+   - 移動平均フィルター（Centered Moving Average, 窓長 ≈ 0.8秒）
+   - Butterworth ゼロ位相ローパスフィルター（カットオフ ≈ 1.25Hz）
+   - 生の瞬間速度 (Raw diff) と平滑化速度の比較
+   - ロボット進行方向（Surge）と横方向（Sway）への速度分解
+3. FFT スペクトル解析:
+   - 速度振動のパワースペクトルから実際の水かき周波数ピークを自動検出
+4. 出力:
+   - 詳細な時系列データ CSV (座標, 姿勢角, 各種速度)
+   - 4面統合解析グラフ (軌跡, 座標時系列, 速度時系列, FFTスペクトル)
+   - オプション: トラッキング描画オーバーレイ動画 (Annotated MP4)
+"""
+
+import os
+import sys
+import argparse
+import numpy as np
+import pandas as pd
+import scipy.signal as signal
+import matplotlib.pyplot as plt
+import cv2
+from tqdm import tqdm
+
+
+def generate_background(video_path, sample_times=[10, 20, 30, 40, 50, 60, 70, 80], pool_roi=None):
+    """
+    複数タイムスタンプからメディアン合成を行い、
+    ロボットや人のいない綺麗な静止プール背景画像を生成する。
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise RuntimeError(f"Failed to open video: {video_path}")
+
+    frames = []
+    for t in sample_times:
+        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
+        ret, frame = cap.read()
+        if ret:
+            frames.append(frame)
+    cap.release()
+
+    if not frames:
+        raise RuntimeError("Could not read any sample frames for background generation.")
+
+    print(f"[INFO] Generating clean background from {len(frames)} sample frames...")
+    bg = np.median(frames, axis=0).astype(np.uint8)
+    return bg
+
+
+def track_robot_trajectory(
+    video_path,
+    bg_image,
+    start_sec=6.0,
+    end_sec=82.0,
+    pool_roi=(880, 340, 3580, 1840),
+    search_margin=250,
+    save_annotated_video=False,
+    output_video_path="tracked_output.mp4"
+):
+    """
+    背景差分と局所探索窓を用いてロボットの重心および姿勢角を全フレーム追跡する。
+    """
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise RuntimeError(f"Failed to open video: {video_path}")
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    video_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    start_frame = int(round(start_sec * fps))
+    end_frame = int(round(end_sec * fps)) if end_sec else total_video_frames
+    end_frame = min(end_frame, total_video_frames)
+    total_process_frames = end_frame - start_frame
+
+    print(f"[INFO] Video: {video_path}")
+    print(f"[INFO] Resolution: {video_w}x{video_h}, FPS: {fps:.3f}")
+    print(f"[INFO] Tracking range: {start_sec:.2f}s - {end_sec:.2f}s ({start_frame} - {end_frame} frames, Total: {total_process_frames})")
+
+    bg_gray = cv2.cvtColor(bg_image, cv2.COLOR_BGR2GRAY)
+    xmin, ymin, xmax, ymax = pool_roi
+
+    # Pool mask
+    pool_mask = np.zeros((video_h, video_w), dtype=np.uint8)
+    pool_mask[ymin:ymax, xmin:xmax] = 255
+
+    # Video Writer if requested
+    vw = None
+    if save_annotated_video:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        # Scale down 1/2 for output video to save space and fast encode
+        out_w, out_h = video_w // 2, video_h // 2
+        vw = cv2.VideoWriter(output_video_path, fourcc, fps, (out_w, out_h))
+        print(f"[INFO] Saving annotated video to {output_video_path} ({out_w}x{out_h})")
+
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    records = []
+    prev_center = None
+    trail_points = []
+
+    pbar = tqdm(total=total_process_frames, desc="Tracking robot", unit="frames")
+
+    for f_idx in range(start_frame, end_frame):
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        t_sec = f_idx / fps
+
+        # Determine search window
+        if prev_center is None:
+            cur_xmin, cur_ymin, cur_xmax, cur_ymax = xmin, ymin, xmax, ymax
+        else:
+            px, py = prev_center
+            cur_xmin = max(xmin, int(px - search_margin))
+            cur_xmax = min(xmax, int(px + search_margin))
+            cur_ymin = max(ymin, int(py - search_margin))
+            cur_ymax = min(ymax, int(py + search_margin))
+
+        # Crop local search area
+        frame_crop = frame[cur_ymin:cur_ymax, cur_xmin:cur_xmax]
+        bg_crop = bg_gray[cur_ymin:cur_ymax, cur_xmin:cur_xmax]
+        gray_crop = cv2.cvtColor(frame_crop, cv2.COLOR_BGR2GRAY)
+
+        # Background subtraction: Robot is darker than bright pool background
+        diff_crop = np.clip(bg_crop.astype(np.int16) - gray_crop.astype(np.int16), 0, 255).astype(np.uint8)
+
+        # Binary threshold & morphological cleanup
+        _, bin_mask = cv2.threshold(diff_crop, 35, 255, cv2.THRESH_BINARY)
+        bin_mask = cv2.morphologyEx(bin_mask, cv2.MORPH_OPEN, kernel)
+        bin_mask = cv2.morphologyEx(bin_mask, cv2.MORPH_CLOSE, kernel)
+
+        # Contours inside search window
+        contours, _ = cv2.findContours(bin_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        best_c = None
+        best_dist = float('inf')
+        max_area = 0
+
+        for c in contours:
+            area = cv2.contourArea(c)
+            if 3000 < area < 45000:
+                M = cv2.moments(c)
+                if M["m00"] > 0:
+                    cx = (M["m10"] / M["m00"]) + cur_xmin
+                    cy = (M["m01"] / M["m00"]) + cur_ymin
+                    if prev_center is None:
+                        if area > max_area:
+                            max_area = area
+                            best_c = (cx, cy, area, c)
+                    else:
+                        d = (cx - prev_center[0])**2 + (cy - prev_center[1])**2
+                        if d < best_dist:
+                            best_dist = d
+                            best_c = (cx, cy, area, c)
+
+        if best_c is not None:
+            cx, cy, area, c = best_c
+            prev_center = (cx, cy)
+            trail_points.append((int(round(cx)), int(round(cy))))
+            if len(trail_points) > 300:
+                trail_points.pop(0)
+
+            # Detect blue markers inside robot crop for heading angle
+            hsv_crop = cv2.cvtColor(frame_crop, cv2.COLOR_BGR2HSV)
+            blue_mask = cv2.inRange(hsv_crop, np.array([90, 100, 100]), np.array([135, 255, 255]))
+            bm = cv2.moments(blue_mask)
+            if bm["m00"] > 30:
+                bx = (bm["m10"] / bm["m00"]) + cur_xmin
+                by = (bm["m01"] / bm["m00"]) + cur_ymin
+                theta = np.arctan2(by - cy, bx - cx)
+            else:
+                bx, by, theta = np.nan, np.nan, np.nan
+
+            records.append({
+                "frame": f_idx,
+                "time_sec": t_sec,
+                "x": cx,
+                "y": cy,
+                "area": area,
+                "blue_x": bx,
+                "blue_y": by,
+                "theta_rad": theta,
+                "status": "detected"
+            })
+
+            # Render overlay if video output requested
+            if vw is not None:
+                # Draw trail
+                for i in range(1, len(trail_points)):
+                    alpha_trail = i / len(trail_points)
+                    color = (int(255 * (1 - alpha_trail)), int(200 * alpha_trail), 255)
+                    cv2.line(frame, trail_points[i - 1], trail_points[i], color, 3)
+
+                # Draw bounding box & center
+                bx_c, by_c, bw_c, bh_c = cv2.boundingRect(c)
+                cv2.rectangle(frame, (cur_xmin + bx_c, cur_ymin + by_c),
+                              (cur_xmin + bx_c + bw_c, cur_ymin + by_c + bh_c), (0, 255, 0), 3)
+                cv2.circle(frame, (int(round(cx)), int(round(cy))), 6, (0, 0, 255), -1)
+
+                # Draw heading arrow
+                if not np.isnan(theta):
+                    arrow_len = 80
+                    ax_end = int(round(cx + arrow_len * np.cos(theta)))
+                    ay_end = int(round(cy + arrow_len * np.sin(theta)))
+                    cv2.arrowedLine(frame, (int(round(cx)), int(round(cy))), (ax_end, ay_end), (255, 100, 0), 4, tipLength=0.3)
+
+                # Text info
+                info_text = f"Time: {t_sec:.2f}s | Frame: {f_idx} | Pos: ({cx:.1f}, {cy:.1f})"
+                cv2.putText(frame, info_text, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 3)
+                
+                # Resize and write
+                frame_out = cv2.resize(frame, (out_w, out_h))
+                vw.write(frame_out)
+        else:
+            prev_center = None
+            records.append({
+                "frame": f_idx,
+                "time_sec": t_sec,
+                "x": np.nan,
+                "y": np.nan,
+                "area": np.nan,
+                "blue_x": np.nan,
+                "blue_y": np.nan,
+                "theta_rad": np.nan,
+                "status": "lost"
+            })
+            if vw is not None:
+                cv2.putText(frame, "TARGET LOST - SEARCHING", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
+                frame_out = cv2.resize(frame, (out_w, out_h))
+                vw.write(frame_out)
+
+        pbar.update(1)
+
+    pbar.close()
+    cap.release()
+    if vw is not None:
+        vw.release()
+
+    df = pd.DataFrame(records)
+    detected_count = (df['status'] == 'detected').sum()
+    print(f"[INFO] Tracking finished. Detected {detected_count}/{len(df)} frames ({detected_count/len(df)*100:.1f}%)")
+    return df, fps
+
+
+def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
+    """
+    1.25Hz の水かき周期に対応したフィルターを適用し、
+    位置の平滑化および遊泳速度を算出する。
+    """
+    dt = 1.0 / fps
+
+    # Window length for 1.25 Hz stroke: T = 1 / 1.25 = 0.8s -> frames = 0.8 * fps
+    window_sec = 1.0 / stroke_freq
+    window_frames = int(round(window_sec * fps))
+    if window_frames % 2 == 0:
+        window_frames += 1  # Savgol requires odd window length
+
+    print(f"[INFO] Velocity filtering: stroke_freq={stroke_freq} Hz, window={window_sec:.3f} s ({window_frames} frames)")
+
+    # Interpolate missing values if any
+    x = df['x'].interpolate(method='linear').bfill().ffill().to_numpy()
+    y = df['y'].interpolate(method='linear').bfill().ffill().to_numpy()
+    t = df['time_sec'].to_numpy()
+
+    # 1. Raw differential velocity (gradient)
+    vx_raw = np.gradient(x, dt)
+    vy_raw = np.gradient(y, dt)
+    speed_raw = np.sqrt(vx_raw**2 + vy_raw**2)
+
+    # 2. Savitzky-Golay filter (Position & Velocity derivative)
+    x_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2)
+    y_sg = signal.savgol_filter(y, window_length=window_frames, polyorder=2)
+    vx_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
+    vy_sg = signal.savgol_filter(y, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
+    speed_sg = np.sqrt(vx_sg**2 + vy_sg**2)
+
+    # 3. Moving average velocity
+    speed_ma = pd.Series(speed_raw).rolling(window=window_frames, center=True, min_periods=1).mean().to_numpy()
+
+    # 4. Butterworth Low-Pass Filter (cutoff = stroke_freq)
+    nyquist = 0.5 * fps
+    cutoff = stroke_freq
+    b, a = signal.butter(4, cutoff / nyquist, btype='low')
+    vx_butter = signal.filtfilt(b, a, vx_raw)
+    vy_butter = signal.filtfilt(b, a, vy_raw)
+    speed_butter = np.sqrt(vx_butter**2 + vy_butter**2)
+
+    # Robot Heading & Surge / Sway velocity decomposition
+    theta = df['theta_rad'].interpolate(method='linear').bfill().ffill().to_numpy()
+    theta_unwrapped = np.unwrap(theta)
+    theta_sg = signal.savgol_filter(theta_unwrapped, window_length=window_frames, polyorder=2)
+    omega_sg = signal.savgol_filter(theta_unwrapped, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
+
+    # Surge (forward velocity along robot heading) & Sway (lateral velocity)
+    # Heading unit vector: u_h = [cos(theta), sin(theta)]
+    v_surge = vx_sg * np.cos(theta_sg) + vy_sg * np.sin(theta_sg)
+    v_sway = -vx_sg * np.sin(theta_sg) + vy_sg * np.cos(theta_sg)
+
+    # Attach to DataFrame
+    df['x_smooth_px'] = x_sg
+    df['y_smooth_px'] = y_sg
+    df['vx_raw_px_s'] = vx_raw
+    df['vy_raw_px_s'] = vy_raw
+    df['speed_raw_px_s'] = speed_raw
+
+    df['vx_sg_px_s'] = vx_sg
+    df['vy_sg_px_s'] = vy_sg
+    df['speed_sg_px_s'] = speed_sg
+    df['speed_ma_px_s'] = speed_ma
+    df['speed_butter_px_s'] = speed_butter
+
+    df['theta_smooth_deg'] = np.degrees(theta_sg) % 360
+    df['omega_deg_s'] = np.degrees(omega_sg)
+    df['v_surge_px_s'] = v_surge
+    df['v_sway_px_s'] = v_sway
+
+    # Optional metric conversion
+    if scale_m_per_px is not None:
+        df['x_m'] = x_sg * scale_m_per_px
+        df['y_m'] = y_sg * scale_m_per_px
+        df['speed_sg_m_s'] = speed_sg * scale_m_per_px
+        df['speed_butter_m_s'] = speed_butter * scale_m_per_px
+        df['v_surge_m_s'] = v_surge * scale_m_per_px
+
+    return df, window_sec, window_frames
+
+
+def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, output_img_path="swimming_analysis.png"):
+    """
+    軌跡、位置時系列、1.25Hz平滑化速度、FFT周波数スペクトルの4連グラフを作成して保存する。
+    """
+    t = df['time_sec'].to_numpy()
+    dt = 1.0 / fps
+
+    x = df['x'].to_numpy()
+    y = df['y'].to_numpy()
+    x_sg = df['x_smooth_px'].to_numpy()
+    y_sg = df['y_smooth_px'].to_numpy()
+
+    speed_raw = df['speed_raw_px_s'].to_numpy()
+    speed_sg = df['speed_sg_px_s'].to_numpy()
+    speed_butter = df['speed_butter_px_s'].to_numpy()
+
+    # FFT analysis of velocity oscillation
+    speed_detrend = speed_raw - np.mean(speed_raw)
+    n_fft = len(speed_detrend)
+    freqs = np.fft.rfftfreq(n_fft, d=dt)
+    fft_vals = np.abs(np.fft.rfft(speed_detrend))
+
+    # Find dominant stroke peak in 0.5 - 3.0 Hz
+    mask = (freqs >= 0.5) & (freqs <= 3.0)
+    if np.any(mask):
+        peak_freq = freqs[mask][np.argmax(fft_vals[mask])]
+    else:
+        peak_freq = target_freq
+
+    fig, axs = plt.subplots(4, 1, figsize=(12, 16))
+
+    # 1. 2D Trajectory
+    axs[0].plot(x, y, color='lightgray', lw=1.2, label='Raw trajectory')
+    sc = axs[0].scatter(x_sg, y_sg, c=t, cmap='viridis', s=6, label='Smoothed trajectory')
+    cbar = plt.colorbar(sc, ax=axs[0])
+    cbar.set_label('Time (s)', fontsize=11)
+    axs[0].set_title('Robot Swimming Trajectory in Pool', fontsize=14, fontweight='bold')
+    axs[0].set_xlabel('X Coordinate (px)', fontsize=11)
+    axs[0].set_ylabel('Y Coordinate (px)', fontsize=11)
+    axs[0].invert_yaxis()  # Match image coordinates
+    axs[0].axis('equal')
+    axs[0].grid(True, linestyle='--', alpha=0.5)
+    axs[0].legend(loc='upper right')
+
+    # 2. Coordinates vs Time
+    axs[1].plot(t, x, color='salmon', alpha=0.5, label='X (raw)')
+    axs[1].plot(t, x_sg, color='firebrick', lw=1.8, label='X (Savgol smoothed)')
+    axs[1].plot(t, y, color='skyblue', alpha=0.5, label='Y (raw)')
+    axs[1].plot(t, y_sg, color='royalblue', lw=1.8, label='Y (Savgol smoothed)')
+    axs[1].set_title('Robot Position vs Time', fontsize=14, fontweight='bold')
+    axs[1].set_xlabel('Time (s)', fontsize=11)
+    axs[1].set_ylabel('Position (px)', fontsize=11)
+    axs[1].grid(True, linestyle='--', alpha=0.5)
+    axs[1].legend(loc='upper right')
+
+    # 3. Swimming Speed vs Time
+    mean_speed = np.mean(speed_sg)
+    axs[2].plot(t, speed_raw, color='lightgray', alpha=0.7, lw=1.0, label='Raw instantaneous speed')
+    axs[2].plot(t, speed_sg, color='seagreen', lw=2.2, label=f'Savgol Filtered ({window_sec:.2f}s / {window_frames}f window)')
+    axs[2].plot(t, speed_butter, color='darkorange', lw=1.5, linestyle='--', label=f'Butterworth Low-pass ({target_freq} Hz)')
+    axs[2].axhline(mean_speed, color='crimson', linestyle=':', lw=2, label=f'Mean Cruising Speed = {mean_speed:.1f} px/s')
+    axs[2].set_title(f'Swimming Velocity vs Time (~{target_freq} Hz Stroke Filtered)', fontsize=14, fontweight='bold')
+    axs[2].set_xlabel('Time (s)', fontsize=11)
+    axs[2].set_ylabel('Speed (px/s)', fontsize=11)
+    axs[2].set_ylim(0, max(np.percentile(speed_raw, 99.5) * 1.2, mean_speed * 2.5))
+    axs[2].grid(True, linestyle='--', alpha=0.5)
+    axs[2].legend(loc='upper right')
+
+    # 4. FFT Power Spectrum
+    axs[3].plot(freqs, fft_vals, color='purple', lw=1.5, label='Speed Oscillation Spectrum')
+    axs[3].axvline(peak_freq, color='crimson', linestyle='--', lw=1.8, label=f'Observed Stroke Peak = {peak_freq:.2f} Hz')
+    axs[3].axvline(target_freq, color='darkgreen', linestyle=':', lw=1.8, label=f'Target Frequency = {target_freq:.2f} Hz')
+    axs[3].set_xlim(0, 5.0)
+    axs[3].set_title('Velocity Oscillation Spectrum (FFT)', fontsize=14, fontweight='bold')
+    axs[3].set_xlabel('Frequency (Hz)', fontsize=11)
+    axs[3].set_ylabel('Amplitude', fontsize=11)
+    axs[3].grid(True, linestyle='--', alpha=0.5)
+    axs[3].legend(loc='upper right')
+
+    plt.tight_layout()
+    plt.savefig(output_img_path, dpi=200)
+    pdf_path = os.path.splitext(output_img_path)[0] + ".pdf"
+    plt.savefig(pdf_path)
+    plt.close()
+    print(f"[INFO] Figures saved to:")
+    print(f"       PNG: {output_img_path}")
+    print(f"       PDF: {pdf_path}")
+    return peak_freq, mean_speed
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Track swimming robot and compute filtered velocity from fixed-camera video.")
+    parser.add_argument("--video", type=str, default=r"d:\codes\Volvocine_PicoV2\VolBotVideo\GX011315.MP4",
+                        help="Path to input video file")
+    parser.add_argument("--start_sec", type=float, default=6.0,
+                        help="Start time in seconds for tracking (default: 6.0s)")
+    parser.add_argument("--end_sec", type=float, default=82.0,
+                        help="End time in seconds for tracking (default: 82.0s, None for end of video)")
+    parser.add_argument("--stroke_freq", type=float, default=1.25,
+                        help="Robot paddle stroke frequency in Hz for filter window (default: 1.25 Hz)")
+    parser.add_argument("--scale_m_per_px", type=float, default=None,
+                        help="Spatial scale in meters per pixel (optional)")
+    parser.add_argument("--output_dir", type=str, default="tracking_results",
+                        help="Output directory for results")
+    parser.add_argument("--save_video", action="store_true",
+                        help="Save video with tracking trajectory and bounding box overlay")
+    parser.add_argument("--yolo", action="store_true",
+                        help="Flag passed from prompt (runs automated pipeline without interactive prompts)")
+
+    args = parser.parse_args()
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    video_basename = os.path.splitext(os.path.basename(args.video))[0]
+
+    # 1. Background generation
+    bg_image = generate_background(args.video)
+    bg_path = os.path.join(args.output_dir, f"{video_basename}_background.jpg")
+    cv2.imwrite(bg_path, bg_image)
+    print(f"[INFO] Saved clean background to {bg_path}")
+
+    # 2. Tracking
+    annotated_video_path = os.path.join(args.output_dir, f"{video_basename}_tracked.mp4")
+    df_track, fps = track_robot_trajectory(
+        video_path=args.video,
+        bg_image=bg_image,
+        start_sec=args.start_sec,
+        end_sec=args.end_sec,
+        save_annotated_video=args.save_video,
+        output_video_path=annotated_video_path
+    )
+
+    # 3. Filtering and Velocity Computation
+    df_analyzed, win_sec, win_frames = compute_filtered_velocity(
+        df=df_track,
+        fps=fps,
+        stroke_freq=args.stroke_freq,
+        scale_m_per_px=args.scale_m_per_px
+    )
+
+    # 4. Save CSV
+    csv_path = os.path.join(args.output_dir, f"{video_basename}_trajectory_velocity.csv")
+    df_analyzed.to_csv(csv_path, index=False)
+    print(f"[INFO] Trajectory & velocity data saved to {csv_path}")
+
+    # 5. Plot Figures
+    fig_path = os.path.join(args.output_dir, f"{video_basename}_swimming_analysis.png")
+    peak_freq, mean_speed = plot_swimming_results(
+        df=df_analyzed,
+        fps=fps,
+        window_sec=win_sec,
+        window_frames=win_frames,
+        target_freq=args.stroke_freq,
+        output_img_path=fig_path
+    )
+
+    # Summary
+    print("\n" + "="*60)
+    print("           SWIMMING ANALYSIS SUMMARY REPORT")
+    print("="*60)
+    print(f" Video File            : {args.video}")
+    print(f" Analyzed Duration     : {args.start_sec:.2f}s to {args.end_sec:.2f}s ({len(df_analyzed)/fps:.2f}s)")
+    print(f" Frame Rate (FPS)      : {fps:.3f} fps")
+    print(f" Filter Window Length  : {win_sec:.3f} s ({win_frames} frames) [Stroke ~{args.stroke_freq} Hz]")
+    print(f" Observed Stroke Peak  : {peak_freq:.3f} Hz")
+    print(f" Mean Swimming Speed   : {mean_speed:.2f} px/s")
+    print(f" Max Filtered Speed    : {df_analyzed['speed_sg_px_s'].max():.2f} px/s")
+    print(f" Min Filtered Speed    : {df_analyzed['speed_sg_px_s'].min():.2f} px/s")
+    if args.scale_m_per_px:
+        print(f" Mean Speed (m/s)      : {mean_speed * args.scale_m_per_px:.3f} m/s ({mean_speed * args.scale_m_per_px * 100:.1f} cm/s)")
+    print(f" Output CSV            : {csv_path}")
+    print(f" Output Plot (PNG/PDF) : {fig_path}")
+    if args.save_video:
+        print(f" Output Video          : {annotated_video_path}")
+    print("="*60 + "\n")
+
+
+if __name__ == "__main__":
+    main()

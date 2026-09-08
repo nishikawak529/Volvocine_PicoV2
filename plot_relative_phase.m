@@ -1236,7 +1236,8 @@ function energy_info = compute_and_display_energy(phase_series_by_file, file_lis
         end
 
         energy_info(f).file = file_list{f};
-        energy_info(f).time_range = [0, max_plot_time];
+        % Clamp time range to actual available data duration (not arbitrary max_plot_time)
+        effective_plot_time = max_plot_time;
 
         agent_results = struct('agent_id', {}, 'display_id', {}, 'energy_J', {}, 'energy_mWh', {}, 'mean_power_W', {}, 'mean_power_mW', {});
         total_energy_J = 0;
@@ -1286,6 +1287,7 @@ function energy_info = compute_and_display_energy(phase_series_by_file, file_lis
                 'mean_power_mW', mean_p_mW); %#ok<AGROW>
         end
 
+        energy_info(f).time_range = [0, actual_duration];
         energy_info(f).duration_sec = actual_duration;
         energy_info(f).agents = agent_results;
         energy_info(f).total_energy_J = total_energy_J;
@@ -1300,8 +1302,8 @@ function energy_info = compute_and_display_energy(phase_series_by_file, file_lis
 
         % Display formatted energy table in command window
         fprintf('\n========================================================================================\n');
-        fprintf('[ENERGY] Energy Consumption in Plotted Range [0.00 s - %.2f s] (Duration: %.2f s)\n', ...
-            max_plot_time, actual_duration);
+        fprintf('[ENERGY] Energy Consumption over Actual Data Range [0.00 s - %.2f s] (Duration: %.2f s)\n', ...
+            actual_duration, actual_duration);
         fprintf('         File: %s\n', file_label);
         fprintf('----------------------------------------------------------------------------------------\n');
         fprintf('  Agent ID (Disp ID) |  Energy [J]  |  Energy [mWh] |  Mean Power [W] |  Mean Power [mW]\n');
