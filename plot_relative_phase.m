@@ -96,7 +96,11 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         error('Directory not found: %s', dirpath);
     end
 
-    csvs = dir(fullfile(dirpath, '*.csv'));
+    csvs = dir(fullfile(dirpath, 'merged_*.csv'));
+    if isempty(csvs)
+        csvs = dir(fullfile(dirpath, '*.csv'));
+        csvs = csvs(~contains({csvs.name}, 'trajectory') & ~contains({csvs.name}, 'phase_energy'));
+    end
     if isempty(csvs)
         error('No CSV files found in %s', dirpath);
     end
@@ -913,10 +917,15 @@ function df_all = correct_chunk_start_times_matlab(df_all, threshold_sec, jump_s
         start_time = min(df_all.time_pc_sec_abs(idx));
         if start_time - median_start > threshold_sec
             df_all.time_pc_sec_abs(idx) = df_all.time_pc_sec_abs(idx) - jump_sec;
-            aid = agent_keys(i);
-            cid = chunk_keys(i);
-            fprintf('[FIX] Corrected chunk time for agent %d, chunk %d: %.3f → %.3f\n', ...
-                aid, cid, start_time, start_time - jump_sec);
+            try
+                aid = agent_keys(i);
+                cid = chunk_keys(i);
+                if iscell(aid), aid = aid{1}; end
+                if iscell(cid), cid = cid{1}; end
+                fprintf('[FIX] Corrected chunk time for agent %s, chunk %s: %.3f → %.3f\n', ...
+                    string(aid), string(cid), start_time, start_time - jump_sec);
+            catch
+            end
         end
     end
 end

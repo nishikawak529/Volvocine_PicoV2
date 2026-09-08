@@ -158,19 +158,39 @@ def track_robot_trajectory(
         for c in contours:
             area = cv2.contourArea(c)
             if 3000 < area < 45000:
-                M = cv2.moments(c)
-                if M["m00"] > 0:
+                # Extract core body centroid via Distance Transform to reject arm/reflection shifts
+                bx, by, bw, bh = cv2.boundingRect(c)
+                roi_mask = np.zeros((bh, bw), dtype=np.uint8)
+                c_shifted = c - np.array([bx, by])
+                cv2.drawContours(roi_mask, [c_shifted], -1, 255, -1)
+                dt_roi = cv2.distanceTransform(roi_mask, cv2.DIST_L2, 5)
+                max_dt = float(np.max(dt_roi))
+                
+                if max_dt > 12:
+                    core = (dt_roi >= 0.55 * max_dt).astype(np.uint8)
+                    Mc = cv2.moments(core)
+                    if Mc["m00"] > 0:
+                        cx = (Mc["m10"] / Mc["m00"]) + bx + cur_xmin
+                        cy = (Mc["m01"] / Mc["m00"]) + by + cur_ymin
+                    else:
+                        M = cv2.moments(c)
+                        cx = (M["m10"] / M["m00"]) + cur_xmin
+                        cy = (M["m01"] / M["m00"]) + cur_ymin
+                else:
+                    M = cv2.moments(c)
                     cx = (M["m10"] / M["m00"]) + cur_xmin
                     cy = (M["m01"] / M["m00"]) + cur_ymin
-                    if prev_center is None:
-                        if area > max_area:
-                            max_area = area
-                            best_c = (cx, cy, area, c)
-                    else:
-                        d = (cx - prev_center[0])**2 + (cy - prev_center[1])**2
-                        if d < best_dist:
-                            best_dist = d
-                            best_c = (cx, cy, area, c)
+
+                if prev_center is None:
+                    if area > max_area:
+                        max_area = area
+                        best_c = (cx, cy, area, c)
+                else:
+                    d = (cx - prev_center[0])**2 + (cy - prev_center[1])**2
+                    # Reject sudden jumps > 25 pixels in a single frame (prevents hopping to reflections/hands)
+                    if d < 625 and d < best_dist:
+                        best_dist = d
+                        best_c = (cx, cy, area, c)
 
         if best_c is not None:
             cx, cy, area, c = best_c
@@ -281,12 +301,35 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     y = df['y'].interpolate(method='linear').bfill().ffill().to_numpy()
     t = df['time_sec'].to_numpy()
 
-    # 1. Raw differential velocity (gradient)
-    vx_raw = np.gradient(x, dt)
-    vy_raw = np.gradient(y, dt)
+    # 0. Clean position outliers (Hampel filter / median deviation)
+    # Replaces single/double frame glitches (specular reflections, bubble shadows)
+    w_med = 11
+    pad_w = w_med // 2
+    for _ in range(2):
+        x_pad = np.pad(x, pad_w, mode='edge')
+        y_pad = np.pad(y, pad_w, mode='edge')
+        x_med = signal.medfilt(x_pad, kernel_size=w_med)[pad_w:-pad_w]
+        y_med = signal.medfilt(y_pad, kernel_size=w_med)[pad_w:-pad_w]
+        dev = np.sqrt((x - x_med)**2 + (y - y_med)**2)
+        outliers = dev > 3.5  # Jump > 3.5 px in 0.18s is non-physical (> 210 px/s)
+        x[outliers] = x_med[outliers]
+        y[outliers] = y_med[outliers]
+
+    # 1. Instantaneous swimming velocity
+    # Uses short-window Savitzky-Golay (0.15s = 9 frames) to capture genuine intra-stroke oscillations
+    # while eliminating single-frame camera digitizing noise
+    vx_raw = signal.savgol_filter(x, window_length=9, polyorder=2, deriv=1, delta=dt)
+    vy_raw = signal.savgol_filter(y, window_length=9, polyorder=2, deriv=1, delta=dt)
     speed_raw = np.sqrt(vx_raw**2 + vy_raw**2)
 
-    # 2. Savitzky-Golay filter (Position & Velocity derivative)
+    # Suppress any residual non-physical spikes above 150 px/s (robot peak stroke speed is ~80-100 px/s)
+    spikes = speed_raw > 150.0
+    if np.any(spikes):
+        spd_med = signal.medfilt(speed_raw, kernel_size=7)
+        speed_raw[spikes] = np.minimum(speed_raw[spikes], np.maximum(spd_med[spikes], 90.0))
+        speed_raw = np.clip(speed_raw, 0, 180.0)
+
+    # 2. Savitzky-Golay filter (Stroke-cycle averaged Position & Velocity derivative)
     x_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2)
     y_sg = signal.savgol_filter(y, window_length=window_frames, polyorder=2)
     vx_sg = signal.savgol_filter(x, window_length=window_frames, polyorder=2, deriv=1, delta=dt)
@@ -408,7 +451,7 @@ def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, 
     axs[2].set_title(f'Swimming Velocity vs Time (~{target_freq} Hz Stroke Filtered)', fontsize=14, fontweight='bold')
     axs[2].set_xlabel('Time (s)', fontsize=11)
     axs[2].set_ylabel('Speed (px/s)', fontsize=11)
-    axs[2].set_ylim(0, max(np.percentile(speed_raw, 99.5) * 1.2, mean_speed * 2.5))
+    axs[2].set_ylim(0, max(np.percentile(speed_raw, 99.5) * 1.25, mean_speed * 2.2, 80.0))
     axs[2].grid(True, linestyle='--', alpha=0.5)
     axs[2].legend(loc='upper right')
 
