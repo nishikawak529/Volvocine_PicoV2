@@ -68,6 +68,13 @@ COND_CONFIG = {
     }
 }
 
+# Physical calibration settings (Pool height = 2.0 m, 1585 px inner water boundary in 4K reference)
+POOL_HEIGHT_PX = 1585.0   # Reference 4K pixels
+POOL_HEIGHT_M = 2.0        # Physical length in meters
+SCALE_M_PER_PX = POOL_HEIGHT_M / POOL_HEIGHT_PX   # ~0.00126183 m/px
+SCALE_CM_PER_PX = SCALE_M_PER_PX * 100.0           # ~0.126183 cm/px
+SCALE_MM_PER_PX = SCALE_M_PER_PX * 1000.0          # ~1.26183 mm/px
+
 
 def load_and_aggregate_all_trials(base_dir=r"D:\codes\Volvocine_PicoV2\VolBotVideo"):
     """
@@ -232,6 +239,13 @@ def load_and_aggregate_all_trials(base_dir=r"D:\codes\Volvocine_PicoV2\VolBotVid
                 
             cfg = COND_CONFIG.get(cond, {'color': '#333333', 'marker': 'o', 'label': cond})
             
+            # Physical metrics (cm/s, m, J/m)
+            mean_speed_cm_s = mean_speed * SCALE_CM_PER_PX
+            max_speed_cm_s = max_speed * SCALE_CM_PER_PX
+            std_speed_cm_s = std_speed * SCALE_CM_PER_PX
+            total_dist_m = total_dist_px * SCALE_M_PER_PX
+            cot_J_m = mean_power / (mean_speed * SCALE_M_PER_PX) if np.isfinite(mean_power) and mean_speed > 0 else np.nan
+
             row_data = {
                 "trial": t_name,
                 "condition": cond,
@@ -241,13 +255,18 @@ def load_and_aggregate_all_trials(base_dir=r"D:\codes\Volvocine_PicoV2\VolBotVid
                 "mean_speed_px_s": mean_speed,
                 "max_speed_px_s": max_speed,
                 "std_speed_px_s": std_speed,
+                "mean_speed_cm_s": mean_speed_cm_s,
+                "max_speed_cm_s": max_speed_cm_s,
+                "std_speed_cm_s": std_speed_cm_s,
                 "total_distance_px": total_dist_px,
+                "total_distance_m": total_dist_m,
                 "stroke_peak_freq_hz": peak_freq,
                 "mean_power_W": mean_power,
                 "mean_power_mW": mean_power * 1000.0 if np.isfinite(mean_power) else np.nan,
                 "total_energy_J": total_energy_J,
                 "cot_J_px": cot_J_px,
                 "cot_mJ_px": cot_mJ_px,
+                "cot_J_m": cot_J_m,
                 "mode1_converged_mean": mode_metrics['mode1_converged_mean'],
                 "mode1_steady_std": mode_metrics['mode1_steady_std'],
                 "mode2_converged_mean": mode_metrics['mode2_converged_mean'],
@@ -314,7 +333,7 @@ def plot_speed_vs_cot(df, output_dir, annotate_trials=False):
         group = df[df['condition'] == cond]
         if group.empty:
             continue
-        ax.scatter(group['mean_speed_px_s'], group['cot_mJ_px'],
+        ax.scatter(group['mean_speed_cm_s'], group['cot_J_m'],
                    c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                    edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -324,15 +343,15 @@ def plot_speed_vs_cot(df, output_dir, annotate_trials=False):
             t_id = row['trial'].replace('GX01', '')
             cond = row['condition']
             cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-            ax.annotate(t_id, (row['mean_speed_px_s'], row['cot_mJ_px']),
+            ax.annotate(t_id, (row['mean_speed_cm_s'], row['cot_J_m']),
                         xytext=(4, 4), textcoords='offset points',
                         fontsize=8.0, fontweight='medium', color=cfg['color'],
                         path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
-    set_smart_axis_limits(ax, df['mean_speed_px_s'], df['cot_mJ_px'], x_pad=0.08, y_pad=0.10)
+    set_smart_axis_limits(ax, df['mean_speed_cm_s'], df['cot_J_m'], x_pad=0.08, y_pad=0.10)
     
     # Correlation for all trials
-    corr_all = compute_correlations(df['mean_speed_px_s'], df['cot_mJ_px'], "All")
+    corr_all = compute_correlations(df['mean_speed_cm_s'], df['cot_J_m'], "All")
     if corr_all:
         stat_str = (f"All Trials (N={corr_all['n']}):\n"
                     f"  Pearson r = {corr_all['pearson_r']:+.3f} (p = {corr_all['pearson_p']:.2e})\n"
@@ -341,8 +360,8 @@ def plot_speed_vs_cot(df, output_dir, annotate_trials=False):
                 fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
     ax.set_title("Distribution of Swimming Speed vs. Cost of Transport (CoT) by Condition", fontsize=14, fontweight='bold', pad=12)
-    ax.set_xlabel("Mean Swimming Speed $v$ [px/s]", fontsize=12)
-    ax.set_ylabel("Cost of Transport (CoT = $P/v$) [mJ/px]", fontsize=12)
+    ax.set_xlabel("Mean Swimming Speed $v$ [cm/s]", fontsize=12)
+    ax.set_ylabel("Cost of Transport (CoT = $P/v$) [J/m]", fontsize=12)
     ax.grid(True, linestyle='--', alpha=0.5)
     ax.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=10.5)
 
@@ -365,7 +384,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
         group = df[df['condition'] == cond]
         if group.empty:
             continue
-        ax1.scatter(group['mode1_converged_mean'], group['mean_speed_px_s'],
+        ax1.scatter(group['mode1_converged_mean'], group['mean_speed_cm_s'],
                     c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                     edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -374,7 +393,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
             t_id = row['trial'].replace('GX01', '')
             cond = row['condition']
             cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-            ax1.annotate(t_id, (row['mode1_converged_mean'], row['mean_speed_px_s']),
+            ax1.annotate(t_id, (row['mode1_converged_mean'], row['mean_speed_cm_s']),
                          xytext=(4, 4), textcoords='offset points',
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
@@ -382,14 +401,14 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
     # Baseline regression line
     base_df = df[df['condition'] == 'baseline']
     if len(base_df) >= 3:
-        p_base = np.polyfit(base_df['mode1_converged_mean'], base_df['mean_speed_px_s'], deg=1)
+        p_base = np.polyfit(base_df['mode1_converged_mean'], base_df['mean_speed_cm_s'], deg=1)
         x_line = np.linspace(df['mode1_converged_mean'].min()*0.9, df['mode1_converged_mean'].max()*1.1, 100)
         ax1.plot(x_line, np.polyval(p_base, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7, label='Baseline Fit')
 
-    set_smart_axis_limits(ax1, df['mode1_converged_mean'], df['mean_speed_px_s'])
+    set_smart_axis_limits(ax1, df['mode1_converged_mean'], df['mean_speed_cm_s'])
     
-    corr_base = compute_correlations(base_df['mode1_converged_mean'], base_df['mean_speed_px_s'], "Baseline")
-    corr_all = compute_correlations(df['mode1_converged_mean'], df['mean_speed_px_s'], "All")
+    corr_base = compute_correlations(base_df['mode1_converged_mean'], base_df['mean_speed_cm_s'], "Baseline")
+    corr_all = compute_correlations(df['mode1_converged_mean'], df['mean_speed_cm_s'], "All")
     stat_lines = []
     if corr_base:
         stat_lines.append(f"Baseline (N={corr_base['n']}): r = {corr_base['pearson_r']:+.3f} (p = {corr_base['pearson_p']:.2e})")
@@ -401,7 +420,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
 
     ax1.set_title("First Mode Convergence Value vs. Swimming Speed", fontsize=13, fontweight='bold', pad=12)
     ax1.set_xlabel("First Mode Steady Convergence Value $|Z_1|$", fontsize=12)
-    ax1.set_ylabel("Mean Swimming Speed $v$ [px/s]", fontsize=12)
+    ax1.set_ylabel("Mean Swimming Speed $v$ [cm/s]", fontsize=12)
     ax1.grid(True, linestyle='--', alpha=0.5)
     ax1.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=10)
 
@@ -410,7 +429,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
         group = df[df['condition'] == cond]
         if group.empty:
             continue
-        ax2.scatter(group['mode1_converged_mean'], group['cot_mJ_px'],
+        ax2.scatter(group['mode1_converged_mean'], group['cot_J_m'],
                     c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                     edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -419,20 +438,20 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
             t_id = row['trial'].replace('GX01', '')
             cond = row['condition']
             cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-            ax2.annotate(t_id, (row['mode1_converged_mean'], row['cot_mJ_px']),
+            ax2.annotate(t_id, (row['mode1_converged_mean'], row['cot_J_m']),
                          xytext=(4, 4), textcoords='offset points',
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
     if len(base_df) >= 3:
-        p_base2 = np.polyfit(base_df['mode1_converged_mean'], base_df['cot_mJ_px'], deg=1)
+        p_base2 = np.polyfit(base_df['mode1_converged_mean'], base_df['cot_J_m'], deg=1)
         x_line = np.linspace(df['mode1_converged_mean'].min()*0.9, df['mode1_converged_mean'].max()*1.1, 100)
         ax2.plot(x_line, np.polyval(p_base2, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7, label='Baseline Fit')
 
-    set_smart_axis_limits(ax2, df['mode1_converged_mean'], df['cot_mJ_px'])
+    set_smart_axis_limits(ax2, df['mode1_converged_mean'], df['cot_J_m'])
 
-    corr_base2 = compute_correlations(base_df['mode1_converged_mean'], base_df['cot_mJ_px'], "Baseline")
-    corr_all2 = compute_correlations(df['mode1_converged_mean'], df['cot_mJ_px'], "All")
+    corr_base2 = compute_correlations(base_df['mode1_converged_mean'], base_df['cot_J_m'], "Baseline")
+    corr_all2 = compute_correlations(df['mode1_converged_mean'], df['cot_J_m'], "All")
     stat_lines2 = []
     if corr_base2:
         stat_lines2.append(f"Baseline (N={corr_base2['n']}): r = {corr_base2['pearson_r']:+.3f} (p = {corr_base2['pearson_p']:.2e})")
@@ -444,7 +463,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
 
     ax2.set_title("First Mode Convergence Value vs. Cost of Transport", fontsize=13, fontweight='bold', pad=12)
     ax2.set_xlabel("First Mode Steady Convergence Value $|Z_1|$", fontsize=12)
-    ax2.set_ylabel("Cost of Transport (CoT = $P/v$) [mJ/px]", fontsize=12)
+    ax2.set_ylabel("Cost of Transport (CoT = $P/v$) [J/m]", fontsize=12)
     ax2.grid(True, linestyle='--', alpha=0.5)
     ax2.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=10)
 
@@ -469,7 +488,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
         group = df[df['condition'] == cond]
         if group.empty:
             continue
-        ax1.scatter(group['G_sum_all'], group['mean_speed_px_s'],
+        ax1.scatter(group['G_sum_all'], group['mean_speed_cm_s'],
                     c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                     edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -478,20 +497,20 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
             t_id = row['trial'].replace('GX01', '')
             cond = row['condition']
             cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-            ax1.annotate(t_id, (row['G_sum_all'], row['mean_speed_px_s']),
+            ax1.annotate(t_id, (row['G_sum_all'], row['mean_speed_cm_s']),
                          xytext=(4, 4), textcoords='offset points',
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
     if len(base_df) >= 3:
-        p_base = np.polyfit(base_df['G_sum_all'], base_df['mean_speed_px_s'], deg=1)
+        p_base = np.polyfit(base_df['G_sum_all'], base_df['mean_speed_cm_s'], deg=1)
         x_line = np.linspace(df['G_sum_all'].min()*0.9, df['G_sum_all'].max()*1.1, 100)
         ax1.plot(x_line, np.polyval(p_base, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7)
 
-    set_smart_axis_limits(ax1, df['G_sum_all'], df['mean_speed_px_s'])
+    set_smart_axis_limits(ax1, df['G_sum_all'], df['mean_speed_cm_s'])
     
-    corr1_base = compute_correlations(base_df['G_sum_all'], base_df['mean_speed_px_s'], "Baseline")
-    corr1_all = compute_correlations(df['G_sum_all'], df['mean_speed_px_s'], "All")
+    corr1_base = compute_correlations(base_df['G_sum_all'], base_df['mean_speed_cm_s'], "Baseline")
+    corr1_all = compute_correlations(df['G_sum_all'], df['mean_speed_cm_s'], "All")
     stat_lines = []
     if corr1_base:
         stat_lines.append(f"Baseline (N={corr1_base['n']}): r = {corr1_base['pearson_r']:+.3f} (p = {corr1_base['pearson_p']:.2e})")
@@ -503,7 +522,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
 
     ax1.set_title("Total Weighted Input Amplitude vs. Swimming Speed", fontsize=13, fontweight='bold', pad=12)
     ax1.set_xlabel(r"Total Received Input Amplitude $\sum_{i} |G_i|$", fontsize=12)
-    ax1.set_ylabel("Mean Swimming Speed $v$ [px/s]", fontsize=12)
+    ax1.set_ylabel("Mean Swimming Speed $v$ [cm/s]", fontsize=12)
     ax1.grid(True, linestyle='--', alpha=0.5)
     ax1.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=10)
 
@@ -512,7 +531,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
         group = df[df['condition'] == cond]
         if group.empty:
             continue
-        ax2.scatter(group['G_sum_all'], group['cot_mJ_px'],
+        ax2.scatter(group['G_sum_all'], group['cot_J_m'],
                     c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                     edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -521,20 +540,20 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
             t_id = row['trial'].replace('GX01', '')
             cond = row['condition']
             cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-            ax2.annotate(t_id, (row['G_sum_all'], row['cot_mJ_px']),
+            ax2.annotate(t_id, (row['G_sum_all'], row['cot_J_m']),
                          xytext=(4, 4), textcoords='offset points',
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
     if len(base_df) >= 3:
-        p_base2 = np.polyfit(base_df['G_sum_all'], base_df['cot_mJ_px'], deg=1)
+        p_base2 = np.polyfit(base_df['G_sum_all'], base_df['cot_J_m'], deg=1)
         x_line = np.linspace(df['G_sum_all'].min()*0.9, df['G_sum_all'].max()*1.1, 100)
         ax2.plot(x_line, np.polyval(p_base2, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7)
 
-    set_smart_axis_limits(ax2, df['G_sum_all'], df['cot_mJ_px'])
+    set_smart_axis_limits(ax2, df['G_sum_all'], df['cot_J_m'])
 
-    corr2_base = compute_correlations(base_df['G_sum_all'], base_df['cot_mJ_px'], "Baseline")
-    corr2_all = compute_correlations(df['G_sum_all'], df['cot_mJ_px'], "All")
+    corr2_base = compute_correlations(base_df['G_sum_all'], base_df['cot_J_m'], "Baseline")
+    corr2_all = compute_correlations(df['G_sum_all'], df['cot_J_m'], "All")
     stat_lines2 = []
     if corr2_base:
         stat_lines2.append(f"Baseline (N={corr2_base['n']}): r = {corr2_base['pearson_r']:+.3f} (p = {corr2_base['pearson_p']:.2e})")
@@ -546,7 +565,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
 
     ax2.set_title("Total Weighted Input Amplitude vs. Cost of Transport", fontsize=13, fontweight='bold', pad=12)
     ax2.set_xlabel(r"Total Received Input Amplitude $\sum_{i} |G_i|$", fontsize=12)
-    ax2.set_ylabel("Cost of Transport (CoT = $P/v$) [mJ/px]", fontsize=12)
+    ax2.set_ylabel("Cost of Transport (CoT = $P/v$) [J/m]", fontsize=12)
     ax2.grid(True, linestyle='--', alpha=0.5)
     ax2.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=10)
 
@@ -577,7 +596,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
             group = df[df['condition'] == cond]
             if group.empty:
                 continue
-            ax_speed.scatter(group[col_m], group['mean_speed_px_s'],
+            ax_speed.scatter(group[col_m], group['mean_speed_cm_s'],
                              c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                              edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
                              
@@ -586,20 +605,20 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
                 t_id = row['trial'].replace('GX01', '')
                 cond = row['condition']
                 cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-                ax_speed.annotate(t_id, (row[col_m], row['mean_speed_px_s']),
+                ax_speed.annotate(t_id, (row[col_m], row['mean_speed_cm_s']),
                                   xytext=(4, 4), textcoords='offset points',
                                   fontsize=7.5, color=cfg['color'],
                                   path_effects=[pe.withStroke(linewidth=2.0, foreground='white')])
                                   
         if len(base_df) >= 3:
-            p_s = np.polyfit(base_df[col_m], base_df['mean_speed_px_s'], deg=1)
+            p_s = np.polyfit(base_df[col_m], base_df['mean_speed_cm_s'], deg=1)
             x_s = np.linspace(df[col_m].min() * 0.9, df[col_m].max() * 1.1, 100)
             ax_speed.plot(x_s, np.polyval(p_s, x_s), color='#118AB2', linestyle='--', lw=1.5, alpha=0.7)
 
-        set_smart_axis_limits(ax_speed, df[col_m], df['mean_speed_px_s'])
+        set_smart_axis_limits(ax_speed, df[col_m], df['mean_speed_cm_s'])
         
-        corr_s_base = compute_correlations(base_df[col_m], base_df['mean_speed_px_s'], f"Mode{m}")
-        corr_s_all = compute_correlations(df[col_m], df['mean_speed_px_s'], f"Mode{m}")
+        corr_s_base = compute_correlations(base_df[col_m], base_df['mean_speed_cm_s'], f"Mode{m}")
+        corr_s_all = compute_correlations(df[col_m], df['mean_speed_cm_s'], f"Mode{m}")
         stat_lines = []
         if corr_s_base:
             stat_lines.append(f"Baseline: r={corr_s_base['pearson_r']:+.3f}")
@@ -612,7 +631,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
 
         ax_speed.set_title(f"Mode {m} ($|Z_{m}|$) vs. Speed", fontsize=12.5, fontweight='bold', pad=10)
         ax_speed.set_xlabel(f"Mode {m} Convergence Value $|Z_{m}|$", fontsize=11)
-        ax_speed.set_ylabel("Mean Speed $v$ [px/s]", fontsize=11)
+        ax_speed.set_ylabel("Mean Speed $v$ [cm/s]", fontsize=11)
         ax_speed.grid(True, linestyle='--', alpha=0.5)
         if m == 1:
             ax_speed.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=9.5)
@@ -623,7 +642,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
             group = df[df['condition'] == cond]
             if group.empty:
                 continue
-            ax_cot.scatter(group[col_m], group['cot_mJ_px'],
+            ax_cot.scatter(group[col_m], group['cot_J_m'],
                            c=cfg['color'], marker=cfg['marker'], s=cfg['size'], label=f"{cfg['label']} (N={len(group)})",
                            edgecolors='black', linewidth=1.1, alpha=0.9, zorder=cfg['zorder'])
 
@@ -632,20 +651,20 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
                 t_id = row['trial'].replace('GX01', '')
                 cond = row['condition']
                 cfg = COND_CONFIG.get(cond, {'color': '#333333'})
-                ax_cot.annotate(t_id, (row[col_m], row['cot_mJ_px']),
+                ax_cot.annotate(t_id, (row[col_m], row['cot_J_m']),
                                 xytext=(4, 4), textcoords='offset points',
                                 fontsize=7.5, color=cfg['color'],
                                 path_effects=[pe.withStroke(linewidth=2.0, foreground='white')])
 
         if len(base_df) >= 3:
-            p_c = np.polyfit(base_df[col_m], base_df['cot_mJ_px'], deg=1)
+            p_c = np.polyfit(base_df[col_m], base_df['cot_J_m'], deg=1)
             x_c = np.linspace(df[col_m].min() * 0.9, df[col_m].max() * 1.1, 100)
             ax_cot.plot(x_c, np.polyval(p_c, x_c), color='#118AB2', linestyle='--', lw=1.5, alpha=0.7)
 
-        set_smart_axis_limits(ax_cot, df[col_m], df['cot_mJ_px'])
+        set_smart_axis_limits(ax_cot, df[col_m], df['cot_J_m'])
 
-        corr_c_base = compute_correlations(base_df[col_m], base_df['cot_mJ_px'], f"Mode{m}")
-        corr_c_all = compute_correlations(df[col_m], df['cot_mJ_px'], f"Mode{m}")
+        corr_c_base = compute_correlations(base_df[col_m], base_df['cot_J_m'], f"Mode{m}")
+        corr_c_all = compute_correlations(df[col_m], df['cot_J_m'], f"Mode{m}")
         stat_lines_cot = []
         if corr_c_base:
             stat_lines_cot.append(f"Baseline: r={corr_c_base['pearson_r']:+.3f}")
@@ -658,7 +677,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
 
         ax_cot.set_title(f"Mode {m} ($|Z_{m}|$) vs. Cost of Transport", fontsize=12.5, fontweight='bold', pad=10)
         ax_cot.set_xlabel(f"Mode {m} Convergence Value $|Z_{m}|$", fontsize=11)
-        ax_cot.set_ylabel("Cost of Transport [mJ/px]", fontsize=11)
+        ax_cot.set_ylabel("Cost of Transport (CoT) [J/m]", fontsize=11)
         ax_cot.grid(True, linestyle='--', alpha=0.5)
         if m == 1:
             ax_cot.legend(loc='lower left', frameon=True, facecolor='white', framealpha=0.92, fontsize=9.5)
@@ -674,21 +693,21 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
 
 
 def plot_speed_and_stroke_comparison(df, output_dir):
-    """Figure 5: Swimming Speed and Stroke Frequency Distribution Comparison across all 5 conditions."""
-    fig, (ax_speed, ax_freq) = plt.subplots(1, 2, figsize=(16, 7))
+    """Figure 5: Swimming Speed and Cost of Transport (CoT) Distribution Comparison across conditions."""
+    fig, (ax_speed, ax_cot) = plt.subplots(1, 2, figsize=(16, 7))
     conditions = [c for c in ['baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz'] if c in df['condition'].unique()]
     
     positions = np.arange(len(conditions))
-    speed_data = [df[df['condition'] == c]['mean_speed_px_s'].dropna().values for c in conditions]
-    freq_data = [df[df['condition'] == c]['stroke_peak_freq_hz'].dropna().values for c in conditions]
+    speed_data = [df[df['condition'] == c]['mean_speed_cm_s'].dropna().values for c in conditions]
+    cot_data = [df[df['condition'] == c]['cot_J_m'].dropna().values for c in conditions]
     
     # 1. Swimming Speed comparison
-    bp = ax_speed.boxplot(speed_data, positions=positions, patch_artist=True, widths=0.45,
-                          showmeans=True, meanline=True,
-                          medianprops=dict(color='black', lw=1.5),
-                          meanprops=dict(color='red', lw=2.0, linestyle='--'))
-                          
-    for patch, c in zip(bp['boxes'], conditions):
+    bp_s = ax_speed.boxplot(speed_data, positions=positions, patch_artist=True, widths=0.45,
+                            showmeans=True, meanline=True,
+                            medianprops=dict(color='black', lw=1.5),
+                            meanprops=dict(color='red', lw=2.0, linestyle='--'))
+                           
+    for patch, c in zip(bp_s['boxes'], conditions):
         color = COND_CONFIG[c]['color']
         patch.set_facecolor(color)
         patch.set_alpha(0.35)
@@ -703,48 +722,62 @@ def plot_speed_and_stroke_comparison(df, output_dir):
         ax_speed.scatter(pos + jitter, vals, c=cfg['color'], marker=cfg['marker'], s=cfg['size'] * 0.7,
                          edgecolors='black', linewidth=0.8, alpha=0.85, zorder=4)
         m_val, s_val = np.mean(vals), np.std(vals)
-        ax_speed.text(pos, np.max(vals) + 0.8, f"{m_val:.2f}\n±{s_val:.2f}",
+        ax_speed.text(pos, np.max(vals) + 0.12, f"{m_val:.2f}\n±{s_val:.2f}",
                       ha='center', va='bottom', fontsize=9.5, fontweight='bold', color=cfg['color'])
 
     ax_speed.set_xticks(positions)
     ax_speed.set_xticklabels([f"{COND_CONFIG[c]['label']}\n(N={len(speed_data[i])})" for i, c in enumerate(conditions)], fontsize=11, fontweight='medium')
-    ax_speed.set_ylabel("Mean Swimming Speed [px/s]", fontsize=12, fontweight='bold')
+    ax_speed.set_ylabel("Mean Swimming Speed [cm/s]", fontsize=12, fontweight='bold')
     ax_speed.set_title("Cruising Speed Comparison across Conditions", fontsize=13, fontweight='bold')
     ax_speed.grid(True, linestyle='--', alpha=0.5, axis='y')
+    if len(speed_data) > 0 and all(len(v) > 0 for v in speed_data):
+        min_spd = min(np.min(v) for v in speed_data)
+        max_spd = max(np.max(v) for v in speed_data)
+        ax_speed.set_ylim(min_spd - 0.4, max_spd + 0.8)
 
-    # One-way ANOVA
+    # One-way ANOVA for Speed
     if len(speed_data) >= 2:
-        f_val, p_val = stats.f_oneway(*speed_data)
-        ax_speed.text(0.04, 0.95, f"ANOVA: F = {f_val:.2f}, p = {p_val:.2e}", transform=ax_speed.transAxes,
+        f_val_s, p_val_s = stats.f_oneway(*speed_data)
+        ax_speed.text(0.04, 0.95, f"ANOVA: F = {f_val_s:.2f}, p = {p_val_s:.2e}", transform=ax_speed.transAxes,
                       fontsize=10.5, fontweight='bold', bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, edgecolor='#888888'))
 
-    # 2. Stroke Peak Frequency comparison
-    bp_f = ax_freq.boxplot(freq_data, positions=positions, patch_artist=True, widths=0.45,
-                           showmeans=True, meanline=True,
-                           medianprops=dict(color='black', lw=1.5),
-                           meanprops=dict(color='red', lw=2.0, linestyle='--'))
-                           
-    for patch, c in zip(bp_f['boxes'], conditions):
+    # 2. Cost of Transport (CoT) comparison
+    bp_c = ax_cot.boxplot(cot_data, positions=positions, patch_artist=True, widths=0.45,
+                          showmeans=True, meanline=True,
+                          medianprops=dict(color='black', lw=1.5),
+                          meanprops=dict(color='red', lw=2.0, linestyle='--'))
+                          
+    for patch, c in zip(bp_c['boxes'], conditions):
         color = COND_CONFIG[c]['color']
         patch.set_facecolor(color)
         patch.set_alpha(0.35)
         patch.set_edgecolor(color)
         patch.set_linewidth(1.5)
         
-    for pos, c, vals in zip(positions, conditions, freq_data):
+    for pos, c, vals in zip(positions, conditions, cot_data):
         jitter = np.random.normal(0, 0.05, size=len(vals))
         cfg = COND_CONFIG[c]
-        ax_freq.scatter(pos + jitter, vals, c=cfg['color'], marker=cfg['marker'], s=cfg['size'] * 0.7,
-                        edgecolors='black', linewidth=0.8, alpha=0.85, zorder=4)
+        ax_cot.scatter(pos + jitter, vals, c=cfg['color'], marker=cfg['marker'], s=cfg['size'] * 0.7,
+                       edgecolors='black', linewidth=0.8, alpha=0.85, zorder=4)
         m_val, s_val = np.mean(vals), np.std(vals)
-        ax_freq.text(pos, np.max(vals) + 0.05, f"{m_val:.2f}\n±{s_val:.2f}",
-                     ha='center', va='bottom', fontsize=9.5, fontweight='bold', color=cfg['color'])
+        ax_cot.text(pos, np.max(vals) + 1.2, f"{m_val:.2f}\n±{s_val:.2f}",
+                    ha='center', va='bottom', fontsize=9.5, fontweight='bold', color=cfg['color'])
 
-    ax_freq.set_xticks(positions)
-    ax_freq.set_xticklabels([f"{COND_CONFIG[c]['label']}\n(N={len(freq_data[i])})" for i, c in enumerate(conditions)], fontsize=11, fontweight='medium')
-    ax_freq.set_ylabel("Stroke Peak Frequency [Hz]", fontsize=12, fontweight='bold')
-    ax_freq.set_title("Stroke Oscillation Frequency across Conditions", fontsize=13, fontweight='bold')
-    ax_freq.grid(True, linestyle='--', alpha=0.5, axis='y')
+    ax_cot.set_xticks(positions)
+    ax_cot.set_xticklabels([f"{COND_CONFIG[c]['label']}\n(N={len(cot_data[i])})" for i, c in enumerate(conditions)], fontsize=11, fontweight='medium')
+    ax_cot.set_ylabel("Cost of Transport (CoT) [J/m]", fontsize=12, fontweight='bold')
+    ax_cot.set_title("Cost of Transport (CoT) Comparison across Conditions", fontsize=13, fontweight='bold')
+    ax_cot.grid(True, linestyle='--', alpha=0.5, axis='y')
+    if len(cot_data) > 0 and all(len(v) > 0 for v in cot_data):
+        min_cot = min(np.min(v) for v in cot_data)
+        max_cot = max(np.max(v) for v in cot_data)
+        ax_cot.set_ylim(min_cot - 2.5, max_cot + 6.0)
+
+    # One-way ANOVA for CoT
+    if len(cot_data) >= 2:
+        f_val_c, p_val_c = stats.f_oneway(*cot_data)
+        ax_cot.text(0.04, 0.95, f"ANOVA: F = {f_val_c:.2f}, p = {p_val_c:.2e}", transform=ax_cot.transAxes,
+                    fontsize=10.5, fontweight='bold', bbox=dict(boxstyle='round,pad=0.4', facecolor='white', alpha=0.9, edgecolor='#888888'))
 
     plt.tight_layout()
     png_path = os.path.join(output_dir, "scatter_speed_comparison_all_conditions.png")
@@ -768,14 +801,18 @@ def main():
     # Save combined summary
     summary_path = os.path.join(base_dir, "all_trials_summary.csv")
     cols_to_save = [
-        'trial', 'condition', 'mean_speed_px_s', 'mean_power_W', 'cot_mJ_px', 'cot_J_px',
+        'trial', 'condition',
+        'mean_speed_cm_s', 'mean_speed_px_s',
+        'mean_power_W',
+        'cot_J_m', 'cot_mJ_px', 'cot_J_px',
+        'total_distance_m', 'total_distance_px',
         'mode1_converged_mean', 'mode1_steady_std',
         'mode2_converged_mean', 'mode2_steady_std',
         'mode3_converged_mean', 'mode3_steady_std',
         'mode4_converged_mean', 'mode4_steady_std',
         'G_sum_all', 'G_mean_all',
         'G_ag8', 'G_ag9', 'G_ag11', 'G_ag12', 'stroke_peak_freq_hz',
-        'total_energy_J', 'total_distance_px', 'swimming_duration_sec',
+        'total_energy_J', 'swimming_duration_sec',
         'eval_window_start_sec', 'eval_window_end_sec'
     ]
     avail_cols = [c for c in cols_to_save if c in df.columns]
@@ -787,8 +824,8 @@ def main():
     print(f"\n[INFO] Filtered dataset for summary plots (excluding 'moptz'): {len(df_plot)} trials (from {len(df)})")
     print(f"       Conditions in plots: {list(df_plot['condition'].unique())}")
 
-    # 1. Generate Speed & Stroke Frequency comparison plot
-    print("\n[INFO] Generating Speed & Stroke Frequency comparison plot...")
+    # 1. Generate Speed & CoT comparison plot
+    print("\n[INFO] Generating Speed & CoT comparison plot...")
     plot_speed_and_stroke_comparison(df_plot, base_dir)
 
     # 2. Generate plots for trials with energy/mode data
@@ -808,7 +845,7 @@ def main():
     print("\n" + "="*145)
     print("                                            ALL TRIALS ANALYSIS SUMMARY TABLE")
     print("="*145)
-    disp_cols = ['trial', 'condition', 'mean_speed_px_s', 'mean_power_W', 'cot_mJ_px', 'mode1_converged_mean', 'mode2_converged_mean', 'mode3_converged_mean', 'mode4_converged_mean', 'G_sum_all']
+    disp_cols = ['trial', 'condition', 'mean_speed_cm_s', 'mean_power_W', 'cot_J_m', 'mode1_converged_mean', 'mode2_converged_mean', 'mode3_converged_mean', 'mode4_converged_mean', 'G_sum_all']
     disp_df = df[[c for c in disp_cols if c in df.columns]]
     print(disp_df.to_string(index=False))
     print("="*145 + "\n")

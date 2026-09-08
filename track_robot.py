@@ -159,11 +159,17 @@ def track_robot_trajectory(
         bg_crop = bg_gray[cur_ymin:cur_ymax, cur_xmin:cur_xmax]
         gray_crop = cv2.cvtColor(frame_crop, cv2.COLOR_BGR2GRAY)
 
-        # Background subtraction: Robot is darker than bright pool background
+        # Background subtraction with Black Robot Physical Prior:
+        # The robot chassis and paddle legs are black plastic (gray < 105),
+        # while waves, ripples, and specular glints are bright white (gray > 180).
+        # By enforcing (1) Darker than BG (bg - frame > 25), (2) Absolute low luminance (gray < 105),
+        # and (3) Preserving blue heading markers, surface reflections are 100% eliminated.
         diff_crop = np.clip(bg_crop.astype(np.int16) - gray_crop.astype(np.int16), 0, 255).astype(np.uint8)
+        is_dark = (gray_crop < 105)
+        hsv_crop = cv2.cvtColor(frame_crop, cv2.COLOR_BGR2HSV)
+        blue_mask = cv2.inRange(hsv_crop, np.array([90, 70, 60]), np.array([135, 255, 255]))
 
-        # Binary threshold & morphological cleanup
-        _, bin_mask = cv2.threshold(diff_crop, 35, 255, cv2.THRESH_BINARY)
+        bin_mask = (((diff_crop > 25) & is_dark) | (blue_mask > 0)).astype(np.uint8) * 255
         bin_mask = cv2.morphologyEx(bin_mask, cv2.MORPH_OPEN, kernel)
         bin_mask = cv2.morphologyEx(bin_mask, cv2.MORPH_CLOSE, kernel)
 
@@ -424,9 +430,10 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     return df, window_sec, window_frames
 
 
-def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, output_img_path="swimming_analysis.png"):
+def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, output_img_path="swimming_analysis.png", bg_image=None):
     """
     軌跡、位置時系列、1.25Hz平滑化速度、FFT周波数スペクトルの4連グラフを作成して保存する。
+    bg_imageが指定されている場合、第1パネルにプール背景画像を敷いて軌跡を描画する。
     """
     t = df['time_sec'].to_numpy()
     dt = 1.0 / fps
@@ -455,17 +462,34 @@ def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, 
 
     fig, axs = plt.subplots(4, 1, figsize=(12, 16))
 
-    # 1. 2D Trajectory
-    axs[0].plot(x, y, color='lightgray', lw=1.2, label='Raw trajectory')
-    sc = axs[0].scatter(x_sg, y_sg, c=t, cmap='viridis', s=6, label='Smoothed trajectory')
-    cbar = plt.colorbar(sc, ax=axs[0])
-    cbar.set_label('Time (s)', fontsize=11)
+    # 1. 2D Trajectory (Overlaid on Background if provided)
+    if bg_image is not None:
+        bg_h, bg_w = bg_image.shape[:2]
+        s_x = bg_w / 3840.0
+        s_y = bg_h / 2160.0
+        axs[0].imshow(cv2.cvtColor(bg_image, cv2.COLOR_BGR2RGB))
+        axs[0].plot(x * s_x, y * s_y, color='white', lw=1.2, alpha=0.6, label='Raw trajectory')
+        sc = axs[0].scatter(x_sg * s_x, y_sg * s_y, c=t, cmap='plasma', s=8, label='Smoothed trajectory', zorder=5)
+        cbar = plt.colorbar(sc, ax=axs[0])
+        # Crop just outside the yellow pool rim (1080p: [140, 1920], [0, 1060])
+        x_low = int(round(140 * (bg_w / 1920.0)))
+        x_high = int(round(1920 * (bg_w / 1920.0)))
+        y_low = int(round(0 * (bg_h / 1080.0)))
+        y_high = int(round(1060 * (bg_h / 1080.0)))
+        axs[0].set_xlim(x_low, x_high)
+        axs[0].set_ylim(y_high, y_low)
+    else:
+        axs[0].plot(x, y, color='lightgray', lw=1.2, label='Raw trajectory')
+        sc = axs[0].scatter(x_sg, y_sg, c=t, cmap='viridis', s=6, label='Smoothed trajectory')
+        cbar = plt.colorbar(sc, ax=axs[0])
+        cbar.set_label('Time (s)', fontsize=11)
+        axs[0].invert_yaxis()  # Match image coordinates
+        axs[0].axis('equal')
+        axs[0].grid(True, linestyle='--', alpha=0.5)
+
     axs[0].set_title('Robot Swimming Trajectory in Pool', fontsize=14, fontweight='bold')
     axs[0].set_xlabel('X Coordinate (px)', fontsize=11)
     axs[0].set_ylabel('Y Coordinate (px)', fontsize=11)
-    axs[0].invert_yaxis()  # Match image coordinates
-    axs[0].axis('equal')
-    axs[0].grid(True, linestyle='--', alpha=0.5)
     axs[0].legend(loc='upper right')
 
     # 2. Coordinates vs Time
@@ -576,7 +600,8 @@ def main():
         window_sec=win_sec,
         window_frames=win_frames,
         target_freq=args.stroke_freq,
-        output_img_path=fig_path
+        output_img_path=fig_path,
+        bg_image=bg_image
     )
 
     # Summary
