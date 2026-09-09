@@ -3,10 +3,18 @@
 """
 Batch Tracking across all condition directories in VolBotVideo
 ============================================================
+Processes all trials using the improved tracking algorithm:
+- Black robot physical prior (gray < 105, dark contrast > 25, blue heading marker)
+- Lost-frame recovery tolerance (up to 15 frames before full-frame search)
+- Metric calibration (2.0 m = 1585 px in 4K reference)
+- Unified pool bounds on background overlay
 """
 
 import os
 import glob
+import time
+import argparse
+import subprocess
 import cv2
 import numpy as np
 import pandas as pd
@@ -17,30 +25,38 @@ sys.path.append(r"D:\codes\Volvocine_PicoV2")
 from track_robot import generate_background, track_robot_trajectory, compute_filtered_velocity, plot_swimming_results
 
 BASE_DIR = r"D:\codes\Volvocine_PicoV2\VolBotVideo"
-CONDITIONS = ['baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz', 'msinz']
+CONDITIONS = ['baseline', 'sinz', 'm5sinz', 'm10sinz', 'moptz']
+
+# Physical calibration constants
+POOL_HEIGHT_PX_4K = 1585.0
+POOL_HEIGHT_M = 2.0
+SCALE_M_PER_PX = POOL_HEIGHT_M / POOL_HEIGHT_PX_4K
+SCALE_CM_PER_PX = SCALE_M_PER_PX * 100.0
 
 
-def get_all_trials():
+def get_all_trials(selected_conditions=None):
+    if selected_conditions is None:
+        selected_conditions = CONDITIONS
     trials_list = []
-    for cond in CONDITIONS:
+    for cond in selected_conditions:
         cond_dir = os.path.join(BASE_DIR, cond)
         if not os.path.exists(cond_dir):
             continue
         subdirs = sorted([d for d in os.listdir(cond_dir) if os.path.isdir(os.path.join(cond_dir, d)) and d.startswith("GX")])
         for t in subdirs:
             t_dir = os.path.join(cond_dir, t)
-            v_path = os.path.join(t_dir, f"{t}.MP4")
-            if os.path.exists(v_path):
+            v_matches = glob.glob(os.path.join(t_dir, f"{t}.[mM][pP]4"))
+            if v_matches:
                 trials_list.append({
                     "condition": cond,
                     "trial": t,
                     "trial_dir": t_dir,
-                    "video_path": v_path
+                    "video_path": v_matches[0]
                 })
     return trials_list
 
 
-def process_single_trial(info):
+def process_single_trial(info, force=True):
     t_name = info["trial"]
     cond = info["condition"]
     trial_dir = info["trial_dir"]
@@ -55,8 +71,8 @@ def process_single_trial(info):
     video_dur = total_frames / fps if fps > 0 else 0
     cap.release()
     
-    # Check if already processed
-    if os.path.exists(csv_path) and os.path.exists(fig_path):
+    # Check if already processed (only when not forced)
+    if not force and os.path.exists(csv_path) and os.path.exists(fig_path):
         try:
             df_existing = pd.read_csv(csv_path)
             if len(df_existing) > 100:
@@ -73,7 +89,6 @@ def process_single_trial(info):
                 fft_vals = np.abs(np.fft.rfft(speed_detrend))
                 mask = (freqs >= 0.5) & (freqs <= 3.0)
                 peak_freq = float(freqs[mask][np.argmax(fft_vals[mask])]) if np.any(mask) else 1.25
-                print(f"[ALREADY DONE] [{cond}] {t_name}: Mean Speed = {mean_speed:.2f} px/s")
                 return {
                     "condition": cond,
                     "trial": t_name,
@@ -82,18 +97,22 @@ def process_single_trial(info):
                     "detected_frames": len(df_existing),
                     "detection_rate_pct": 100.0,
                     "mean_speed_px_s": mean_speed,
+                    "mean_speed_cm_s": mean_speed * SCALE_CM_PER_PX,
                     "max_speed_px_s": max_speed,
+                    "max_speed_cm_s": max_speed * SCALE_CM_PER_PX,
                     "std_speed_px_s": std_speed,
+                    "std_speed_cm_s": std_speed * SCALE_CM_PER_PX,
                     "total_distance_px": total_dist_px,
+                    "total_distance_m": total_dist_px * SCALE_M_PER_PX,
                     "stroke_peak_freq_hz": peak_freq
                 }
-        except Exception as e:
-            print(f"[WARN] Error reading existing data for {t_name}: {e}. Re-processing...")
+        except Exception:
+            pass
 
     start_sec = 5.0
     end_sec = max(start_sec + 5.0, video_dur - 2.5)
     
-    print(f"[START] [{cond}] {t_name} (Dur: {video_dur:.1f}s, Window: {start_sec:.1f}s - {end_sec:.1f}s) ...")
+    t_start_clock = time.time()
     
     # Generate background specifically for this video using evenly spaced samples
     sample_fractions = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65]
@@ -104,12 +123,14 @@ def process_single_trial(info):
     bg_path = os.path.join(trial_dir, f"{t_name}_background.jpg")
     cv2.imwrite(bg_path, bg_image)
     
+    # Track with black robot prior & lost frame recovery tolerance
     df_track, fps_out = track_robot_trajectory(
         video_path=video_path,
         bg_image=bg_image,
         start_sec=start_sec,
         end_sec=end_sec,
-        save_annotated_video=False
+        save_annotated_video=False,
+        verbose=False
     )
     
     detected_indices = df_track.index[df_track['status'] == 'detected'].tolist()
@@ -150,7 +171,8 @@ def process_single_trial(info):
     df_analyzed, win_sec, win_frames = compute_filtered_velocity(
         df=df_swim,
         fps=fps_out,
-        stroke_freq=1.25
+        stroke_freq=1.25,
+        scale_m_per_px=SCALE_M_PER_PX
     )
     
     df_analyzed.to_csv(csv_path, index=False)
@@ -161,7 +183,8 @@ def process_single_trial(info):
         window_sec=win_sec,
         window_frames=win_frames,
         target_freq=1.25,
-        output_img_path=fig_path
+        output_img_path=fig_path,
+        bg_image=bg_image
     )
     
     speed_sg = df_analyzed['speed_sg_px_s']
@@ -172,7 +195,12 @@ def process_single_trial(info):
     dy = np.diff(df_analyzed['y_smooth_px'])
     total_dist_px = float(np.sum(np.sqrt(dx**2 + dy**2)))
     
-    print(f"[FINISHED] [{cond}] {t_name}: Mean Speed = {mean_speed:.2f} px/s, Peak = {peak_freq:.2f} Hz, Detected = {det_ratio:.1f}%")
+    mean_speed_cm_s = mean_speed * SCALE_CM_PER_PX
+    max_speed_cm_s = max_speed * SCALE_CM_PER_PX
+    std_speed_cm_s = std_speed * SCALE_CM_PER_PX
+    total_dist_m = total_dist_px * SCALE_M_PER_PX
+    
+    elapsed_time = time.time() - t_start_clock
     
     return {
         "condition": cond,
@@ -182,37 +210,108 @@ def process_single_trial(info):
         "detected_frames": len(df_swim),
         "detection_rate_pct": det_ratio,
         "mean_speed_px_s": mean_speed,
+        "mean_speed_cm_s": mean_speed_cm_s,
         "max_speed_px_s": max_speed,
+        "max_speed_cm_s": max_speed_cm_s,
         "std_speed_px_s": std_speed,
+        "std_speed_cm_s": std_speed_cm_s,
         "total_distance_px": total_dist_px,
-        "stroke_peak_freq_hz": peak_freq
+        "total_distance_m": total_dist_m,
+        "stroke_peak_freq_hz": peak_freq,
+        "processing_time_sec": elapsed_time
     }
 
 
 def main():
-    trials = get_all_trials()
-    print(f"Found total {len(trials)} trials across conditions: {CONDITIONS}")
+    parser = argparse.ArgumentParser(description="Batch re-track all trials with improved tracking algorithm.")
+    parser.add_argument("--workers", type=int, default=10, help="Number of parallel worker processes (default: 10)")
+    parser.add_argument("--no-force", action="store_true", help="Skip trials that already have results (default: force reprocess)")
+    parser.add_argument("--conditions", nargs="+", default=CONDITIONS, help="List of conditions to process")
+    args = parser.parse_args()
     
-    max_workers = 6
-    print(f"Starting parallel tracking across {max_workers} worker processes...")
+    force_reprocess = not args.no_force
+    trials = get_all_trials(args.conditions)
+    total_n = len(trials)
+    print("=" * 80)
+    print("  BATCH RE-TRACKING ALL CONDITIONS WITH IMPROVED TRACKING")
+    print("=" * 80)
+    print(f"Total trials to process: {total_n}")
+    print(f"Conditions: {args.conditions}")
+    print(f"Parallel workers: {args.workers}")
+    print(f"Force reprocess: {force_reprocess}")
+    print("=" * 80)
+    
     results = []
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_single_trial, info): info for info in trials}
-        for future in as_completed(futures):
-            info = futures[future]
+    completed_count = 0
+    t0_all = time.time()
+    
+    with ProcessPoolExecutor(max_workers=args.workers) as executor:
+        future_to_info = {
+            executor.submit(process_single_trial, info, force_reprocess): info 
+            for info in trials
+        }
+        
+        for future in as_completed(future_to_info):
+            info = future_to_info[future]
+            completed_count += 1
             try:
                 res = future.result()
                 if res:
                     results.append(res)
+                    print(f"[{completed_count:2d}/{total_n:2d}] [{res['condition']:8s}] {res['trial']}: "
+                          f"Speed = {res['mean_speed_cm_s']:.2f} cm/s ({res['mean_speed_px_s']:.1f} px/s), "
+                          f"Dist = {res['total_distance_m']:.2f} m, Det = {res['detection_rate_pct']:.1f}%, "
+                          f"Time = {res['processing_time_sec']:.1f}s", flush=True)
+                else:
+                    print(f"[{completed_count:2d}/{total_n:2d}] [{info['condition']:8s}] {info['trial']}: FAILED (insufficient detections)", flush=True)
             except Exception as e:
-                print(f"[ERROR] {info['trial']} raised exception: {e}")
+                print(f"[{completed_count:2d}/{total_n:2d}] [{info['condition']:8s}] {info['trial']}: EXCEPTION: {e}", flush=True)
 
+    total_elapsed = time.time() - t0_all
+    print("\n" + "=" * 80, flush=True)
+    print(f"  BATCH TRACKING COMPLETED IN {total_elapsed / 60.0:.2f} MINUTES", flush=True)
+    print("=" * 80, flush=True)
+    
     df_summary = pd.DataFrame(results)
-    df_summary.sort_values(by=['condition', 'trial'], inplace=True)
-    out_csv = os.path.join(BASE_DIR, "tracking_all_trials_summary.csv")
-    df_summary.to_csv(out_csv, index=False)
-    print(f"\nAll tracking completed! Summary saved to: {out_csv}")
-    print(df_summary.to_string(index=False))
+    if not df_summary.empty:
+        df_summary.sort_values(by=['condition', 'trial'], inplace=True)
+        out_csv = os.path.join(BASE_DIR, "tracking_all_trials_summary.csv")
+        df_summary.to_csv(out_csv, index=False)
+        print(f"[SAVED] Tracking summary saved to: {out_csv}")
+        
+        # Summary by condition
+        print("\n--- Summary Statistics by Condition ---")
+        grouped = df_summary.groupby('condition').agg(
+            trials=('trial', 'count'),
+            mean_speed_cm_s=('mean_speed_cm_s', 'mean'),
+            std_speed_cm_s=('mean_speed_cm_s', 'std'),
+            mean_dist_m=('total_distance_m', 'mean'),
+            mean_det_pct=('detection_rate_pct', 'mean')
+        )
+        print(grouped.to_string())
+
+    # Automatically trigger downstream updates
+    print("\n" + "=" * 80)
+    print("  STEP 2: UPDATING SPEED VS COT AND ALL TRIALS SUMMARY")
+    print("=" * 80)
+    try:
+        cmd_summary = [sys.executable, r"D:\codes\Volvocine_PicoV2\plot_speed_vs_cot.py"]
+        subprocess.run(cmd_summary, check=True)
+        print("[SUCCESS] Speed vs. CoT plots and all_trials_summary.csv updated.")
+    except Exception as e:
+        print(f"[ERROR] Failed to run plot_speed_vs_cot.py: {e}")
+
+    print("\n" + "=" * 80)
+    print("  STEP 3: RE-GENERATING POOL BACKGROUND TRAJECTORY OVERLAYS")
+    print("=" * 80)
+    try:
+        cmd_bg = [sys.executable, r"D:\codes\Volvocine_PicoV2\plot_trajectories_on_background.py"]
+        subprocess.run(cmd_bg, check=True)
+        print("[SUCCESS] Background overlay figures successfully regenerated.")
+    except Exception as e:
+        print(f"[ERROR] Failed to run plot_trajectories_on_background.py: {e}")
+
+    print("\n[ALL TASKS COMPLETED SUCCESSFULLY]")
 
 
 if __name__ == "__main__":

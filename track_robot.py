@@ -65,15 +65,16 @@ def generate_background(video_path, sample_times=[10, 20, 30, 40, 50, 60, 70, 80
 def track_robot_trajectory(
     video_path,
     bg_image,
-    start_sec=6.0,
-    end_sec=82.0,
-    pool_roi=(880, 340, 3580, 1840),
-    search_margin=250,
+    start_sec=0.0,
+    end_sec=None,
+    pool_roi=(600, 100, 3700, 1950),
+    search_margin=120,
     save_annotated_video=False,
-    output_video_path="tracked_output.mp4"
+    output_video_path="tracked_robot.mp4",
+    verbose=True
 ):
     """
-    背景差分と局所探索窓を用いてロボットの重心および姿勢角を全フレーム追跡する。
+    動画からロボットの2D位置 (x, y) および進行方向方位角 theta をフレーム毎にトラッキングする。
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -89,9 +90,10 @@ def track_robot_trajectory(
     end_frame = min(end_frame, total_video_frames)
     total_process_frames = end_frame - start_frame
 
-    print(f"[INFO] Video: {video_path}")
-    print(f"[INFO] Resolution: {video_w}x{video_h}, FPS: {fps:.3f}")
-    print(f"[INFO] Tracking range: {start_sec:.2f}s - {end_sec:.2f}s ({start_frame} - {end_frame} frames, Total: {total_process_frames})")
+    if verbose:
+        print(f"[INFO] Video: {video_path}")
+        print(f"[INFO] Resolution: {video_w}x{video_h}, FPS: {fps:.3f}")
+        print(f"[INFO] Tracking range: {start_sec:.2f}s - {end_sec:.2f}s ({start_frame} - {end_frame} frames, Total: {total_process_frames})")
 
     bg_gray = cv2.cvtColor(bg_image, cv2.COLOR_BGR2GRAY)
     scale = video_w / 3840.0
@@ -126,16 +128,18 @@ def track_robot_trajectory(
         # Scale down 1/2 for output video to save space and fast encode
         out_w, out_h = video_w // 2, video_h // 2
         vw = cv2.VideoWriter(output_video_path, fourcc, fps, (out_w, out_h))
-        print(f"[INFO] Saving annotated video to {output_video_path} ({out_w}x{out_h})")
+        if verbose:
+            print(f"[INFO] Saving annotated video to {output_video_path} ({out_w}x{out_h})")
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     records = []
     prev_center = None
+    consecutive_lost = 0
     trail_points = []
 
-    pbar = tqdm(total=total_process_frames, desc="Tracking robot", unit="frames")
+    pbar = tqdm(total=total_process_frames, desc="Tracking robot", unit="frames", disable=not verbose)
 
     for f_idx in range(start_frame, end_frame):
         ret, frame = cap.read()
@@ -149,10 +153,11 @@ def track_robot_trajectory(
             cur_xmin, cur_ymin, cur_xmax, cur_ymax = xmin, ymin, xmax, ymax
         else:
             px, py = prev_center
-            cur_xmin = max(xmin, int(px - cur_search_margin))
-            cur_xmax = min(xmax, int(px + cur_search_margin))
-            cur_ymin = max(ymin, int(py - cur_search_margin))
-            cur_ymax = min(ymax, int(py + cur_search_margin))
+            cur_margin = int(round(cur_search_margin * (1.0 + 0.15 * consecutive_lost)))
+            cur_xmin = max(xmin, int(px - cur_margin))
+            cur_xmax = min(xmax, int(px + cur_margin))
+            cur_ymin = max(ymin, int(py - cur_margin))
+            cur_ymax = min(ymax, int(py + cur_margin))
 
         # Crop local search area
         frame_crop = frame[cur_ymin:cur_ymax, cur_xmin:cur_xmax]
@@ -220,6 +225,7 @@ def track_robot_trajectory(
         if best_c is not None:
             cx, cy, area, c = best_c
             prev_center = (cx, cy)
+            consecutive_lost = 0
             trail_points.append((int(round(cx)), int(round(cy))))
             if len(trail_points) > 300:
                 trail_points.pop(0)
@@ -277,7 +283,9 @@ def track_robot_trajectory(
                 frame_out = cv2.resize(frame, (out_w, out_h))
                 vw.write(frame_out)
         else:
-            prev_center = None
+            consecutive_lost += 1
+            if consecutive_lost > 15:
+                prev_center = None
             records.append({
                 "frame": f_idx,
                 "time_sec": t_sec,
@@ -307,7 +315,7 @@ def track_robot_trajectory(
     return df, fps
 
 
-def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
+def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=2.0 / 1585.0):
     """
     1.25Hz の水かき周期に対応したフィルターを適用し、
     位置の平滑化および遊泳速度を算出する。
@@ -419,13 +427,15 @@ def compute_filtered_velocity(df, fps, stroke_freq=1.25, scale_m_per_px=None):
     df['v_surge_px_s'] = v_surge
     df['v_sway_px_s'] = v_sway
 
-    # Optional metric conversion
+    # Physical metric conversion (Reference 4K calibration: 2.0 m = 1585 px)
     if scale_m_per_px is not None:
         df['x_m'] = x_sg * scale_m_per_px
         df['y_m'] = y_sg * scale_m_per_px
         df['speed_sg_m_s'] = speed_sg * scale_m_per_px
+        df['speed_sg_cm_s'] = speed_sg * scale_m_per_px * 100.0
         df['speed_butter_m_s'] = speed_butter * scale_m_per_px
         df['v_surge_m_s'] = v_surge * scale_m_per_px
+        df['v_surge_cm_s'] = v_surge * scale_m_per_px * 100.0
 
     return df, window_sec, window_frames
 
@@ -471,6 +481,7 @@ def plot_swimming_results(df, fps, window_sec, window_frames, target_freq=1.25, 
         axs[0].plot(x * s_x, y * s_y, color='white', lw=1.2, alpha=0.6, label='Raw trajectory')
         sc = axs[0].scatter(x_sg * s_x, y_sg * s_y, c=t, cmap='plasma', s=8, label='Smoothed trajectory', zorder=5)
         cbar = plt.colorbar(sc, ax=axs[0])
+        cbar.set_label('Time (s)', fontsize=11)
         # Crop just outside the yellow pool rim (1080p: [140, 1920], [0, 1060])
         x_low = int(round(140 * (bg_w / 1920.0)))
         x_high = int(round(1920 * (bg_w / 1920.0)))
