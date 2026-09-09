@@ -32,35 +32,35 @@ plt.rcParams['axes.linewidth'] = 1.0
 # Condition definitions, colors, and markers
 COND_CONFIG = {
     'baseline': {
-        'label': 'Baseline',
+        'label': r'Baseline ($\kappa = 0$)',
         'color': '#118AB2',  # Oceanic Blue
         'marker': 'o',
         'size': 85,
         'zorder': 3
     },
     'sinz': {
-        'label': 'sinz',
+        'label': r'$\kappa = 5$',
         'color': '#E63946',  # Crimson Red
         'marker': 'D',
         'size': 95,
         'zorder': 4
     },
     'm5sinz': {
-        'label': 'm5sinz',
+        'label': r'$\kappa = -5$',
         'color': '#06D6A0',  # Emerald Green
         'marker': 's',
         'size': 95,
         'zorder': 4
     },
     'm10sinz': {
-        'label': 'm10sinz',
+        'label': r'$\kappa = -10$',
         'color': '#F77F00',  # Amber Orange
         'marker': 'h',
         'size': 100,
         'zorder': 5
     },
     'moptz': {
-        'label': 'moptz',
+        'label': 'Optimal PRC',
         'color': '#9B5DE5',  # Vivid Purple
         'marker': '^',
         'size': 100,
@@ -349,15 +349,7 @@ def plot_speed_vs_cot(df, output_dir, annotate_trials=False):
                         path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
     set_smart_axis_limits(ax, df['mean_speed_cm_s'], df['cot_J_m'], x_pad=0.08, y_pad=0.10)
-    
-    # Correlation for all trials
-    corr_all = compute_correlations(df['mean_speed_cm_s'], df['cot_J_m'], "All")
-    if corr_all:
-        stat_str = (f"All Trials (N={corr_all['n']}):\n"
-                    f"  Pearson r = {corr_all['pearson_r']:+.3f} (p = {corr_all['pearson_p']:.2e})\n"
-                    f"  Spearman ρ = {corr_all['spearman_rho']:+.3f} (p = {corr_all['spearman_p']:.2e})")
-        ax.text(0.96, 0.96, stat_str, transform=ax.transAxes, verticalalignment='top', horizontalalignment='right',
-                fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
+    # (Correlation display omitted as requested)
 
     ax.set_title("Distribution of Swimming Speed vs. Cost of Transport (CoT) by Condition", fontsize=14, fontweight='bold', pad=12)
     ax.set_xlabel("Mean Swimming Speed $v$ [cm/s]", fontsize=12)
@@ -398,25 +390,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
-    # Baseline regression line
-    base_df = df[df['condition'] == 'baseline']
-    if len(base_df) >= 3:
-        p_base = np.polyfit(base_df['mode1_converged_mean'], base_df['mean_speed_cm_s'], deg=1)
-        x_line = np.linspace(df['mode1_converged_mean'].min()*0.9, df['mode1_converged_mean'].max()*1.1, 100)
-        ax1.plot(x_line, np.polyval(p_base, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7, label='Baseline Fit')
-
     set_smart_axis_limits(ax1, df['mode1_converged_mean'], df['mean_speed_cm_s'])
-    
-    corr_base = compute_correlations(base_df['mode1_converged_mean'], base_df['mean_speed_cm_s'], "Baseline")
-    corr_all = compute_correlations(df['mode1_converged_mean'], df['mean_speed_cm_s'], "All")
-    stat_lines = []
-    if corr_base:
-        stat_lines.append(f"Baseline (N={corr_base['n']}): r = {corr_base['pearson_r']:+.3f} (p = {corr_base['pearson_p']:.2e})")
-    if corr_all:
-        stat_lines.append(f"All Trials (N={corr_all['n']}): r = {corr_all['pearson_r']:+.3f} (p = {corr_all['pearson_p']:.2e})")
-    if stat_lines:
-        ax1.text(0.96, 0.96, "\n".join(stat_lines), transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right',
-                 fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
     ax1.set_title("First Mode Convergence Value vs. Swimming Speed", fontsize=13, fontweight='bold', pad=12)
     ax1.set_xlabel("First Mode Steady Convergence Value $|Z_1|$", fontsize=12)
@@ -443,23 +417,7 @@ def plot_mode1_correlations(df, output_dir, annotate_trials=False):
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
-    if len(base_df) >= 3:
-        p_base2 = np.polyfit(base_df['mode1_converged_mean'], base_df['cot_J_m'], deg=1)
-        x_line = np.linspace(df['mode1_converged_mean'].min()*0.9, df['mode1_converged_mean'].max()*1.1, 100)
-        ax2.plot(x_line, np.polyval(p_base2, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7, label='Baseline Fit')
-
     set_smart_axis_limits(ax2, df['mode1_converged_mean'], df['cot_J_m'])
-
-    corr_base2 = compute_correlations(base_df['mode1_converged_mean'], base_df['cot_J_m'], "Baseline")
-    corr_all2 = compute_correlations(df['mode1_converged_mean'], df['cot_J_m'], "All")
-    stat_lines2 = []
-    if corr_base2:
-        stat_lines2.append(f"Baseline (N={corr_base2['n']}): r = {corr_base2['pearson_r']:+.3f} (p = {corr_base2['pearson_p']:.2e})")
-    if corr_all2:
-        stat_lines2.append(f"All Trials (N={corr_all2['n']}): r = {corr_all2['pearson_r']:+.3f} (p = {corr_all2['pearson_p']:.2e})")
-    if stat_lines2:
-        ax2.text(0.96, 0.96, "\n".join(stat_lines2), transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',
-                 fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
     ax2.set_title("First Mode Convergence Value vs. Cost of Transport", fontsize=13, fontweight='bold', pad=12)
     ax2.set_xlabel("First Mode Steady Convergence Value $|Z_1|$", fontsize=12)
@@ -502,23 +460,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
-    if len(base_df) >= 3:
-        p_base = np.polyfit(base_df['G_sum_all'], base_df['mean_speed_cm_s'], deg=1)
-        x_line = np.linspace(df['G_sum_all'].min()*0.9, df['G_sum_all'].max()*1.1, 100)
-        ax1.plot(x_line, np.polyval(p_base, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7)
-
     set_smart_axis_limits(ax1, df['G_sum_all'], df['mean_speed_cm_s'])
-    
-    corr1_base = compute_correlations(base_df['G_sum_all'], base_df['mean_speed_cm_s'], "Baseline")
-    corr1_all = compute_correlations(df['G_sum_all'], df['mean_speed_cm_s'], "All")
-    stat_lines = []
-    if corr1_base:
-        stat_lines.append(f"Baseline (N={corr1_base['n']}): r = {corr1_base['pearson_r']:+.3f} (p = {corr1_base['pearson_p']:.2e})")
-    if corr1_all:
-        stat_lines.append(f"All Trials (N={corr1_all['n']}): r = {corr1_all['pearson_r']:+.3f} (p = {corr1_all['pearson_p']:.2e})")
-    if stat_lines:
-        ax1.text(0.96, 0.96, "\n".join(stat_lines), transform=ax1.transAxes, verticalalignment='top', horizontalalignment='right',
-                 fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
     ax1.set_title("Total Weighted Input Amplitude vs. Swimming Speed", fontsize=13, fontweight='bold', pad=12)
     ax1.set_xlabel(r"Total Received Input Amplitude $\sum_{i} |G_i|$", fontsize=12)
@@ -545,23 +487,7 @@ def plot_weighted_input_correlations(df, output_dir, annotate_trials=False):
                          fontsize=8.0, color=cfg['color'],
                          path_effects=[pe.withStroke(linewidth=2.2, foreground='white')])
 
-    if len(base_df) >= 3:
-        p_base2 = np.polyfit(base_df['G_sum_all'], base_df['cot_J_m'], deg=1)
-        x_line = np.linspace(df['G_sum_all'].min()*0.9, df['G_sum_all'].max()*1.1, 100)
-        ax2.plot(x_line, np.polyval(p_base2, x_line), color='#118AB2', linestyle='--', lw=1.6, alpha=0.7)
-
     set_smart_axis_limits(ax2, df['G_sum_all'], df['cot_J_m'])
-
-    corr2_base = compute_correlations(base_df['G_sum_all'], base_df['cot_J_m'], "Baseline")
-    corr2_all = compute_correlations(df['G_sum_all'], df['cot_J_m'], "All")
-    stat_lines2 = []
-    if corr2_base:
-        stat_lines2.append(f"Baseline (N={corr2_base['n']}): r = {corr2_base['pearson_r']:+.3f} (p = {corr2_base['pearson_p']:.2e})")
-    if corr2_all:
-        stat_lines2.append(f"All Trials (N={corr2_all['n']}): r = {corr2_all['pearson_r']:+.3f} (p = {corr2_all['pearson_p']:.2e})")
-    if stat_lines2:
-        ax2.text(0.96, 0.96, "\n".join(stat_lines2), transform=ax2.transAxes, verticalalignment='top', horizontalalignment='right',
-                 fontsize=9.5, bbox=dict(boxstyle='round,pad=0.5', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
     ax2.set_title("Total Weighted Input Amplitude vs. Cost of Transport", fontsize=13, fontweight='bold', pad=12)
     ax2.set_xlabel(r"Total Received Input Amplitude $\sum_{i} |G_i|$", fontsize=12)
@@ -610,24 +536,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
                                   fontsize=7.5, color=cfg['color'],
                                   path_effects=[pe.withStroke(linewidth=2.0, foreground='white')])
                                   
-        if len(base_df) >= 3:
-            p_s = np.polyfit(base_df[col_m], base_df['mean_speed_cm_s'], deg=1)
-            x_s = np.linspace(df[col_m].min() * 0.9, df[col_m].max() * 1.1, 100)
-            ax_speed.plot(x_s, np.polyval(p_s, x_s), color='#118AB2', linestyle='--', lw=1.5, alpha=0.7)
-
         set_smart_axis_limits(ax_speed, df[col_m], df['mean_speed_cm_s'])
-        
-        corr_s_base = compute_correlations(base_df[col_m], base_df['mean_speed_cm_s'], f"Mode{m}")
-        corr_s_all = compute_correlations(df[col_m], df['mean_speed_cm_s'], f"Mode{m}")
-        stat_lines = []
-        if corr_s_base:
-            stat_lines.append(f"Baseline: r={corr_s_base['pearson_r']:+.3f}")
-        if corr_s_all:
-            stat_lines.append(f"All: r={corr_s_all['pearson_r']:+.3f}")
-        if stat_lines:
-            ax_speed.text(0.96, 0.96, "\n".join(stat_lines), transform=ax_speed.transAxes,
-                          verticalalignment='top', horizontalalignment='right',
-                          fontsize=8.5, bbox=dict(boxstyle='round,pad=0.35', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
         ax_speed.set_title(f"Mode {m} ($|Z_{m}|$) vs. Speed", fontsize=12.5, fontweight='bold', pad=10)
         ax_speed.set_xlabel(f"Mode {m} Convergence Value $|Z_{m}|$", fontsize=11)
@@ -656,24 +565,7 @@ def plot_all_modes_correlations(df, output_dir, annotate_trials=False):
                                 fontsize=7.5, color=cfg['color'],
                                 path_effects=[pe.withStroke(linewidth=2.0, foreground='white')])
 
-        if len(base_df) >= 3:
-            p_c = np.polyfit(base_df[col_m], base_df['cot_J_m'], deg=1)
-            x_c = np.linspace(df[col_m].min() * 0.9, df[col_m].max() * 1.1, 100)
-            ax_cot.plot(x_c, np.polyval(p_c, x_c), color='#118AB2', linestyle='--', lw=1.5, alpha=0.7)
-
         set_smart_axis_limits(ax_cot, df[col_m], df['cot_J_m'])
-
-        corr_c_base = compute_correlations(base_df[col_m], base_df['cot_J_m'], f"Mode{m}")
-        corr_c_all = compute_correlations(df[col_m], df['cot_J_m'], f"Mode{m}")
-        stat_lines_cot = []
-        if corr_c_base:
-            stat_lines_cot.append(f"Baseline: r={corr_c_base['pearson_r']:+.3f}")
-        if corr_c_all:
-            stat_lines_cot.append(f"All: r={corr_c_all['pearson_r']:+.3f}")
-        if stat_lines_cot:
-            ax_cot.text(0.96, 0.96, "\n".join(stat_lines_cot), transform=ax_cot.transAxes,
-                        verticalalignment='top', horizontalalignment='right',
-                        fontsize=8.5, bbox=dict(boxstyle='round,pad=0.35', facecolor='white', alpha=0.92, edgecolor='#aaaaaa'))
 
         ax_cot.set_title(f"Mode {m} ($|Z_{m}|$) vs. Cost of Transport", fontsize=12.5, fontweight='bold', pad=10)
         ax_cot.set_xlabel(f"Mode {m} Convergence Value $|Z_{m}|$", fontsize=11)

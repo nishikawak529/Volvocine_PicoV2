@@ -28,10 +28,10 @@ SCALE_M_PER_PX_4K = POOL_HEIGHT_M / POOL_HEIGHT_PX_4K  # 1.26183e-3 m/px
 SCALE_CM_PER_PX_4K = SCALE_M_PER_PX_4K * 100.0
 
 COND_CONFIG = {
-    'baseline': {'label': 'Baseline (No coupling)', 'color': '#118AB2', 'marker': 'o'},
-    'sinz':     {'label': r'sin($\theta$) ($M=1$)',   'color': '#E07A5F', 'marker': 's'},
-    'm5sinz':   {'label': r'sin($5\theta$) ($M=5$)',  'color': '#06D6A0', 'marker': '^'},
-    'm10sinz':  {'label': r'sin($10\theta$) ($M=10$)', 'color': '#E71D36', 'marker': 'D'},
+    'baseline': {'label': r'Baseline ($\kappa = 0$)', 'color': '#118AB2', 'marker': 'o'},
+    'sinz':     {'label': r'$\kappa = 5$',   'color': '#E07A5F', 'marker': 's'},
+    'm5sinz':   {'label': r'$\kappa = -5$',  'color': '#06D6A0', 'marker': '^'},
+    'm10sinz':  {'label': r'$\kappa = -10$', 'color': '#E71D36', 'marker': 'D'},
 }
 
 # Unified Pool Cropping Boundaries (Just outside the yellow rim in 1080p coordinates)
