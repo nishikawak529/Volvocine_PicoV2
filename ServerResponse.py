@@ -5,7 +5,7 @@ import os
 import re
 
 omega_values = {
-    2: 3.14 * 3.0,    # エージェント12の周波数
+    8: 3.14 * 2.4,    # エージェント12の周波数
 }
 default_omega = 3.14 * 2.5 # デフォルト周波数（未定義IDの場合）
 
@@ -23,7 +23,7 @@ initial_phase_values = {
 default_initial_phase = "random"  # 未定義エージェント用のデフォルト初期位相
 
 feedback_tau_sec = 1.0  # (その他/元々の) 一次遅れフィルタの時定数 [s]
-kappa = 10       # フィードバックゲイン
+kappa = 0       # フィードバックゲイン
 alpha = -3.14*1.0
 servo_center = 60.0  # サーボ中心角度
 servo_amplitude = 50.0 # サーボ振幅
