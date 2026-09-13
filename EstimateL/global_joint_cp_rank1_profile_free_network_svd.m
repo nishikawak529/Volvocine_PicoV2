@@ -19,9 +19,22 @@ function results = global_joint_cp_rank1_profile_free_network_svd(round_dir, M, 
 %   3. rank1_profile_free_network_svd_approximation.png
 %   4. rank1_profile_free_network_collective_signals.png (if phase time series available)
 
+    % =========================================================================
+    % USER CONFIGURATION: TARGET DATASET / DIRECTORY (For F5 / Run without args)
+    % =========================================================================
+    % Change this single variable to switch datasets easily in code:
+    %   'SStick'  : SStick experiment (Agents 7, 8, 9, 10)
+    %   'Round'   : Round experiment (Agents 7, 8, 9, 10)
+    %   'Round6'  : Round6 experiment (Agents 7, 8, 9, 10, 11, 12)
+    %   'Stick'   : Stick experiment (Agents 7, 8, 9, 10)
+    % Or specify any relative/absolute path.
+    % =========================================================================
+    DEFAULT_DATASET = 'SStick';
+
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStick');
+        round_dir = DEFAULT_DATASET;
     end
+    round_dir = resolve_dataset_directory(round_dir);
     if nargin < 2 || isempty(M)
         M = 10;
     end
@@ -931,3 +944,34 @@ function cmap = make_symmetric_diverging_colormap(N)
     b = [linspace(0.8, 1, N/2), linspace(1, 0.2, N/2)].';
     cmap = [r, g, b];
 end
+
+function resolved_dir = resolve_dataset_directory(d)
+    if ischar(d) || isstring(d)
+        d_str = char(d);
+    else
+        resolved_dir = d;
+        return;
+    end
+
+    if exist(d_str, 'dir')
+        resolved_dir = d_str;
+        return;
+    end
+
+    base_root = fileparts(fileparts(mfilename('fullpath')));
+    estimate_dir = fileparts(mfilename('fullpath'));
+    candidates = {
+        fullfile(estimate_dir, d_str), ...
+        fullfile(base_root, 'EstimateL', d_str), ...
+        fullfile('EstimateL', d_str), ...
+        fullfile(base_root, d_str)
+    };
+    for c = 1:numel(candidates)
+        if exist(candidates{c}, 'dir')
+            resolved_dir = candidates{c};
+            return;
+        end
+    end
+    resolved_dir = d_str;
+end
+
