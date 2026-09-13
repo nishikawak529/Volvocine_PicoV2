@@ -194,7 +194,7 @@ end
 
 function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, default_plot_gamma, varargin)
     p = inputParser;
-    addParameter(p, 'analysis_start_sec', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
+    addParameter(p, 'analysis_start_sec', 6.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
     addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'sample_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'sigma', default_sigma, @(x) isnumeric(x) && isscalar(x) && isfinite(x));

@@ -55,13 +55,14 @@ function results = calculate_input_vibration_optimal_phases(source, varargin)
     % USER CONFIGURATION: TARGET DATASET / DIRECTORY (For F5 / Run without args)
     % =========================================================================
     % Change this single variable to switch datasets easily in code:
-    %   'SStick'  : SStick experiment (Agents 7, 8, 9, 10)
-    %   'Round'   : Round experiment (Agents 7, 8, 9, 10)
-    %   'Round6'  : Round6 experiment (Agents 7, 8, 9, 10, 11, 12)
-    %   'Stick'   : Stick experiment (Agents 7, 8, 9, 10)
+    %   'SStickFlat': SStickFlat experiment (Agents 8, 9, 11, 12)
+    %   'SStick'    : SStick experiment (Agents 7, 8, 9, 10)
+    %   'Round'     : Round experiment (Agents 7, 8, 9, 10)
+    %   'Round6'    : Round6 experiment (Agents 7, 8, 9, 10, 11, 12)
+    %   'Stick'     : Stick experiment (Agents 7, 8, 9, 10)
     % Or specify any relative/absolute path or results struct.
     % =========================================================================
-    DEFAULT_DATASET = 'SStick';
+    DEFAULT_DATASET = 'SStickFlat';
 
     if nargin < 1 || isempty(source)
         source = DEFAULT_DATASET;

@@ -26,7 +26,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 
     % --- SVD Mode weights & Agent ID mapping settings ---
     % File or directory path containing agent SVD contributions (sender_v_mode1, sender_v_mode2, ...)
-    svd_weights_file = fullfile('EstimateL', 'SStick', 'low_rank_analysis', 'M10', ...
+    svd_weights_file = fullfile('EstimateL', 'SStickFlat', 'low_rank_analysis', 'M10', ...
         'global_joint_cp_rank1_profile_free_network_svd', 'agent_svd_contributions.csv');
 
     % Mapping from real robot agent_id (in experiment CSV) to agent_id used in SVD mode calculation.
@@ -34,11 +34,13 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     %   - 2-column matrix: [real_id1, mode_id1; real_id2, mode_id2; ...] (e.g., [1, 7; 2, 8; 3, 9; 4, 10])
     %   - containers.Map:  containers.Map([7, 8, 9, 10], [7, 8, 9, 10])
     %   - empty []:        direct 1-to-1 matching (real_id == mode_id)
-    agent_id_map = [9,8; 8,10; 11,7; 12,9]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
+    %agent_id_map = [9,8; 8,10; 11,7; 12,9]; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
+    agent_id_map = []; % Example mapping for 4 agents (7->7, 8->8, 9->9, 10->10)
 
     if nargin < 1 || isempty(dirpath)
         %dirpath = fullfile('VolBotVideo','sinz\GX011315');
         dirpath = fullfile('VolBotVideo','m5sinz\GX011341');
+        %dirpath = fullfile('VolBotVideo','m10sinz\GX011407');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
@@ -49,7 +51,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
         n_seconds_to_cut = 5.1;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration =60.1;
+        plot_duration =80.1;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;

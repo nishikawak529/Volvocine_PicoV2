@@ -272,7 +272,7 @@ function opts = parse_options(default_mode, varargin)
     addParameter(parser, 'SaveFIG', false, @(x) islogical(x) && isscalar(x));
     addParameter(parser, 'keep_figures', false, @(x) islogical(x) && isscalar(x));
 
-    addParameter(parser, 'analysis_start_sec', 10, @is_finite_scalar);
+    addParameter(parser, 'analysis_start_sec', 6.5, @is_finite_scalar);
     addParameter(parser, 'analysis_duration_sec', 80, @is_finite_scalar);
     addParameter(parser, 'sample_dt', 0.01, @is_positive_scalar);
     addParameter(parser, 'signal_column', 'a2', @(x) ischar(x) || isstring(x));

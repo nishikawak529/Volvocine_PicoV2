@@ -1,0 +1,240 @@
+[INFO] Starting direct joint rank-1 CP analysis
+  Round directory: SStickFlat
+  Output directory: SStickFlat\low_rank_analysis\M10\global_joint_cp_rank1
+  Fourier order: M=10; coefficient order is -M:M
+  Remove self-only terms: true
+  Remove constant term: true
+  Remove other-only terms: false
+  CP multi-starts: 20
+  CP maximum iterations/start: 1000
+  CP relative objective tolerance: 1.000e-10
+  CP random seed: 0
+
+[INFO] Loading Pair 1/6: 11-12
+[警告: Self-profile file not found for Agent 11: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent11_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 12: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent12_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\11-12\phase_dynamics_cache_9d52bc468c4b36d95c9ee9854fb0fb40.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 11, s2 -> 12
+[INFO] omega1 = 7.53998756936 rad/s, omega2 = 7.84995885764 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0403311, s2 = 0.0193574
+[INFO] Loading Pair 2/6: 8-11
+[警告: Self-profile file not found for Agent 8: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent8_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 11: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent11_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\8-11\phase_dynamics_cache_f2547abfc8b951daf92402654ededbdf.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 11
+[INFO] omega1 = 7.85025288406 rad/s, omega2 = 7.54005376578 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0131188, s2 = 0.0421504
+[INFO] Loading Pair 3/6: 8-12
+[警告: Self-profile file not found for Agent 8: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent8_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 12: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent12_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\8-12\phase_dynamics_cache_dbcdd5467dbb20b568aeb1d629684ec0.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 12
+[INFO] omega1 = 7.54008195219 rad/s, omega2 = 7.85022300008 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.018512, s2 = 0.0202701
+[INFO] Loading Pair 4/6: 8-9
+[警告: Self-profile file not found for Agent 8: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent8_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 9: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent9_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\8-9\phase_dynamics_cache_51c5d834f002acaee6fbbca59874079f.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 8, s2 -> 9
+[INFO] omega1 = 7.8500587664 rad/s, omega2 = 7.54010555943 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0143862, s2 = 0.0146488
+[INFO] Loading Pair 5/6: 9-11
+[警告: Self-profile file not found for Agent 9: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent9_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 11: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent11_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\9-11\phase_dynamics_cache_7991d2263b04be8b79ac6d4aee6be6e7.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 11
+[INFO] omega1 = 7.53989315533 rad/s, omega2 = 7.84987529386 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0202353, s2 = 0.0268416
+[INFO] Loading Pair 6/6: 9-12
+[警告: Self-profile file not found for Agent 9: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent9_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 895) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[警告: Self-profile file not found for Agent 12: EstimateL\SStickFlat\low_rank_analysis\M10\agent_self_profiles\agent12_self_profile_data.csv] 
+[> plot_phase_dynamics_from_csv>compute_gamma_for_dynamics (行 903) 内
+plot_phase_dynamics_from_csv (行 124) 内
+global_joint_svd_analysis_joint_cp_rank1 (行 102) 内
+global_joint_cp_rank_sweep_sinusoidal_sender>obtain_coefficient_tensor (行 349) 内
+global_joint_cp_rank_sweep_sinusoidal_sender (行 91) 内
+global_joint_cp_rank1_profile_free_network_svd (行 69) 内] 
+[INFO] Saved cached dynamics to C:\Users\nishikaw\Codes\Volvocine_PicoV2\EstimateL\SStickFlat\9-12\phase_dynamics_cache_730516736ec0fd0d60e8828076c1f903.mat
+[INFO] Fit completed with 8001 samples from 1 file(s).
+[INFO] Agent IDs: s1 -> 9, s2 -> 12
+[INFO] omega1 = 7.54001115273 rad/s, omega2 = 7.84996968627 rad/s, Delta omega = 0 rad/s
+[INFO] RMSE: s1 = 0.0152835, s2 = 0.0168009
+[INFO] Constructed C_tensor with size 21 x 21 x 12.
+[INFO] Verified the current data contain all 12 directions.
+[INFO] Direction metadata form a complete 4-agent digraph.
+  p= 1: 11 <- 12 (11-12, s1)
+  p= 2: 12 <- 11 (11-12, s2)
+  p= 3: 8 <- 11 (8-11, s1)
+  p= 4: 11 <- 8 (8-11, s2)
+  p= 5: 8 <- 12 (8-12, s1)
+  p= 6: 12 <- 8 (8-12, s2)
+  p= 7: 8 <- 9 (8-9, s1)
+  p= 8: 9 <- 8 (8-9, s2)
+  p= 9: 9 <- 11 (9-11, s1)
+  p=10: 11 <- 9 (9-11, s2)
+  p=11: 9 <- 12 (9-12, s1)
+  p=12: 12 <- 9 (9-12, s2)
+
+[INFO] Tensor conjugate-symmetry relative mismatch: 1.392e-15
+
+[INFO] Maximum |imag(a(phi))|: 9.714e-17 (tolerance 2.326e-10)
+[INFO] Maximum |imag(b(phi))|: 7.633e-17 (tolerance 1.531e-10)
+
+[INFO] Selected minimum-objective solution among starts (not a claim of global optimality).
+  Selected start: 3 of 20
+  Accepted ALS iterations: 7
+  Converged by relative objective change: true
+  Final objective J: 3.7507452675206629e-03
+  Overall relative residual: 5.3227860655223991e-01
+  Explained fraction: 7.1667948500680578e-01 (71.66794850%)
+  ||a||_2: 1; ||b||_2: 1
+  Conjugate-symmetry error ||a-conj(flipud(a))||_2: 0.000e+00
+  Conjugate-symmetry error ||b-conj(flipud(b))||_2: 0.000e+00
+
+[INFO] Per-direction CP metrics:
+p    Pair       Target   Source   RelResidual     Explained       w            
+1    11-12      11       12       5.24499421e-01  7.24900357e-01  0.0358593    
+2    11-12      12       11       3.52433820e-01  8.75790403e-01  0.0453635    
+3    8-11       8        11       5.60056719e-01  6.86336471e-01  0.0190307    
+4    8-11       11       8        6.86120118e-01  5.29239184e-01  0.0207536    
+5    8-12       8        12       4.65594099e-01  7.83222135e-01  -0.0311091   
+6    8-12       12       8        5.13304387e-01  7.36518606e-01  -0.0414588   
+7    8-9        8        9        7.69859995e-01  4.07315588e-01  0.00875656   
+8    8-9        9        8        7.07088403e-01  5.00025990e-01  0.00980577   
+9    9-11       9        11       6.61149208e-01  5.62881725e-01  -0.024134    
+10   9-11       11       9        5.85160223e-01  6.57587514e-01  -0.0326279   
+11   9-12       9        12       6.26488787e-01  6.07511800e-01  0.0171381    
+12   9-12       12       9        4.44127037e-01  8.02751175e-01  0.0234729    
+
+[INFO] a coefficients (-M:M):
+  -0.0275 + 0.0046i
+  -0.0058 - 0.0223i
+   0.0435 - 0.0100i
+   0.0077 + 0.0203i
+  -0.0763 + 0.0544i
+  -0.0013 - 0.0096i
+   0.1612 - 0.1379i
+  -0.0023 - 0.0406i
+  -0.4256 + 0.2108i
+  -0.0203 + 0.0331i
+   0.6536 + 0.0000i
+  -0.0203 - 0.0331i
+  -0.4256 - 0.2108i
+  -0.0023 + 0.0406i
+   0.1612 + 0.1379i
+  -0.0013 + 0.0096i
+  -0.0763 - 0.0544i
+   0.0077 - 0.0203i
+   0.0435 + 0.0100i
+  -0.0058 + 0.0223i
+  -0.0275 - 0.0046i
+
+[INFO] b coefficients (-M:M):
+   0.0003 + 0.0027i
+  -0.0034 + 0.0032i
+   0.0018 + 0.0001i
+   0.0109 - 0.0049i
+   0.0034 + 0.0048i
+  -0.0071 - 0.0074i
+  -0.0271 - 0.0188i
+   0.0720 - 0.0646i
+   0.0967 - 0.0405i
+   0.6182 + 0.3101i
+   0.0000 + 0.0000i
+   0.6182 - 0.3101i
+   0.0967 + 0.0405i
+   0.0720 + 0.0646i
+  -0.0271 + 0.0188i
+  -0.0071 + 0.0074i
+   0.0034 - 0.0048i
+   0.0109 + 0.0049i
+   0.0018 - 0.0001i
+  -0.0034 - 0.0032i
+   0.0003 - 0.0027i
+
+[INFO] signed direction weights w:
+    0.0359
+    0.0454
+    0.0190
+    0.0208
+   -0.0311
+   -0.0415
+    0.0088
+    0.0098
+   -0.0241
+   -0.0326
+    0.0171
+    0.0235
+
+[INFO] C_fit display suppressed by DisplayFullArrays=false; the complete array is stored in the returned result and MAT file.

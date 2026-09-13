@@ -45,7 +45,7 @@ function result = target_equilibrium_optimal_z_analysis(varargin)
 
     % Resolve inputs relative to this function, never relative to pwd.
     baseDir = fileparts(mfilename('fullpath'));
-    inputDir = fullfile(baseDir, 'Round', 'low_rank_analysis', 'M10', ...
+    inputDir = fullfile(baseDir, 'SStickFlat', 'low_rank_analysis', 'M10', ...
         'global_joint_cp_rank1_profile_free_network_svd');
     profilePath = fullfile(inputDir, 'target_receiver_profile_a_phi.csv');
     deltaPath = fullfile(inputDir, 'sender_phase_shift_delta.csv');

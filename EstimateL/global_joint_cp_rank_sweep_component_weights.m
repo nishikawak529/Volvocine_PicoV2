@@ -251,7 +251,7 @@ function opts = parse_options(varargin)
 
     % Options forwarded only when a coefficient MAT file is unavailable and
     % the existing rank-1 public function must build C_tensor once.
-    addParameter(parser, 'analysis_start_sec', 10, @is_finite_scalar);
+    addParameter(parser, 'analysis_start_sec', 6.5, @is_finite_scalar);
     addParameter(parser, 'analysis_duration_sec', 80, @is_finite_scalar);
     addParameter(parser, 'sample_dt', 0.01, @is_positive_scalar);
     addParameter(parser, 'signal_column', 'a2', ...
