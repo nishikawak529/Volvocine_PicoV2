@@ -22,13 +22,13 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     agent_display_offset = -0;
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStick');
+        round_dir = fullfile('EstimateL', 'SStickFlat');
     end
     if nargin < 2 || isempty(M)
         M = 10;
     end
 
-    default_sigma = 7;
+    default_sigma = 5;
     default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
