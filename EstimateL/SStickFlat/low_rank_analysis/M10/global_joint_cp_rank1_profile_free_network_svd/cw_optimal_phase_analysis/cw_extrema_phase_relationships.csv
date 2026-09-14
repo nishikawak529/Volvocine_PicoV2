@@ -1,0 +1,5 @@
+extrema_id,classification,type_code,is_global_max,is_global_min,cw_value,order_parameter,gradient_norm,basin_hits,phi_deg_agent_8,phi_rad_agent_8,phi_deg_agent_9,phi_rad_agent_9,phi_deg_agent_11,phi_rad_agent_11,phi_deg_agent_12,phi_rad_agent_12
+1,Stable Maximum (Attractor),STABLE_MAX,1,0,0.0738364786414488,6.12323399573677e-17,3.23730556398485e-18,18,0,0,0,0,-180,-3.14159265358979,-180,-3.14159265358979
+2,Saddle Point (Index 1),SADDLE_1,0,0,0.0539156453767003,6.12323399573677e-17,4.28808886492955e-18,2,0,0,-180,-3.14159265358979,0,0,-180,-3.14159265358979
+3,Saddle Point (Index 2),SADDLE_2,0,0,0.0234485961042649,1,0,2,0,0,0,0,0,0,0,0
+4,Unstable Minimum (Repeller),UNSTABLE_MIN,0,1,-0.151200720122414,6.12323399573677e-17,1.13282997059561e-17,18,0,0,180,3.14159265358979,180,3.14159265358979,0,0

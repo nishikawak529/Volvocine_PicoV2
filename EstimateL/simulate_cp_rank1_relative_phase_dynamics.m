@@ -54,7 +54,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     % --- 3. Dynamics & Reduction Mode ---
     DEFAULT_USE_ORIGINAL_SYSTEM = false;   % false: Phase-averaged Gamma dynamics, true: Original 2D dynamics
     DEFAULT_SUBTRACT_SELF_PROFILE = true;  % true: Account for individual self-profiles
-    DEFAULT_ADD_SELF_FEEDBACK = true;      % true: Add self-profile feedback term
+    DEFAULT_ADD_SELF_FEEDBACK = false;      % true: Add self-profile feedback term
     DEFAULT_REMOVE_GAMMA_BIAS = true;      % true: Subtract mean bias from Gamma_0(psi)
     DEFAULT_USE_FIRST_HARMONIC = false;    % true: Approximate Gamma_0 with 1st harmonic (c0 + c1*sin + c2*cos)
 
@@ -64,7 +64,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_FORCE_ZERO_DIAGONAL = true;    % true: Force diagonal to 0 (no self-coupling in network matrix)
 
     % --- 5. Simulation Timing & Frequency ---
-    DEFAULT_SIMULATION_DURATION_SEC = 500; % Simulation duration in seconds
+    DEFAULT_SIMULATION_DURATION_SEC = 100; % Simulation duration in seconds
     DEFAULT_SIMULATION_DT = 0.01;          % Integration step dt (s)
     DEFAULT_OMEGA_RAD_S = 2.5*pi;          % Natural frequency (rad/s), scalar or vector
     DEFAULT_REFERENCE_AGENT_ID = [];       % Reference agent ID for relative phase ([] uses 1st agent)
