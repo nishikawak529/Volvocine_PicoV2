@@ -19,25 +19,37 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 
     % --- Display-only agent ID offset for publication plots ---
     % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
-    agent_display_offset = -0;
+    agent_display_offset = -6;
 
     if nargin < 1 || isempty(round_dir)
-        round_dir = fullfile('EstimateL', 'SStickFlat');
+        round_dir = fullfile('EstimateL', 'SStick');
     end
+    round_dir = resolve_dataset_directory(round_dir);
+
     if nargin < 2 || isempty(M)
         M = 10;
     end
 
-    default_sigma = 5;
+    default_sigma = -5;
     default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
-    default_use_original_system = false; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
+    default_use_original_system = true; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
     default_plot_gamma = false; % Set to true to plot the Gamma functions used in simulation
+    default_plot_relative_phase = true; % Set to true to plot relative phase trajectories
+    default_plot_mode_amplitudes = true; % Set to true to plot SVD/PMD mode order parameter amplitudes |Z_l(t)|
+    default_plot_agent_input_amp = false; % Set to true to plot agent total weighted input amplitude |G_i(t)|
+    default_decomposition = 'svd'; % 'svd' or 'sparse_pmd'
+    default_agent_display_offset = -6; % Display ID offset (e.g., -6 to display 7->1, 8->2, ..., 10->4)
 
-    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, default_plot_gamma, varargin{:});
+    opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, ...
+        default_add_self_feedback, default_use_first_harmonic, default_use_original_system, ...
+        default_plot_gamma, default_plot_relative_phase, default_plot_mode_amplitudes, ...
+        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
+
+    agent_display_offset = opts.agent_display_offset;
 
     pair_infos = list_pair_folders(round_dir);
     if isempty(pair_infos)
@@ -121,15 +133,17 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     if opts.subtract_self_profile
         self_dir = opts.self_profile_dir;
         if isempty(self_dir)
-            clean_dir = char(round_dir);
-            if clean_dir(end) == '/' || clean_dir(end) == '\'
-                clean_dir = clean_dir(1:end-1);
+            candidate_dirs = {
+                fullfile(round_dir, 'low_rank_analysis', sprintf('M%d', M), 'agent_self_profiles'), ...
+                fullfile(round_dir, 'low_rank_analysis', 'M10', 'agent_self_profiles'), ...
+                fullfile('EstimateL', 'Round', 'low_rank_analysis', 'M10', 'agent_self_profiles')
+            };
+            for c = 1:numel(candidate_dirs)
+                if exist(candidate_dirs{c}, 'dir')
+                    self_dir = candidate_dirs{c};
+                    break;
+                end
             end
-            [~, category, ~] = fileparts(clean_dir);
-            if ~strcmp(category, 'Round') && ~strcmp(category, 'Stick')
-                category = 'Round'; % Fallback
-            end
-            self_dir = fullfile('EstimateL', category, 'low_rank_analysis', 'M10', 'agent_self_profiles');
         end
         for i = 1:numel(node_ids)
             aid = node_ids(i);
@@ -161,17 +175,44 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
 
     relative_phase = wrap_to_pi(phase - phase(:, reference_idx));
 
+    % --- Mode Decomposition Time-Series Analysis (like simulate_cp_rank1_relative_phase_dynamics.m) ---
+    mode_model = load_mode_analysis_model(round_dir, M, node_ids, opts);
+    mode_analysis = compute_mode_amplitudes_time_series(phase, mode_model);
+
+    [~, dataset_name] = fileparts(round_dir);
+    sim_title = sprintf('Pairwise Phase Dynamics (%s), \\sigma = %.2f', dataset_name, opts.sigma);
+
     figures = struct();
-    figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset);
+    if opts.plot_relative_phase
+        figures.relative_phase = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset, sim_title);
+    else
+        figures.relative_phase = [];
+    end
+
     if ~opts.use_original_system && opts.plot_gamma
         figures.gamma_functions = plot_all_gamma_functions(pair_results, agent_display_offset);
     else
         figures.gamma_functions = [];
     end
+
     if opts.plot_absolute_phases
         figures.absolute_phase = plot_absolute_phases(time, phase, node_ids, agent_display_offset);
     else
         figures.absolute_phase = [];
+    end
+
+    if opts.plot_mode_amplitudes && mode_analysis.available
+        figures.mode_amplitudes = plot_mode_order_parameters( ...
+            time, mode_analysis, sim_title);
+    else
+        figures.mode_amplitudes = [];
+    end
+
+    if opts.plot_agent_input_amp && mode_analysis.available
+        figures.agent_input_amp = plot_agent_input_amplitudes( ...
+            time, mode_analysis, node_ids, agent_display_offset, sim_title);
+    else
+        figures.agent_input_amp = [];
     end
 
     out = struct();
@@ -185,6 +226,8 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     out.phase = phase;
     out.relative_phase = relative_phase;
     out.pair_results = pair_results;
+    out.mode_model = mode_model;
+    out.mode_analysis = mode_analysis;
     out.figures = figures;
 
     if opts.save_output
@@ -192,7 +235,10 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     end
 end
 
-function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, default_add_self_feedback, default_use_first_harmonic, default_use_original_system, default_plot_gamma, varargin)
+function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, ...
+        default_add_self_feedback, default_use_first_harmonic, default_use_original_system, ...
+        default_plot_gamma, default_plot_relative_phase, default_plot_mode_amplitudes, ...
+        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, varargin)
     p = inputParser;
     addParameter(p, 'analysis_start_sec', 6.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
     addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
@@ -210,7 +256,13 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'omega_rad_s', 2.5*pi, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
     addParameter(p, 'initial_phases', [], @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'reference_agent_id', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && isfinite(x)));
+    addParameter(p, 'plot_relative_phase', default_plot_relative_phase, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'plot_absolute_phases', false, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'plot_mode_amplitudes', default_plot_mode_amplitudes, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'plot_agent_input_amp', default_plot_agent_input_amp, @(x) islogical(x) || isnumeric(x));
+    addParameter(p, 'decomposition', default_decomposition, @(x) ischar(x) || isstring(x));
+    addParameter(p, 'mode_model_dir', '', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'agent_display_offset', default_agent_display_offset, @(x) isnumeric(x) && isscalar(x));
     addParameter(p, 'keep_pair_figures', false, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'save_output', false, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'output_dir', '', @(x) ischar(x) || isstring(x));
@@ -230,7 +282,12 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     opts.signal_column = char(opts.signal_column);
     opts.normalize_signal = logical(opts.normalize_signal);
     opts.clip_normalized_signal = logical(opts.clip_normalized_signal);
+    opts.plot_relative_phase = logical(opts.plot_relative_phase);
     opts.plot_absolute_phases = logical(opts.plot_absolute_phases);
+    opts.plot_mode_amplitudes = logical(opts.plot_mode_amplitudes);
+    opts.plot_agent_input_amp = logical(opts.plot_agent_input_amp);
+    opts.decomposition = char(opts.decomposition);
+    opts.mode_model_dir = char(opts.mode_model_dir);
     opts.keep_pair_figures = logical(opts.keep_pair_figures);
     opts.save_output = logical(opts.save_output);
     opts.use_cache = logical(opts.use_cache);
@@ -249,6 +306,9 @@ end
 function pair_infos = list_pair_folders(round_dir)
     if isstring(round_dir)
         round_dir = char(round_dir);
+    end
+    if ~isfolder(round_dir)
+        round_dir = resolve_dataset_directory(round_dir);
     end
     if ~isfolder(round_dir)
         candidate = fullfile(pwd, round_dir);
@@ -435,12 +495,15 @@ function fit = fit_first_harmonic(psi, gamma_values)
     fit.r2 = 1 - ss_res / max(ss_tot, eps);
 end
 
-function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset)
+function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, reference_agent_id, agent_display_offset, sim_title)
     if nargin < 5 || isempty(agent_display_offset)
         agent_display_offset = 0;
     end
+    if nargin < 6 || isempty(sim_title)
+        sim_title = 'Pairwise Phase Dynamics';
+    end
 
-    fig = figure('Color', 'w', 'Name', 'Relative phase simulation');
+    fig = figure('Color', 'w', 'Name', sprintf('Relative phase simulation [%s]', sim_title));
     ax = axes('Parent', fig);
     hold(ax, 'on');
 
@@ -459,7 +522,7 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
         end
         
         plot(ax, time, y_val, 'LineWidth', 1.5, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d', displayed_agent_id(node_ids(k), agent_display_offset)));
+            'DisplayName', sprintf('$$j = %d$$', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -470,7 +533,8 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)');
     ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', displayed_agent_id(reference_agent_id, agent_display_offset)), 'Interpreter', 'latex');
-    legend(ax, 'Location', 'eastoutside');
+    title(ax, sprintf('Relative Phase Dynamics [%s]', sim_title), 'FontSize', 11);
+    legend(ax, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
         figure(fig);
@@ -490,7 +554,7 @@ function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
     colors = lines(numel(node_ids));
     for k = 1:numel(node_ids)
         plot(ax, time, phase(:, k), 'LineWidth', 1.2, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d: \\phi', displayed_agent_id(node_ids(k), agent_display_offset)));
+            'DisplayName', sprintf('$$j = %d$$', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -498,7 +562,7 @@ function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
     xlim(ax, [time(1), time(end)]);
     xlabel(ax, 'Time (s)');
     ylabel(ax, '$$\\phi_j$$', 'Interpreter', 'latex');
-    legend(ax, 'Location', 'best');
+    legend(ax, 'Location', 'best', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
         figure(fig);
@@ -560,6 +624,384 @@ function phase_wrapped = wrap_to_pi(phase)
     phase_wrapped = atan2(sin(phase), cos(phase));
 end
 
+function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
+    if nargin < 3 || isempty(net_title)
+        net_title = 'Network Model';
+    end
+
+    fig = figure('Color', 'w', 'Name', sprintf('Weighted Order Parameter |Z_l(t)| (%s)', net_title));
+    ax = axes('Parent', fig);
+    hold(ax, 'on');
+
+    K = mode_analysis.num_modes;
+    d = mode_analysis.d;
+    method = upper(mode_analysis.method);
+    colors = lines(K);
+    line_handles = gobjects(K, 1);
+    mode_legend = cell(K, 1);
+
+    for m = 1:K
+        line_handles(m) = plot(ax, time, mode_analysis.Z_abs(:, m), ...
+            'LineWidth', 1.6, 'Color', colors(m, :));
+        if strcmpi(method, 'SPARSE_PMD')
+            mode_legend{m} = sprintf('Sender Mode %d (d_{%d} = %.3f)', m, m, d(m));
+        else
+            mode_legend{m} = sprintf('Sender Mode %d (\\sigma_{%d} = %.3f)', m, m, d(m));
+        end
+    end
+
+    grid(ax, 'on');
+    box(ax, 'on');
+    xlim(ax, [time(1), time(end)]);
+    xlabel(ax, 'Time (s)', 'FontSize', 11);
+    ylabel(ax, '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$', ...
+        'Interpreter', 'latex', 'FontSize', 12);
+    title(ax, sprintf('Weighted Order Parameter |Z_l(t)| [%s]', net_title), 'FontSize', 12);
+    legend(ax, line_handles, mode_legend, 'Location', 'eastoutside', 'FontSize', 10);
+
+    if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+        figure(fig);
+        tuneFigure();
+    end
+end
+
+function fig = plot_agent_input_amplitudes(time, mode_analysis, node_ids, agent_display_offset, net_title)
+    if nargin < 4 || isempty(agent_display_offset)
+        agent_display_offset = 0;
+    end
+    if nargin < 5 || isempty(net_title)
+        net_title = 'Network Model';
+    end
+
+    fig = figure('Color', 'w', 'Name', sprintf('Agent Weighted Input Amplitude |G_i(t)| (%s)', net_title));
+    ax = axes('Parent', fig);
+    hold(ax, 'on');
+
+    N = numel(node_ids);
+    colors = lines(N);
+    line_handles = gobjects(N, 1);
+    agent_legend = cell(N, 1);
+
+    for i = 1:N
+        line_handles(i) = plot(ax, time, mode_analysis.G_abs(:, i), ...
+            'LineWidth', 1.5, 'Color', colors(i, :));
+        agent_legend{i} = sprintf('ID %d', node_ids(i) + agent_display_offset);
+    end
+
+    grid(ax, 'on');
+    box(ax, 'on');
+    xlim(ax, [time(1), time(end)]);
+    xlabel(ax, 'Time (s)', 'FontSize', 11);
+    ylabel(ax, '$$|G_i(t)| = \left|\sum_{\ell}\sigma_{\ell}u_{i\ell}Z_{\ell}(t)\right|$$', ...
+        'Interpreter', 'latex', 'FontSize', 12);
+    title(ax, sprintf('Agent Total Input Amplitude |G_i(t)| [%s]', net_title), 'FontSize', 12);
+    legend(ax, line_handles, agent_legend, 'Location', 'eastoutside', 'FontSize', 10);
+
+    if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
+        figure(fig);
+        tuneFigure();
+    end
+end
+
+function mode_analysis = compute_mode_amplitudes_time_series(phase, mode_model)
+    mode_analysis = struct();
+    mode_analysis.available = false;
+
+    if isempty(mode_model) || ~isfield(mode_model, 'available') || ~mode_model.available
+        return;
+    end
+
+    modes = mode_model.network_modes;
+    if isempty(modes) || ~isfield(modes, 'P') || ~isfield(modes, 'Q') || ~isfield(modes, 'd')
+        return;
+    end
+
+    U = modes.P;
+    V = modes.Q;
+    d = modes.d(:);
+    K = numel(d);
+
+    % Complex phasors: exp(1i * phase) (T x N)
+    phasors = exp(1i * phase);
+
+    % Weighted order parameter: Z_l(t) = sum_j v_{jl} * exp(1i * phi_j(t))
+    Z_complex = phasors * V;     % T x K
+    Z_abs = abs(Z_complex);     % T x K
+
+    % Receiver total mode input amplitude: G_i(t) = sum_l sigma_l * u_{il} * Z_l(t)
+    G_complex = (Z_complex .* d.') * U.'; % T x N
+    G_abs = abs(G_complex);               % T x N
+
+    % Real collective sender signal: X_real (T x K)
+    if isfield(mode_model, 'delta') && ~isempty(mode_model.delta)
+        B_mat = sqrt(2) * cos(phase - mode_model.delta);
+        X_real = B_mat * V;
+    else
+        X_real = [];
+    end
+
+    mode_analysis.available = true;
+    mode_analysis.method = modes.method;
+    mode_analysis.num_modes = K;
+    mode_analysis.d = d;
+    mode_analysis.U = U;
+    mode_analysis.V = V;
+    mode_analysis.Z_complex = Z_complex;
+    mode_analysis.Z_abs = Z_abs;
+    mode_analysis.G_complex = G_complex;
+    mode_analysis.G_abs = G_abs;
+    mode_analysis.X_real = X_real;
+end
+
+function mode_model = load_mode_analysis_model(round_dir, M, node_ids, opts)
+% Load network mode decomposition (SVD / Sparse PMD) corresponding to round_dir.
+    mode_model = struct('available', false);
+
+    decomp = opts.decomposition;
+    
+    % Candidate directories to search for saved low-rank analysis outputs
+    candidate_dirs = {};
+    if ~isempty(opts.mode_model_dir)
+        candidate_dirs{end + 1} = opts.mode_model_dir;
+    end
+
+    candidate_subdirs = {
+        sprintf('global_joint_cp_rank1_profile_free_network_%s', decomp), ...
+        'global_joint_cp_rank1_profile_free_network_svd', ...
+        'global_joint_cp_multirank_agentwise_sender_free_network_svd', ...
+        'global_joint_cp_rank1'
+    };
+
+    m_dirs = {sprintf('M%d', M), 'M10', 'M5'};
+    for m_idx = 1:numel(m_dirs)
+        base_low_rank = fullfile(round_dir, 'low_rank_analysis', m_dirs{m_idx});
+        for s_idx = 1:numel(candidate_subdirs)
+            candidate_dirs{end + 1} = fullfile(base_low_rank, candidate_subdirs{s_idx}); %#ok<AGROW>
+        end
+        candidate_dirs{end + 1} = base_low_rank; %#ok<AGROW>
+    end
+
+    % Filter existing directories
+    valid_dirs = {};
+    for c = 1:numel(candidate_dirs)
+        if exist(candidate_dirs{c}, 'dir')
+            valid_dirs{end + 1} = candidate_dirs{c}; %#ok<AGROW>
+        end
+    end
+    candidate_dirs = unique(valid_dirs, 'stable');
+
+    if isempty(candidate_dirs)
+        warning('No low_rank_analysis directory found under %s. Mode analysis will be skipped.', round_dir);
+        return;
+    end
+
+    % Search through candidate directories
+    for c = 1:numel(candidate_dirs)
+        target_dir = candidate_dirs{c};
+        
+        % 1. Try MAT file
+        mat_files = {
+            sprintf('rank1_profile_free_network_%s_results.mat', decomp), ...
+            'rank1_profile_free_network_svd_results.mat'
+        };
+        for m_file = 1:numel(mat_files)
+            mat_path = fullfile(target_dir, mat_files{m_file});
+            if exist(mat_path, 'file')
+                try
+                    loaded = load(mat_path);
+                    model = struct();
+                    model.agent_ids = loaded.agent_ids(:).';
+                    if isfield(loaded, 'W')
+                        model.W = loaded.W;
+                    else
+                        model.W = [];
+                    end
+                    if isfield(loaded, 'delta')
+                        model.delta = loaded.delta;
+                    else
+                        model.delta = [];
+                    end
+                    model.network_modes = struct('P', loaded.P, 'Q', loaded.Q, 'd', loaded.d(:), 'method', loaded.method);
+                    
+                    aligned = align_mode_model_to_nodes(model, node_ids);
+                    if aligned.available
+                        mode_model = aligned;
+                        fprintf('[INFO] Loaded mode analysis model from MAT: %s\n', mat_path);
+                        return;
+                    end
+                catch
+                end
+            end
+        end
+
+        % 2. Try CSV files
+        w_csv = fullfile(target_dir, 'network_coupling_matrix_W.csv');
+        delta_csv = fullfile(target_dir, 'sender_phase_shift_delta.csv');
+        contrib_csv = fullfile(target_dir, 'agent_svd_contributions.csv');
+        modes_csv = fullfile(target_dir, 'network_svd_modes_summary.csv');
+
+        delta_val = [];
+        if exist(delta_csv, 'file')
+            try
+                t_delta = readtable(delta_csv);
+                delta_val = t_delta.delta_rad(1);
+            catch
+            end
+        end
+
+        % Option A: Read W matrix
+        if exist(w_csv, 'file')
+            try
+                t_w = readtable(w_csv);
+                var_names = t_w.Properties.VariableNames;
+                sender_cols = var_names(startsWith(var_names, 'sender_agent_'));
+                agent_ids = zeros(1, numel(sender_cols));
+                for k = 1:numel(sender_cols)
+                    agent_ids(k) = str2double(regexprep(sender_cols{k}, '^sender_agent_', ''));
+                end
+                W_mat = table2array(t_w(:, sender_cols));
+
+                [U, S_mat, V] = svd(W_mat);
+                model = struct();
+                model.agent_ids = agent_ids;
+                model.W = W_mat;
+                model.delta = delta_val;
+                model.network_modes = struct('P', U, 'Q', V, 'd', diag(S_mat), 'method', 'svd');
+
+                aligned = align_mode_model_to_nodes(model, node_ids);
+                if aligned.available
+                    mode_model = aligned;
+                    fprintf('[INFO] Loaded mode analysis model from W CSV in %s\n', target_dir);
+                    return;
+                end
+            catch ME
+                warning('Failed reading W CSV: %s', ME.message);
+            end
+        end
+
+        % Option B: Read agent_svd_contributions.csv and network_svd_modes_summary.csv
+        if exist(contrib_csv, 'file')
+            try
+                t_contrib = readtable(contrib_csv);
+                agent_ids = t_contrib.agent_id(:).';
+                var_names = t_contrib.Properties.VariableNames;
+                u_cols = var_names(startsWith(var_names, 'receiver_u_mode'));
+                v_cols = var_names(startsWith(var_names, 'sender_v_mode'));
+                
+                U = table2array(t_contrib(:, u_cols));
+                V = table2array(t_contrib(:, v_cols));
+                
+                d = [];
+                if exist(modes_csv, 'file')
+                    t_modes = readtable(modes_csv);
+                    if ismember('singular_value_sigma', t_modes.Properties.VariableNames)
+                        d = t_modes.singular_value_sigma(:);
+                    end
+                end
+                if isempty(d)
+                    d = ones(numel(v_cols), 1);
+                end
+
+                model = struct();
+                model.agent_ids = agent_ids;
+                model.W = [];
+                model.delta = delta_val;
+                model.network_modes = struct('P', U, 'Q', V, 'd', d, 'method', 'svd');
+
+                aligned = align_mode_model_to_nodes(model, node_ids);
+                if aligned.available
+                    mode_model = aligned;
+                    fprintf('[INFO] Loaded mode analysis model from agent_svd_contributions.csv in %s\n', target_dir);
+                    return;
+                end
+            catch ME
+                warning('Failed reading agent_svd_contributions.csv: %s', ME.message);
+            end
+        end
+    end
+
+    warning('Could not find or load valid mode decomposition model under %s.', round_dir);
+end
+
+function aligned = align_mode_model_to_nodes(model, node_ids)
+    aligned = struct('available', false);
+    if isempty(model) || ~isfield(model, 'network_modes')
+        return;
+    end
+
+    model_agent_ids = model.agent_ids(:).';
+    node_ids = node_ids(:).';
+
+    [tf, loc] = ismember(node_ids, model_agent_ids);
+    if ~all(tf)
+        % Not all simulation nodes are present in the mode model
+        missing_ids = node_ids(~tf);
+        warning('Simulation node IDs %s not found in mode model agent IDs %s.', ...
+            mat2str(missing_ids), mat2str(model_agent_ids));
+        return;
+    end
+
+    % Reorder U, V, and W to match node_ids
+    aligned.available = true;
+    aligned.agent_ids = node_ids;
+    aligned.delta = model.delta;
+    
+    modes = model.network_modes;
+    aligned_P = modes.P(loc, :);
+    aligned_Q = modes.Q(loc, :);
+    
+    aligned.network_modes = struct( ...
+        'P', aligned_P, ...
+        'Q', aligned_Q, ...
+        'd', modes.d, ...
+        'method', modes.method);
+
+    if ~isempty(model.W)
+        aligned.W = model.W(loc, loc);
+    else
+        aligned.W = [];
+    end
+end
+
+function resolved_dir = resolve_dataset_directory(d)
+    if ischar(d) || isstring(d)
+        d_str = char(d);
+    else
+        resolved_dir = d;
+        return;
+    end
+
+    if isfolder(d_str)
+        resolved_dir = d_str;
+        return;
+    end
+
+    this_file = which('simulate_round_relative_phase_dynamics');
+    if ~isempty(this_file)
+        estimate_dir = fileparts(this_file);
+        base_root = fileparts(estimate_dir);
+    else
+        estimate_dir = fullfile(pwd, 'EstimateL');
+        base_root = pwd;
+    end
+
+    candidates = {
+        fullfile(estimate_dir, d_str), ...
+        fullfile(base_root, 'EstimateL', d_str), ...
+        fullfile('EstimateL', d_str), ...
+        fullfile(pwd, 'EstimateL', d_str), ...
+        fullfile(pwd, d_str), ...
+        fullfile(base_root, d_str)
+    };
+    for c = 1:numel(candidates)
+        if isfolder(candidates{c})
+            resolved_dir = candidates{c};
+            return;
+        end
+    end
+    resolved_dir = d_str;
+end
+
 function export = save_outputs(out, opts)
     output_dir = opts.output_dir;
     if isempty(output_dir)
@@ -576,7 +1018,18 @@ function export = save_outputs(out, opts)
         'VariableNames', arrayfun(@(id) sprintf('phi_%d_minus_ref', id), out.node_ids, 'UniformOutput', false));
     writetable(relative_table, csv_path);
 
-    export = struct('output_dir', output_dir, 'csv_path', csv_path);
+    % Also save mode order parameter amplitudes if available
+    if isfield(out, 'mode_analysis') && out.mode_analysis.available
+        mode_csv_path = fullfile(output_dir, 'mode_order_parameters.csv');
+        Z_table = array2table([out.time, out.mode_analysis.Z_abs], ...
+            'VariableNames', [{'time_sec'}, arrayfun(@(m) sprintf('mode_%d_abs', m), 1:out.mode_analysis.num_modes, 'UniformOutput', false)]);
+        writetable(Z_table, mode_csv_path);
+    end
+
+    mat_path = fullfile(output_dir, 'relative_phase_sim_results.mat');
+    save(mat_path, 'out', '-v7.3');
+
+    export = struct('output_dir', output_dir, 'csv_path', csv_path, 'mat_path', mat_path);
 end
 
 function close_pair_figures(pair_out)

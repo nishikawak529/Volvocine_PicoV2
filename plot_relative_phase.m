@@ -22,11 +22,11 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 
     % --- Display-only agent ID offset for publication plots ---
     % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
-    agent_display_offset = -0;
+    agent_display_offset = -6;
 
     % --- SVD Mode weights & Agent ID mapping settings ---
     % File or directory path containing agent SVD contributions (sender_v_mode1, sender_v_mode2, ...)
-    svd_weights_file = fullfile('EstimateL', 'SStickFlat', 'low_rank_analysis', 'M10', ...
+    svd_weights_file = fullfile('EstimateL', 'SStick', 'low_rank_analysis', 'M10', ...
         'global_joint_cp_rank1_profile_free_network_svd', 'agent_svd_contributions.csv');
 
     % Mapping from real robot agent_id (in experiment CSV) to agent_id used in SVD mode calculation.
@@ -39,20 +39,22 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
 
     if nargin < 1 || isempty(dirpath)
         %dirpath = fullfile('VolBotVideo','sinz\GX011315');
-        dirpath = fullfile('VolBotVideo','m5sinz\GX011346');
+        %dirpath = fullfile('VolBotVideo','m5sinz\GX011346');
         %dirpath = fullfile('VolBotVideo','m5sinz\GX011357');
         %dirpath = fullfile('VolBotVideo','m10sinz\GX011407');
+        dirpath = fullfile('merged_chunks_organized','2026-07-01');
+        %dirpath = fullfile('merged_chunks_organized','2026-07-13');
         %dirpath = fullfile('EstimateF','Spring5/250');
         %dirpath = fullfile('EstimateQ','VerifyZopt/Spring3/w1/250');
     end
     if nargin < 2 || isempty(csv_rank_from_latest)
-        csv_rank_from_latest = 1;
+        csv_rank_from_latest = 7;
     end
     if nargin < 3 || isempty(n_seconds_to_cut)
         n_seconds_to_cut = 5.1;
     end
     if nargin < 4 || isempty(plot_duration)
-        plot_duration =80.1;
+        plot_duration =65.1;
     end
     if nargin < 5 || isempty(apply_filter)
         apply_filter = true;
@@ -263,7 +265,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
     line_style = '-';
     max_plot_time = min(plot_duration - n_seconds_to_cut, 120);
 
-    y_label_str = sprintf('$$\\phi_j - \\phi_k\\quad(k=%d)$$', displayed_agent_id(ref_agent_for_label, agent_display_offset));
+    y_label_str = sprintf('$$\\phi_j - \\phi_%d$$', displayed_agent_id(ref_agent_for_label, agent_display_offset));
 
     if overlay_mode
         % ===== OVERLAY MODE: selected CSV in one figure =====
@@ -354,7 +356,7 @@ function varargout = plot_relative_phase(dirpath, csv_rank_from_latest, n_second
                 h = plot(ax, series_entry.time, series_entry.phase, ...
                     'Color', colors(p,:), 'LineWidth', 0.8, 'LineStyle', line_style);
                 line_handles_sep = [line_handles_sep; h];
-                agent_legend = [agent_legend; {sprintf('Agent %d', displayed_agent_id(ag, agent_display_offset))}];
+                agent_legend = [agent_legend; {sprintf('$$j =%d$$', displayed_agent_id(ag, agent_display_offset))}];
             end
 
             xlim(ax, [0, max_plot_time]);
@@ -682,7 +684,7 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
         end
     end
 
-    y_label_str = '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$';
+    y_label_str = '$$|Z_l(t)|$$';
 
     if overlay_mode
         figure('Visible','on');
@@ -710,7 +712,7 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
                     'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
                 if ~isgraphics(line_handles(m))
                     line_handles(m) = h;
-                    mode_legend{m} = sprintf('Sender Mode %d', m);
+                    mode_legend{m} = sprintf('Mode %d', m);
                 end
             end
         end
@@ -753,7 +755,7 @@ function plot_weighted_order_parameter_time_series(phase_series_by_file, file_li
             for m = 1:n_modes
                 line_handles(m) = plot(ax, t_common, Z_abs(:, m), ...
                     'Color', colors(m,:), 'LineWidth', 1.2, 'LineStyle', line_style);
-                mode_legend{m} = sprintf('Sender Mode %d', m);
+                mode_legend{m} = sprintf('Mode %d', m);
             end
 
             format_order_parameter_axis(ax, y_label_str, max_plot_time);

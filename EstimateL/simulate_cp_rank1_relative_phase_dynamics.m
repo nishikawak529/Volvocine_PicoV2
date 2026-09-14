@@ -44,17 +44,17 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     % =========================================================================
     
     % --- 1. Target Dataset & Fourier Order ---
-    DEFAULT_DATASET = 'SStickFlat';   % 'SStickFlat', 'Round', 'Round6', 'Stick', 'SStick'
+    DEFAULT_DATASET = 'SStick';   % 'SStickFlat', 'Round', 'Round6', 'Stick', 'SStick'
     DEFAULT_FOURIER_M = 10;           % Fourier truncation order M
 
     % --- 2. Control Gains (Overall & Self) ---
-    DEFAULT_SIGMA = 10.0;              % Coupling / feedback control gain sigma (scalar or vector)
+    DEFAULT_SIGMA = 7.0;              % Coupling / feedback control gain sigma (scalar or vector)
     DEFAULT_SIGMA_SELF = [];          % Self-feedback gain (empty [] uses DEFAULT_SIGMA)
 
     % --- 3. Dynamics & Reduction Mode ---
     DEFAULT_USE_ORIGINAL_SYSTEM = false;   % false: Phase-averaged Gamma dynamics, true: Original 2D dynamics
     DEFAULT_SUBTRACT_SELF_PROFILE = true;  % true: Account for individual self-profiles
-    DEFAULT_ADD_SELF_FEEDBACK = false;      % true: Add self-profile feedback term
+    DEFAULT_ADD_SELF_FEEDBACK = true;      % true: Add self-profile feedback term
     DEFAULT_REMOVE_GAMMA_BIAS = true;      % true: Subtract mean bias from Gamma_0(psi)
     DEFAULT_USE_FIRST_HARMONIC = false;    % true: Approximate Gamma_0 with 1st harmonic (c0 + c1*sin + c2*cos)
 
@@ -77,7 +77,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_PLOT_GAMMA                = false;  % Plot common profiles a(phi), b(phi) and Gamma_0(psi)
     DEFAULT_PLOT_NETWORK_WEIGHTS      = false;  % Plot network coupling matrix W heatmap
     DEFAULT_PLOT_ALL_GAMMA            = false;  % Plot all pairwise coupling curves
-    DEFAULT_AGENT_DISPLAY_OFFSET      = 0;      % Display ID offset (e.g. -7 to show 8->1, 9->2, ...)
+    DEFAULT_AGENT_DISPLAY_OFFSET      = -6;     % Display ID offset (e.g. -6 to display 7->1, 8->2, ..., 10->4)
     DEFAULT_SAVE_OUTPUT               = false;  % Save outputs to CSV / MAT
     % =========================================================================
 
@@ -784,7 +784,7 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
         end
 
         plot(ax, time, y_val, 'LineWidth', 1.6, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d', node_ids(k) + agent_display_offset));
+            'DisplayName', sprintf('$$j = %d$$', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -794,10 +794,10 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     yticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)', 'FontSize', 11);
-    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$ (rad)', reference_agent_id + agent_display_offset), ...
+    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$ (rad)', displayed_agent_id(reference_agent_id, agent_display_offset)), ...
         'Interpreter', 'latex', 'FontSize', 12);
     title(ax, sprintf('Relative Phase Dynamics [%s]', net_title), 'FontSize', 12);
-    legend(ax, 'Location', 'eastoutside');
+    legend(ax, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
         figure(fig);
@@ -817,7 +817,7 @@ function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
     colors = lines(numel(node_ids));
     for k = 1:numel(node_ids)
         plot(ax, time, phase(:, k), 'LineWidth', 1.2, 'Color', colors(k, :), ...
-            'DisplayName', sprintf('ID %d: \\phi', node_ids(k) + agent_display_offset));
+            'DisplayName', sprintf('$$j = %d$$', displayed_agent_id(node_ids(k), agent_display_offset)));
     end
 
     grid(ax, 'on');
@@ -826,7 +826,7 @@ function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
     xlabel(ax, 'Time (s)', 'FontSize', 11);
     ylabel(ax, '$$\\phi_j$$ (rad)', 'Interpreter', 'latex', 'FontSize', 12);
     title(ax, 'Absolute Phase Dynamics', 'FontSize', 12);
-    legend(ax, 'Location', 'best');
+    legend(ax, 'Location', 'best', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
         figure(fig);
@@ -1312,3 +1312,6 @@ function tf = is_option_name(x)
     tf = any(strcmpi(char(x), known_opts));
 end
 
+function display_id = displayed_agent_id(agent_id, offset)
+    display_id = agent_id + offset;
+end
