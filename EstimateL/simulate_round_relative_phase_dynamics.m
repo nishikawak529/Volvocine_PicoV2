@@ -30,8 +30,8 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
         M = 10;
     end
 
-    default_sigma = -5;
-    default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
+    default_sigma = 5;
+    default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
@@ -251,7 +251,7 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'tail_percent', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0 && x < 50);
     addParameter(p, 'clip_normalized_signal', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'clip_limit', 0.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
-    addParameter(p, 'simulation_duration_sec', 100, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
+    addParameter(p, 'simulation_duration_sec', 60, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'simulation_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'omega_rad_s', 2.5*pi, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
     addParameter(p, 'initial_phases', [], @(x) isempty(x) || isnumeric(x));

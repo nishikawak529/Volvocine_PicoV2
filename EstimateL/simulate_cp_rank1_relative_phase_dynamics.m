@@ -48,7 +48,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_FOURIER_M = 10;           % Fourier truncation order M
 
     % --- 2. Control Gains (Overall & Self) ---
-    DEFAULT_SIGMA = 7.0;              % Coupling / feedback control gain sigma (scalar or vector)
+    DEFAULT_SIGMA = -7.0;              % Coupling / feedback control gain sigma (scalar or vector)
     DEFAULT_SIGMA_SELF = [];          % Self-feedback gain (empty [] uses DEFAULT_SIGMA)
 
     % --- 3. Dynamics & Reduction Mode ---
@@ -64,7 +64,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_FORCE_ZERO_DIAGONAL = true;    % true: Force diagonal to 0 (no self-coupling in network matrix)
 
     % --- 5. Simulation Timing & Frequency ---
-    DEFAULT_SIMULATION_DURATION_SEC = 100; % Simulation duration in seconds
+    DEFAULT_SIMULATION_DURATION_SEC = 60; % Simulation duration in seconds
     DEFAULT_SIMULATION_DT = 0.01;          % Integration step dt (s)
     DEFAULT_OMEGA_RAD_S = 2.5*pi;          % Natural frequency (rad/s), scalar or vector
     DEFAULT_REFERENCE_AGENT_ID = [];       % Reference agent ID for relative phase ([] uses 1st agent)
@@ -854,9 +854,9 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
         line_handles(m) = plot(ax, time, mode_analysis.Z_abs(:, m), ...
             'LineWidth', 1.6, 'Color', colors(m, :));
         if strcmpi(method, 'SPARSE_PMD')
-            mode_legend{m} = sprintf('Sender Mode %d (d_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d', m);
         else
-            mode_legend{m} = sprintf('Sender Mode %d (\\sigma_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d', m);
         end
     end
 
