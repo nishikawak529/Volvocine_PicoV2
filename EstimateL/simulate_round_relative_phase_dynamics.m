@@ -21,21 +21,33 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     % Set to 0 to show raw ids, or -6 to display 7->1, 8->2, ..., 10->4.
     agent_display_offset = -6;
 
-    if nargin < 1 || isempty(round_dir)
+    if nargin >= 1 && (ischar(round_dir) || isstring(round_dir)) && is_known_option(round_dir)
+        % User passed name-value pairs directly (e.g. simulate_round_relative_phase_dynamics('initial_phases', [...]))
+        if nargin >= 2
+            varargin = [{round_dir}, {M}, varargin];
+        else
+            varargin = [{round_dir}, varargin];
+        end
         round_dir = fullfile('EstimateL', 'SStick');
-    end
-    round_dir = resolve_dataset_directory(round_dir);
-
-    if nargin < 2 || isempty(M)
+        round_dir = resolve_dataset_directory(round_dir);
         M = 10;
+    else
+        if nargin < 1 || isempty(round_dir)
+            round_dir = fullfile('EstimateL', 'SStick');
+        end
+        round_dir = resolve_dataset_directory(round_dir);
+
+        if nargin < 2 || isempty(M)
+            M = 10;
+        end
     end
 
-    default_sigma = -5;
+    default_sigma = 7;
     default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave
-    default_use_original_system = true; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
+    default_use_original_system = false; % Set to true to simulate the original 2D dynamics instead of phase-averaged Gamma dynamics
     default_plot_gamma = false; % Set to true to plot the Gamma functions used in simulation
     default_plot_relative_phase = true; % Set to true to plot relative phase trajectories
     default_plot_mode_amplitudes = true; % Set to true to plot SVD/PMD mode order parameter amplitudes |Z_l(t)|
@@ -43,10 +55,20 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     default_decomposition = 'svd'; % 'svd' or 'sparse_pmd'
     default_agent_display_offset = -6; % Display ID offset (e.g., -6 to display 7->1, 8->2, ..., 10->4)
 
+    % --- Initial Phases Configuration ---
+    % Specify initial phases phi_0 for each agent (in radians).
+    % Options:
+    %   - empty [] : Random initial phases in [0, 2*pi)
+    %   - Vector: [phi_1, phi_2, ..., phi_N] (ordered by agent IDs: 7, 8, 9, 10 -> Agent 1, 2, 3, 4)
+    %             Example: [0, pi/2, pi, 3*pi/2] or [0, 0, 0, 0]
+    %   - 2-column matrix: [agent_id, phase_val; ...] (e.g. [7, 0; 8, pi/2; 9, pi; 10, 3*pi/2] or with display IDs [1, 0; 2, pi/2; ...])
+    default_initial_phases = [0,-3*pi/4,pi/2,pi/2];
+
     opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, ...
         default_add_self_feedback, default_use_first_harmonic, default_use_original_system, ...
         default_plot_gamma, default_plot_relative_phase, default_plot_mode_amplitudes, ...
-        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, varargin{:});
+        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, ...
+        default_initial_phases, varargin{:});
     validateattributes(M, {'numeric'}, {'scalar', 'integer', 'nonnegative', 'finite'}, mfilename, 'M');
 
     agent_display_offset = opts.agent_display_offset;
@@ -114,14 +136,14 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
         pair_results(k).target_idx = node_index_map(pair_results(k).target_agent_id);
     end
 
-    if isempty(opts.initial_phases)
-        phi0 = 2*pi*rand(numel(node_ids), 1);
-    else
-        phi0 = opts.initial_phases(:);
-        if numel(phi0) ~= numel(node_ids)
-            error('initial_phases must contain exactly %d values.', numel(node_ids));
-        end
+    phi0 = parse_initial_phases(opts.initial_phases, node_ids, agent_display_offset);
+
+    fprintf('  Initial Phases: [');
+    for i = 1:numel(node_ids)
+        fprintf('Agent %d (ID %d): %.3f rad', displayed_agent_id(node_ids(i), agent_display_offset), node_ids(i), phi0(i));
+        if i < numel(node_ids), fprintf(', '); end
     end
+    fprintf(']\n');
 
     omega_rad_s = opts.omega_rad_s * ones(numel(node_ids), 1);
     time = (0:opts.simulation_dt:opts.simulation_duration_sec).';
@@ -221,6 +243,7 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
     out.options = opts;
     out.node_ids = node_ids;
     out.reference_agent_id = reference_agent_id;
+    out.initial_phases = phi0;
     out.omega_rad_s = omega_rad_s;
     out.time = time;
     out.phase = phase;
@@ -238,10 +261,11 @@ end
 function opts = parse_options(default_sigma, default_remove_gamma_bias, default_subtract_self_profile, ...
         default_add_self_feedback, default_use_first_harmonic, default_use_original_system, ...
         default_plot_gamma, default_plot_relative_phase, default_plot_mode_amplitudes, ...
-        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, varargin)
+        default_plot_agent_input_amp, default_decomposition, default_agent_display_offset, ...
+        default_initial_phases, varargin)
     p = inputParser;
-    addParameter(p, 'analysis_start_sec', 6.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
-    addParameter(p, 'analysis_duration_sec', 80, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
+    addParameter(p, 'analysis_start_sec', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0);
+    addParameter(p, 'analysis_duration_sec', 70, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'sample_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'sigma', default_sigma, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
     addParameter(p, 'n_psi', 501, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 3);
@@ -251,10 +275,10 @@ function opts = parse_options(default_sigma, default_remove_gamma_bias, default_
     addParameter(p, 'tail_percent', 10, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x >= 0 && x < 50);
     addParameter(p, 'clip_normalized_signal', true, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'clip_limit', 0.5, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
-    addParameter(p, 'simulation_duration_sec', 100, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
+    addParameter(p, 'simulation_duration_sec', 60, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'simulation_dt', 0.01, @(x) isnumeric(x) && isscalar(x) && isfinite(x) && x > 0);
     addParameter(p, 'omega_rad_s', 2.5*pi, @(x) isnumeric(x) && isscalar(x) && isfinite(x));
-    addParameter(p, 'initial_phases', [], @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'initial_phases', default_initial_phases, @(x) isempty(x) || isnumeric(x) || isa(x, 'containers.Map'));
     addParameter(p, 'reference_agent_id', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && isfinite(x)));
     addParameter(p, 'plot_relative_phase', default_plot_relative_phase, @(x) islogical(x) || isnumeric(x));
     addParameter(p, 'plot_absolute_phases', false, @(x) islogical(x) || isnumeric(x));
@@ -533,7 +557,7 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)');
     ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', displayed_agent_id(reference_agent_id, agent_display_offset)), 'Interpreter', 'latex');
-    title(ax, sprintf('Relative Phase Dynamics [%s]', sim_title), 'FontSize', 11);
+    %title(ax, sprintf('Relative Phase Dynamics [%s]', sim_title), 'FontSize', 11);
     legend(ax, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
@@ -644,9 +668,9 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
         line_handles(m) = plot(ax, time, mode_analysis.Z_abs(:, m), ...
             'LineWidth', 1.6, 'Color', colors(m, :));
         if strcmpi(method, 'SPARSE_PMD')
-            mode_legend{m} = sprintf('Sender Mode %d (d_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d', m);
         else
-            mode_legend{m} = sprintf('Sender Mode %d (\\sigma_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d', m);
         end
     end
 
@@ -654,9 +678,9 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
     box(ax, 'on');
     xlim(ax, [time(1), time(end)]);
     xlabel(ax, 'Time (s)', 'FontSize', 11);
-    ylabel(ax, '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$', ...
+    ylabel(ax, '$$|Z_l(t)|$$', ...
         'Interpreter', 'latex', 'FontSize', 12);
-    title(ax, sprintf('Weighted Order Parameter |Z_l(t)| [%s]', net_title), 'FontSize', 12);
+    %title(ax, sprintf('Weighted Order Parameter |Z_l(t)| [%s]', net_title), 'FontSize', 12);
     legend(ax, line_handles, mode_legend, 'Location', 'eastoutside', 'FontSize', 10);
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
@@ -1092,4 +1116,79 @@ function s_values = evaluate_fit_surface_local(phi1, phi2, fit_result)
     end
     
     s_values = A * coeff + z_mean;
+end
+
+function phi0 = parse_initial_phases(init_input, node_ids, agent_display_offset)
+% PARSE_INITIAL_PHASES
+% Flexible parsing for initial phases configuration:
+%   - empty [] : Random initial phases in [0, 2*pi)
+%   - Vector: [phi_1, phi_2, ..., phi_N] (ordered by sorted node_ids)
+%   - 2-column matrix: [agent_id, phase_value; ...] (supports raw or displayed agent IDs)
+%   - containers.Map: mapping from agent_id (or displayed ID) to phase_value
+    N = numel(node_ids);
+    if isempty(init_input)
+        phi0 = 2 * pi * rand(N, 1);
+        return;
+    end
+
+    phi0 = zeros(N, 1);
+
+    if isa(init_input, 'containers.Map')
+        for i = 1:N
+            aid = node_ids(i);
+            disp_id = displayed_agent_id(aid, agent_display_offset);
+            if isKey(init_input, aid)
+                phi0(i) = init_input(aid);
+            elseif isKey(init_input, disp_id)
+                phi0(i) = init_input(disp_id);
+            else
+                error('initial_phases map is missing agent ID %d (display ID %d).', aid, disp_id);
+            end
+        end
+    elseif isnumeric(init_input)
+        if isvector(init_input)
+            if numel(init_input) ~= N
+                error('initial_phases vector must contain exactly %d values (got %d).', N, numel(init_input));
+            end
+            phi0 = init_input(:);
+        elseif ismatrix(init_input) && size(init_input, 2) == 2
+            % 2-column matrix: [agent_id, phase_value]
+            for i = 1:N
+                aid = node_ids(i);
+                disp_id = displayed_agent_id(aid, agent_display_offset);
+                row = find(init_input(:, 1) == aid, 1);
+                if isempty(row)
+                    row = find(init_input(:, 1) == disp_id, 1);
+                end
+                if isempty(row)
+                    error('initial_phases matrix is missing entry for agent ID %d (display ID %d).', aid, disp_id);
+                end
+                phi0(i) = init_input(row, 2);
+            end
+        else
+            error('initial_phases matrix must be a length-%d vector or an [agent_id, phase] matrix.', N);
+        end
+    else
+        error('Unsupported initial_phases format: must be numeric vector, matrix, or containers.Map.');
+    end
+end
+
+function tf = is_known_option(x)
+    if ~ischar(x) && ~isstring(x)
+        tf = false;
+        return;
+    end
+    known_opts = { ...
+        'analysis_start_sec', 'analysis_duration_sec', 'sample_dt', 'sigma', ...
+        'n_psi', 'n_theta', 'signal_column', 'normalize_signal', 'tail_percent', ...
+        'clip_normalized_signal', 'clip_limit', 'simulation_duration_sec', ...
+        'simulation_dt', 'omega_rad_s', 'initial_phases', 'reference_agent_id', ...
+        'plot_relative_phase', 'plot_absolute_phases', 'plot_mode_amplitudes', ...
+        'plot_agent_input_amp', 'decomposition', 'mode_model_dir', ...
+        'agent_display_offset', 'keep_pair_figures', 'save_output', 'output_dir', ...
+        'use_cache', 'cache_dir', 'file_indices', 'remove_gamma_bias', ...
+        'subtract_self_profile', 'self_profile_dir', 'add_self_feedback', ...
+        'use_first_harmonic', 'use_original_system', 'plot_gamma' ...
+    };
+    tf = any(strcmpi(char(x), known_opts));
 end

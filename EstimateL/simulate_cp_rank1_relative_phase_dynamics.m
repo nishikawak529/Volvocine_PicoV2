@@ -11,10 +11,13 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
 %
 % Dynamics modes:
 %   1. Phase-averaged Gamma Dynamics (use_original_system = false, default):
-%      dphi_i/dt = omega_i + sigma * sum_{j=1}^N W_{ij} * Gamma_0(phi_i - phi_j)
+%      dphi_i/dt = omega_eff_i + sigma * sum_{j=1}^N W_{ij} * Gamma_0(phi_i - phi_j)
 %      where Gamma_0(psi) is the single global coupling function:
 %      Gamma_0(psi) = (1 / 2*pi) * integral_0^{2*pi} z(theta) * a(theta) * b(theta - psi) dtheta
 %      with z(theta) = -sin(theta) (PRC).
+%      If add_self_feedback = true, the phase-averaged self-feedback contribution
+%      Delta_omega_i = (1 / 2*pi) * integral_0^{2*pi} z(theta) * q_i(theta) dtheta
+%      is added to natural frequency: omega_eff_i = omega_i + sigma_self_i * Delta_omega_i.
 %
 %   2. Original System Dynamics (use_original_system = true):
 %      dphi_i/dt = omega_i + sigma * a(phi_i) * z(phi_i) * [W * b(phi)]_i
@@ -48,7 +51,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_FOURIER_M = 10;           % Fourier truncation order M
 
     % --- 2. Control Gains (Overall & Self) ---
-    DEFAULT_SIGMA = 7.0;              % Coupling / feedback control gain sigma (scalar or vector)
+    DEFAULT_SIGMA = -7.0;              % Coupling / feedback control gain sigma (scalar or vector)
     DEFAULT_SIGMA_SELF = [];          % Self-feedback gain (empty [] uses DEFAULT_SIGMA)
 
     % --- 3. Dynamics & Reduction Mode ---
@@ -64,7 +67,7 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     DEFAULT_FORCE_ZERO_DIAGONAL = true;    % true: Force diagonal to 0 (no self-coupling in network matrix)
 
     % --- 5. Simulation Timing & Frequency ---
-    DEFAULT_SIMULATION_DURATION_SEC = 100; % Simulation duration in seconds
+    DEFAULT_SIMULATION_DURATION_SEC = 60; % Simulation duration in seconds
     DEFAULT_SIMULATION_DT = 0.01;          % Integration step dt (s)
     DEFAULT_OMEGA_RAD_S = 2.5*pi;          % Natural frequency (rad/s), scalar or vector
     DEFAULT_REFERENCE_AGENT_ID = [];       % Reference agent ID for relative phase ([] uses 1st agent)
@@ -263,6 +266,19 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     network_info.sigma = sigma;
     network_info.sigma_self = sigma_self;
 
+    % 6. Compute effective natural frequencies including phase-averaged self-feedback if applicable
+    delta_omega_self = zeros(N, 1);
+    omega_effective = omega_rad_s;
+    if opts.add_self_feedback && ~isempty(node_self_profiles)
+        delta_omega_self = compute_averaged_self_feedback(node_self_profiles, opts.n_theta);
+        if ~opts.use_original_system
+            % Phase-averaged Gamma Dynamics:
+            % Self-profile feedback is phase-averaged with PRC z(theta) and added to natural frequencies:
+            %   omega_effective_i = omega_i + sigma_self_i * <z(theta) * q_i(theta)>
+            omega_effective = omega_rad_s + sigma_self .* delta_omega_self;
+        end
+    end
+
     fprintf('[INFO] Simulating CP Rank-1 Phase Dynamics (%s)\n', resolved_dir);
     fprintf('  Agents (%d): %s | Duration: %.1fs | dt: %.4fs\n', ...
         N, mat2str(node_ids.'), opts.simulation_duration_sec, opts.simulation_dt);
@@ -271,8 +287,20 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     fprintf('  System type: %s | Network mode: %s\n', ...
         ternary(opts.use_original_system, 'Original 2D Dynamics', 'Phase-averaged Gamma Dynamics'), ...
         network_info.desc);
+    if opts.add_self_feedback && ~isempty(node_self_profiles)
+        if ~opts.use_original_system
+            fprintf('  Self-feedback averaging: ACTIVE (Gamma Dynamics)\n');
+            for i = 1:N
+                fprintf('    Agent %d: base_omega = %.4f, delta_omega = %+.4f, self_gain*delta = %+.4f, omega_eff = %.4f rad/s\n', ...
+                    displayed_agent_id(node_ids(i), agent_display_offset), omega_rad_s(i), delta_omega_self(i), ...
+                    sigma_self(i) * delta_omega_self(i), omega_effective(i));
+            end
+        else
+            fprintf('  Self-feedback: Instantaneous 2D feedback active (sigma_self * q_i(phi_i) * z(phi_i))\n');
+        end
+    end
 
-    % 6. Time stepping integration
+    % 7. Time stepping integration
     dt = opts.simulation_dt;
 
     for t_idx = 1:(n_steps - 1)
@@ -281,8 +309,8 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
             dphi = compute_phase_velocity_original(phi_curr, omega_rad_s, W_sim, ...
                 cp_model, sigma, sigma_self, opts.add_self_feedback, node_self_profiles);
         else
-            dphi = compute_phase_velocity_gamma(phi_curr, omega_rad_s, W_sim, ...
-                gamma0, sigma, sigma_self, opts.add_self_feedback, node_self_profiles);
+            dphi = compute_phase_velocity_gamma(phi_curr, omega_effective, W_sim, ...
+                gamma0, sigma);
         end
         phase(t_idx + 1, :) = phase(t_idx, :) + dt * dphi.';
     end
@@ -359,6 +387,8 @@ function out = simulate_cp_rank1_relative_phase_dynamics(target_dir, M, varargin
     out.node_ids = node_ids;
     out.reference_agent_id = reference_agent_id;
     out.omega_rad_s = omega_rad_s;
+    out.omega_effective = omega_effective;
+    out.delta_omega_self = delta_omega_self;
     out.sigma = sigma;
     out.sigma_self = sigma_self;
     out.time = time;
@@ -383,10 +413,11 @@ end
 % DYNAMICS COMPUTATION FUNCTIONS
 % =========================================================================
 
-function dphi = compute_phase_velocity_gamma(phi, omega_rad_s, W, gamma0, sigma, sigma_self, add_self_feedback, node_self_profiles)
+function dphi = compute_phase_velocity_gamma(phi, omega_effective, W, gamma0, sigma, varargin)
 % Phase-averaged Gamma Dynamics:
-%   dphi_i/dt = omega_i + sigma_i * sum_j W_{ij} * Gamma_0(phi_i - phi_j) + sigma_self_i * q_i(phi_i) * z(phi_i)
-    N = numel(phi);
+%   dphi_i/dt = omega_effective_i + sigma_i * sum_j W_{ij} * Gamma_0(phi_i - phi_j)
+% Note: Any self-feedback contribution is already phase-averaged with PRC z(theta) = -sin(theta)
+% and absorbed into omega_effective: omega_effective_i = omega_i + sigma_self_i * <z(theta) * q_i(theta)>.
     
     % Pairwise phase differences: Delta_Phi(i, j) = phi_i - phi_j
     % Row i: target/receiver, Column j: source/sender
@@ -398,18 +429,27 @@ function dphi = compute_phase_velocity_gamma(phi, omega_rad_s, W, gamma0, sigma,
     % Network coupling sum for each agent i: sum_j W_{ij} * Gamma_0(phi_i - phi_j)
     coupling_term = sum(W .* gamma_mat, 2);
     
-    dphi = omega_rad_s + sigma .* coupling_term;
+    dphi = omega_effective + sigma .* coupling_term;
+end
 
-    % Optional self feedback: sigma_self * q_i(phi_i) * z(phi_i)
-    if add_self_feedback && ~isempty(node_self_profiles)
-        for i = 1:N
-            sp = node_self_profiles{i};
-            if ~isempty(sp)
-                phi_w = mod(phi(i), 2*pi);
-                q_val = interp1(sp.phi, sp.val, phi_w, 'linear', 'extrap');
-                z_val = -sin(phi_w);
-                dphi(i) = dphi(i) + sigma_self(i) * q_val * z_val;
-            end
+function delta_omega_self = compute_averaged_self_feedback(node_self_profiles, n_theta)
+% COMPUTE_AVERAGED_SELF_FEEDBACK
+% Computes the phase-averaged frequency shift from self-profile feedback:
+%   Delta_omega_i = (1 / 2*pi) * integral_0^{2*pi} z(theta) * q_i(theta) dtheta
+% where z(theta) = -sin(theta) (PRC) and q_i(theta) is the self-profile of agent i.
+    N = numel(node_self_profiles);
+    delta_omega_self = zeros(N, 1);
+    theta = linspace(0, 2*pi, n_theta).';
+    z_theta = -sin(theta);
+
+    for i = 1:N
+        sp = node_self_profiles{i};
+        if ~isempty(sp) && isfield(sp, 'phi') && isfield(sp, 'val') && ...
+                ~isempty(sp.phi) && ~isempty(sp.val)
+            % Interpolate q_i onto [0, 2*pi] grid
+            q_theta = interp1(sp.phi, sp.val, theta, 'linear', 'extrap');
+            integrand = z_theta .* q_theta;
+            delta_omega_self(i) = trapz(theta, integrand) / (2 * pi);
         end
     end
 end
@@ -794,9 +834,9 @@ function fig = plot_relative_phase_trajectories(time, relative_phase, node_ids, 
     yticks(ax, [-pi, -pi/2, 0, pi/2, pi]);
     yticklabels(ax, {'-\pi', '-\pi/2', '0', '\pi/2', '\pi'});
     xlabel(ax, 'Time (s)', 'FontSize', 11);
-    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$ (rad)', displayed_agent_id(reference_agent_id, agent_display_offset)), ...
+    ylabel(ax, sprintf('$$\\phi_j - \\phi_{%d}$$', displayed_agent_id(reference_agent_id, agent_display_offset)), ...
         'Interpreter', 'latex', 'FontSize', 12);
-    title(ax, sprintf('Relative Phase Dynamics [%s]', net_title), 'FontSize', 12);
+    %title(ax, sprintf('Relative Phase Dynamics [%s]', net_title), 'FontSize', 12);
     legend(ax, 'Location', 'eastoutside', 'Interpreter', 'latex');
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
@@ -824,7 +864,7 @@ function fig = plot_absolute_phases(time, phase, node_ids, agent_display_offset)
     box(ax, 'on');
     xlim(ax, [time(1), time(end)]);
     xlabel(ax, 'Time (s)', 'FontSize', 11);
-    ylabel(ax, '$$\\phi_j$$ (rad)', 'Interpreter', 'latex', 'FontSize', 12);
+    ylabel(ax, '$$\\phi_j$$', 'Interpreter', 'latex', 'FontSize', 12);
     title(ax, 'Absolute Phase Dynamics', 'FontSize', 12);
     legend(ax, 'Location', 'best', 'Interpreter', 'latex');
 
@@ -854,9 +894,9 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
         line_handles(m) = plot(ax, time, mode_analysis.Z_abs(:, m), ...
             'LineWidth', 1.6, 'Color', colors(m, :));
         if strcmpi(method, 'SPARSE_PMD')
-            mode_legend{m} = sprintf('Sender Mode %d (d_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d',m);
         else
-            mode_legend{m} = sprintf('Sender Mode %d (\\sigma_{%d} = %.3f)', m, m, d(m));
+            mode_legend{m} = sprintf('Mode %d', m);
         end
     end
 
@@ -864,9 +904,9 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
     box(ax, 'on');
     xlim(ax, [time(1), time(end)]);
     xlabel(ax, 'Time (s)', 'FontSize', 11);
-    ylabel(ax, '$$|Z_l(t)| = \left|\sum_j v_{jl} e^{i \phi_j(t)}\right|$$', ...
+    ylabel(ax, '$$|Z_l(t)|$$', ...
         'Interpreter', 'latex', 'FontSize', 12);
-    title(ax, sprintf('Weighted Order Parameter |Z_l(t)| [%s]', net_title), 'FontSize', 12);
+    %title(ax, sprintf('Weighted Order Parameter |Z_l(t)| [%s]', net_title), 'FontSize', 12);
     legend(ax, line_handles, mode_legend, 'Location', 'eastoutside', 'FontSize', 10);
 
     if exist('tuneFigure', 'file') == 2 || exist('tuneFigure', 'builtin')
