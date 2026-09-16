@@ -33,7 +33,7 @@ function results = global_joint_cp_rank1_profile_free_network_svd(round_dir, M, 
     %   'Round6'    : Round6 experiment (Agents 7, 8, 9, 10, 11, 12)
     %   'Stick'     : Stick experiment (Agents 7, 8, 9, 10)
     % Or specify any relative/absolute path.
-    DEFAULT_DATASET = 'SStickFlat';
+    DEFAULT_DATASET = 'SStick';
 
     % Network Decomposition Method: 'svd' or 'sparse_pmd'
     DEFAULT_NETWORK_DECOMPOSITION = 'svd';

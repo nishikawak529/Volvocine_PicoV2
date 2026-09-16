@@ -42,8 +42,13 @@ function out = simulate_round_relative_phase_dynamics(round_dir, M, varargin)
         end
     end
 
+<<<<<<< HEAD
     default_sigma = 7;
     default_remove_gamma_bias = true; % Set to true to subtract the mean (bias) from Gamma functions
+=======
+    default_sigma = 5;
+    default_remove_gamma_bias = false; % Set to true to subtract the mean (bias) from Gamma functions
+>>>>>>> ea782b00c25806f9b4d398883f28068b0ea21259
     default_subtract_self_profile = true; % Set to true to subtract mean self-profile before Gamma calculation
     default_add_self_feedback = true; % Set to true to add 1 copy of self-profile feedback in simulation when subtract_self_profile is true
     default_use_first_harmonic = false; % Set to true to approximate Gamma with constant + 1st sin wave

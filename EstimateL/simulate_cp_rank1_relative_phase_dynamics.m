@@ -894,7 +894,11 @@ function fig = plot_mode_order_parameters(time, mode_analysis, net_title)
         line_handles(m) = plot(ax, time, mode_analysis.Z_abs(:, m), ...
             'LineWidth', 1.6, 'Color', colors(m, :));
         if strcmpi(method, 'SPARSE_PMD')
+<<<<<<< HEAD
             mode_legend{m} = sprintf('Mode %d',m);
+=======
+            mode_legend{m} = sprintf('Mode %d', m);
+>>>>>>> ea782b00c25806f9b4d398883f28068b0ea21259
         else
             mode_legend{m} = sprintf('Mode %d', m);
         end
