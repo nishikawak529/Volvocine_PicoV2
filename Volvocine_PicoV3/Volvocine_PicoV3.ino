@@ -17,6 +17,71 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// ==========================================
+// 動作モード設定
+// ==========================================
+constexpr bool DEMO_MODE = true;
+constexpr bool USE_WIFI = !DEMO_MODE;
+constexpr bool ENABLE_LOGGING = !DEMO_MODE;
+
+constexpr int PRC_MAX_HARMONICS = 10;
+
+// ==========================================
+// デモモード用パラメータ設定
+// DEMO_MODE = true 時に適用される制御パラメータ。
+// 周波数、ゲイン、サーボ中心・振幅、光センサ設定、初期位相、PRC係数を一括して確認・変更できます。
+// ==========================================
+namespace DemoConfig {
+  // --- 周波数・フィードバックゲイン ---
+  // Ino初期値: omega = 3.0*PI rad/s (~9.42 rad/s, 1.5 Hz), kappa = 1.0f
+  // サーバー設定値 (ServerResponse.py): default_omega = 2.5*PI rad/s (~7.85 rad/s, 1.25 Hz), kappa = 0.0f
+  constexpr float OMEGA = 3.0f * 3.14159265f;
+  constexpr float KAPPA = 1.0f;       // フィードバックゲイン (開始5秒後に kappa_now に反映)
+  constexpr float KAPPA_INIT = 0.0f;  // 起動/再開直後 (最初の5秒間) のゲイン
+
+  // --- サーボモータ設定 ---
+  // Ino初期値: center = 110.0f, amplitude = 60.0f
+  // サーバー設定値: center = 60.0f, amplitude = 50.0f
+  // ※ 機体のホーン取り付け角や可動域に合わせて設定します
+  constexpr float SERVO_CENTER = 110.0f;
+  constexpr float SERVO_AMPLITUDE = 60.0f;
+
+  // --- 光センサフィードバックパラメータ ---
+  // Ino初期値: tau = 1.0s, gain = 1.0, omega_gain = 0.0, min_amp_ratio = 0.1
+  // サーバー設定値: tau = 0.0s, gain = 0.0, omega_gain = -0.0, min_amp_ratio = 0.6
+  constexpr float LIGHT_TAU_SEC = 1.0f;
+  constexpr float LIGHT_FEEDBACK_GAIN = 1.0f;
+  constexpr float LIGHT_FEEDBACK_OMEGA_GAIN = 0.0f;
+  constexpr float MIN_AMPLITUDE_RATIO = 0.1f;
+  constexpr float FEEDBACK_TAU_SEC = 1.0f;
+
+  // --- 初期位相設定 ---
+  // IS_RANDOM_INITIAL_PHASE が true の場合は起動/再開時にランダム位相 (0〜2π rad) を適用
+  // false の場合は INITIAL_PHASE [rad] を適用
+  constexpr bool IS_RANDOM_INITIAL_PHASE = true;
+  constexpr float INITIAL_PHASE = 0.0f;
+
+  // --- PRC (Phase Response Curve) フーリエ係数設定 ---
+  // 注意: 既存Ino初期値は全て 0.0f です。
+  // PRC係数が全てゼロの場合、zPrc = 0 となり曲げセンサによる位相変調は働きません（自励発振のみ）。
+  // サーバーから取得しないデモ時でも曲げフィードバックを働かせたい場合は、
+  // 以下の配列に必要な高調波係数を設定してください。
+  constexpr int PRC_HARMONICS = 1;
+  // 既存初期値: 全てゼロ (未設定時は曲げセンサのフィードバック効果 zPrc = 0)
+  const float PRC_COS_COEFFS[PRC_MAX_HARMONICS + 1] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+  const float PRC_SIN_COEFFS[PRC_MAX_HARMONICS + 1] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+  // 【PRCプリセット参考】
+  // 1) 1次正弦波フォールバック (agent_config.cpp フォールバック相当):
+  //    PRC_HARMONICS = 1;
+  //    PRC_COS_COEFFS: a1 = 1.0f, 他 0
+  //    PRC_SIN_COEFFS: 全て 0
+  // 2) ServerResponse.py (alpha = -pi 相当):
+  //    PRC_HARMONICS = 1;
+  //    PRC_COS_COEFFS: 全て 0
+  //    PRC_SIN_COEFFS: b1 = -1.0f, 他 0
+}
+
 // agent_id: 不変なのでRAMで持つだけでOK (送信時にのみ使用)
 int agent_id;
 
@@ -55,7 +120,7 @@ struct CompressedLogData {
 #pragma pack(pop)
 
 #define CONTROL_PERIOD_US 2000 // 制御周期 (μs)
-#define LOG_BUFFER_SIZE   20000 // 20000 * 7バイト = 140,000バイト (約140KB)
+#define LOG_BUFFER_SIZE   (ENABLE_LOGGING ? 20000 : 10) // ログ有効時: 20000レコード (約140KB), デモ時: 10レコード
 CompressedLogData logBuffer[LOG_BUFFER_SIZE];
 int logIndex = 0;
 bool paused = false;
@@ -73,7 +138,6 @@ float omega = 3.0f * 3.14f;
 float kappa = 1.0f;  // フィードバックゲイン
 float kappa_init = 0.0f;
 float kappa_now = 0.0f;
-const int PRC_MAX_HARMONICS = 10;
 int prcHarmonics = 1;
 float prcCosCoeffs[PRC_MAX_HARMONICS + 1] = {0.0f};
 float prcSinCoeffs[PRC_MAX_HARMONICS + 1] = {0.0f};
@@ -109,10 +173,55 @@ void applyInitialPhase() {
   }
 }
 
-
 // 停止制御用パラメータ (サーバーから受信)
 int stopAgentId = 0; // 停止対象のエージェントID (0は特殊な意味を持つ場合など)
 int stopDelaySeconds = 0; // 停止までの秒数
+
+// デモ用パラメータを各制御変数に適用する関数
+void applyDemoParameters() {
+  omega = DemoConfig::OMEGA;
+  kappa = DemoConfig::KAPPA;
+  kappa_init = DemoConfig::KAPPA_INIT;
+  kappa_now = kappa_init;
+  wait_max = 2.0f * (float)M_PI / omega;
+
+  servoCenter = DemoConfig::SERVO_CENTER;
+  servoAmplitude = DemoConfig::SERVO_AMPLITUDE;
+
+  lightTauSec = DemoConfig::LIGHT_TAU_SEC;
+  lightFeedbackGain = DemoConfig::LIGHT_FEEDBACK_GAIN;
+  lightFeedbackOmegaGain = DemoConfig::LIGHT_FEEDBACK_OMEGA_GAIN;
+  minAmplitudeRatio = DemoConfig::MIN_AMPLITUDE_RATIO;
+  feedbackTauSec = DemoConfig::FEEDBACK_TAU_SEC;
+
+  initialPhase = DemoConfig::INITIAL_PHASE;
+  isRandomInitialPhase = DemoConfig::IS_RANDOM_INITIAL_PHASE;
+
+  stopAgentId = 0;
+  stopDelaySeconds = 0;
+
+  prcHarmonics = DemoConfig::PRC_HARMONICS;
+  for (int n = 0; n <= PRC_MAX_HARMONICS; n++) {
+    prcCosCoeffs[n] = DemoConfig::PRC_COS_COEFFS[n];
+    prcSinCoeffs[n] = DemoConfig::PRC_SIN_COEFFS[n];
+  }
+}
+
+// デモ用パラメータをSerial出力する関数
+void printDemoParameters() {
+  Serial.println("[INFO] --- Demo Mode Parameters ---");
+  Serial.printf("[INFO]   omega: %.3f rad/s (%.2f Hz)\n", omega, omega / (2.0f * (float)M_PI));
+  Serial.printf("[INFO]   kappa: %.2f (init: %.2f)\n", kappa, kappa_init);
+  Serial.printf("[INFO]   servo center: %.1f deg, amplitude: %.1f deg\n", servoCenter, servoAmplitude);
+  Serial.printf("[INFO]   light tau: %.3f s, gain: %.2f, omega_gain: %.2f, min_amp_ratio: %.2f\n",
+                lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio);
+  Serial.printf("[INFO]   initial phase: %s (%.3f rad)\n", isRandomInitialPhase ? "random" : "fixed", initialPhase);
+  Serial.printf("[INFO]   PRC harmonics: %d\n", prcHarmonics);
+  for (int n = 0; n <= prcHarmonics; n++) {
+    Serial.printf("[INFO]     n=%d: cos=%.4f, sin=%.4f\n", n, prcCosCoeffs[n], prcSinCoeffs[n]);
+  }
+  Serial.println("[INFO] ----------------------------");
+}
 
 // データ保存間隔を設定 (例: 5ループごとに保存)
 const int saveInterval = 5;
@@ -331,6 +440,10 @@ float evaluatePRC(float psi) {
 //   (各パケット先頭に agent_id の1バイトと送信時の時刻4バイトを付加して送る)
 // ---------------------------------------------------
 void sendLogBuffer() {
+  if constexpr (!ENABLE_LOGGING || !USE_WIFI) {
+    return;
+  }
+
   const int maxPacketBytes = 512;
   uint8_t packet[maxPacketBytes];
   const int maxRetries = 100;
@@ -425,25 +538,27 @@ void logSensorData() {
   unsigned long elapsed = now - startLoggingMicros;
   prevLoopEndTime = now;
 
-  // INA226からW単位の量子化前電力値を取得し、台形則で積算
-  float currentPowerW = 0.0f;
-  bool inaSuccess = readIna226PowerW(currentPowerW);
+  // INA226からW単位の量子化前電力値を取得し、台形則で積算 (ロギング有効時のみ)
+  if constexpr (ENABLE_LOGGING) {
+    float currentPowerW = 0.0f;
+    bool inaSuccess = readIna226PowerW(currentPowerW);
 
-  if (inaSuccess) {
-    if (powerAccumValid) {
-      unsigned long dtInaMicros = now - prevInaTimeMicros; // 符号なし減算でオーバーフロー補正
-      float dtInaSec = (float)dtInaMicros / 1e6f;
-      powerEnergyJAccum += 0.5f * (previousPowerW + currentPowerW) * dtInaSec;
-      powerWindowDurationSec += dtInaSec;
-    } else {
-      powerAccumValid = true;
-    }
-    previousPowerW = currentPowerW;
-    prevInaTimeMicros = now;
-  } else {
-    // 読み取り失敗時：無効測定値を積算せず、時刻を更新して失敗期間を積算から除外
-    if (powerAccumValid) {
+    if (inaSuccess) {
+      if (powerAccumValid) {
+        unsigned long dtInaMicros = now - prevInaTimeMicros; // 符号なし減算でオーバーフロー補正
+        float dtInaSec = (float)dtInaMicros / 1e6f;
+        powerEnergyJAccum += 0.5f * (previousPowerW + currentPowerW) * dtInaSec;
+        powerWindowDurationSec += dtInaSec;
+      } else {
+        powerAccumValid = true;
+      }
+      previousPowerW = currentPowerW;
       prevInaTimeMicros = now;
+    } else {
+      // 読み取り失敗時：無効測定値を積算せず、時刻を更新して失敗期間を積算から除外
+      if (powerAccumValid) {
+        prevInaTimeMicros = now;
+      }
     }
   }
 
@@ -496,68 +611,70 @@ void logSensorData() {
   myServo.write(servoCenter + currentAmplitude * currentCos);
 
 
-  // データ保存は指定された間隔でのみ実行
-  if (loopCounter % saveInterval == 0) {
-    int raw1 = 0;
-    if (powerAccumValid && powerWindowDurationSec > 0.0f) {
-      float averagePowerW = powerEnergyJAccum / powerWindowDurationSec;
-      raw1 = (int)(averagePowerW * POWER_W_TO_RAW + 0.5f);
-      if (raw1 > POWER_RAW_MAX) {
-        raw1 = POWER_RAW_MAX;
+  // データ保存は指定された間隔でのみ実行 (ロギング有効時のみ)
+  if constexpr (ENABLE_LOGGING) {
+    if (loopCounter % saveInterval == 0) {
+      int raw1 = 0;
+      if (powerAccumValid && powerWindowDurationSec > 0.0f) {
+        float averagePowerW = powerEnergyJAccum / powerWindowDurationSec;
+        raw1 = (int)(averagePowerW * POWER_W_TO_RAW + 0.5f);
+        if (raw1 > POWER_RAW_MAX) {
+          raw1 = POWER_RAW_MAX;
+        }
+        if (raw1 < 0) {
+          raw1 = 0;
+        }
+        lastPowerRaw = raw1;
+
+        // 保存区間のリセット（境界の最終測定値previousPowerW/prevInaTimeMicrosは次区間の初期値として引き継ぐ）
+        powerEnergyJAccum = 0.0f;
+        powerWindowDurationSec = 0.0f;
+      } else {
+        raw1 = lastPowerRaw;
       }
-      if (raw1 < 0) {
-        raw1 = 0;
+
+      // ログ用構造体
+      CompressedLogData entry;
+      uint32_t m24 = now >> 8;  // 24ビットに圧縮
+      entry.micros24_0 = (uint8_t)(m24 & 0xFF);
+      entry.micros24_1 = (uint8_t)((m24 >> 8) & 0xFF);
+      entry.micros24_2 = (uint8_t)((m24 >> 16) & 0xFF);
+
+      // analog0: phiを [0..2π) → 0..255 に圧縮
+      float phiMod = fmodf((float)elapsed / 1e6f * omega + phi, 2.0f * (float)M_PI);
+      if (phiMod < 0) phiMod += 2.0f * (float)M_PI;
+      entry.analog0 = (uint8_t)(phiMod * (255.0f / (2.0f * (float)M_PI)));
+
+      // analog1: 16mW単位へ四捨五入（最も近い16mW単位へ丸めて0..255に制限）
+      int val16 = (raw1 + 8) >> 4;
+      if (val16 > 255) {
+        val16 = 255;
       }
-      lastPowerRaw = raw1;
-
-      // 保存区間のリセット（境界の最終測定値previousPowerW/prevInaTimeMicrosは次区間の初期値として引き継ぐ）
-      powerEnergyJAccum = 0.0f;
-      powerWindowDurationSec = 0.0f;
-    } else {
-      raw1 = lastPowerRaw;
-    }
-
-    // ログ用構造体
-    CompressedLogData entry;
-    uint32_t m24 = now >> 8;  // 24ビットに圧縮
-    entry.micros24_0 = (uint8_t)(m24 & 0xFF);
-    entry.micros24_1 = (uint8_t)((m24 >> 8) & 0xFF);
-    entry.micros24_2 = (uint8_t)((m24 >> 16) & 0xFF);
-
-    // analog0: phiを [0..2π) → 0..255 に圧縮
-    float phiMod = fmodf((float)elapsed / 1e6f * omega + phi, 2.0f * (float)M_PI);
-    if (phiMod < 0) phiMod += 2.0f * (float)M_PI;
-    entry.analog0 = (uint8_t)(phiMod * (255.0f / (2.0f * (float)M_PI)));
-
-    // analog1: 16mW単位へ四捨五入（最も近い16mW単位へ丸めて0..255に制限）
-    int val16 = (raw1 + 8) >> 4;
-    if (val16 > 255) {
-      val16 = 255;
-    }
-    if (val16 < 0) {
-      val16 = 0;
-    }
-    entry.analog1 = (uint8_t)val16;
-
-    entry.analog2 = (uint8_t)(raw2 >> 4);
-
-    entry.analog3 = (uint8_t)((int)filteredLightRaw >> 4);
-
-    // バッファに書き込み
-    if (logIndex < LOG_BUFFER_SIZE) {
-      logBuffer[logIndex++] = entry;
-    } else {
-      // 1度だけWarnを出す
-      if (!bufferOverflowed) {
-        Serial.println("[WARN] log buffer overflow!");
-        bufferOverflowed = true;
+      if (val16 < 0) {
+        val16 = 0;
       }
-    }
+      entry.analog1 = (uint8_t)val16;
 
-    // バッファ使用率 (10件毎に表示)
-    if (logIndex % 10 == 0) {
-      float usage = (float)logIndex / LOG_BUFFER_SIZE * 100.0f;
-      //Serial.printf("[STATUS] buffer: %d/%d (%.1f%%)\n", logIndex, LOG_BUFFER_SIZE, usage);
+      entry.analog2 = (uint8_t)(raw2 >> 4);
+
+      entry.analog3 = (uint8_t)((int)filteredLightRaw >> 4);
+
+      // バッファに書き込み
+      if (logIndex < LOG_BUFFER_SIZE) {
+        logBuffer[logIndex++] = entry;
+      } else {
+        // 1度だけWarnを出す
+        if (!bufferOverflowed) {
+          Serial.println("[WARN] log buffer overflow!");
+          bufferOverflowed = true;
+        }
+      }
+
+      // バッファ使用率 (10件毎に表示)
+      if (logIndex % 10 == 0) {
+        float usage = (float)logIndex / LOG_BUFFER_SIZE * 100.0f;
+        //Serial.printf("[STATUS] buffer: %d/%d (%.1f%%)\n", logIndex, LOG_BUFFER_SIZE, usage);
+      }
     }
   }
 
@@ -583,70 +700,87 @@ void setup() {
   Serial.begin(115200);
   analogReadResolution(12);
 
-  Wire1.setSDA(inaSdaPin);
-  Wire1.setSCL(inaSclPin);
-  Wire1.begin();
-  Wire1.setClock(400000);
-  inaReady = detectIna226Address();
-  if (inaReady) {
-    initIna226();
+  if constexpr (ENABLE_LOGGING) {
+    Wire1.setSDA(inaSdaPin);
+    Wire1.setSCL(inaSclPin);
+    Wire1.begin();
+    Wire1.setClock(400000);
+    inaReady = detectIna226Address();
+    if (inaReady) {
+      initIna226();
+    }
+  }
+
+  if constexpr (DEMO_MODE) {
+    Serial.println("\n==================================");
+    Serial.println("[INFO] Booting in DEMO MODE (Offline)");
+    Serial.println("==================================");
+    applyDemoParameters();
+    printDemoParameters();
   }
 
   myServo.attach(1);
   myServo.write(servoCenter); // 初期位置を中心に設定
 
-  agent_id = readAgentIdFromFile(); // ユーザ実装の想定
-  agentPort = 5000 + agent_id; // エージェント専用ポート
+  if constexpr (USE_WIFI) {
+    agent_id = readAgentIdFromFile(); // ユーザ実装の想定
+    agentPort = 5000 + agent_id; // エージェント専用ポート
 
-  // WiFi接続
-  connectToWiFi(ssid, password);
+    // WiFi接続
+    connectToWiFi(ssid, password);
 
-  udp.begin(12345);
+    udp.begin(12345);
 
-  // サーバー接続先を選択
-  IPAddress serverIP1(192, 168, 13, 98);
-  IPAddress serverIP2(192, 168, 13, 99);
-  
-  warmUpUDP(udp, serverIP1, serverPort);  // ServerUtils.cppの関数を呼び出し
-  warmUpUDP(udp, serverIP2, serverPort);  
-  
-  while (true) {
-    if (isServerReady(udp, serverIP1, serverPort)) {
-      serverIP = serverIP1;
-      Serial.println("[INFO] Connected to server at 192.168.13.98");
-      break;
-    } else if (isServerReady(udp, serverIP2, serverPort)) {
-      serverIP = serverIP2;
-      Serial.println("[INFO] Connected to server at 192.168.13.99");
-      break;
-    } else {
-      Serial.println("[WARN] No servers are ready. Retrying in 1 second...");
-      delay(1000);  // 1秒待機して再試行
+    // サーバー接続先を選択
+    IPAddress serverIP1(192, 168, 13, 98);
+    IPAddress serverIP2(192, 168, 13, 99);
+    
+    warmUpUDP(udp, serverIP1, serverPort);  // ServerUtils.cppの関数を呼び出し
+    warmUpUDP(udp, serverIP2, serverPort);  
+    
+    while (true) {
+      if (isServerReady(udp, serverIP1, serverPort)) {
+        serverIP = serverIP1;
+        Serial.println("[INFO] Connected to server at 192.168.13.98");
+        break;
+      } else if (isServerReady(udp, serverIP2, serverPort)) {
+        serverIP = serverIP2;
+        Serial.println("[INFO] Connected to server at 192.168.13.99");
+        break;
+      } else {
+        Serial.println("[WARN] No servers are ready. Retrying in 1 second...");
+        delay(1000);  // 1秒待機して再試行
+      }
     }
+
+    Serial.printf("Loaded agent_id: %d\n", agent_id);
+
+    // 最初はメインポート（5000）でパラメータリクエスト
+    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+
+    // パラメータ取得後、専用ポートに切り替え
+    serverPort = agentPort;
+    Serial.printf("[INFO] Switched to agent-specific port: %d\n", serverPort);
+
+    // サーボモータを真ん中に動かす
+    myServo.write(servoCenter); // パラメータ受信後の値で中心に設定
+    Serial.println("[INFO] Servo moved to center position");
+
+    Serial.println("[INFO] Ready to log in RAM");
+  } else {
+    Serial.println("[INFO] Servo initialized to center position");
   }
 
-  Serial.printf("Loaded agent_id: %d\n", agent_id);
-
-  // 最初はメインポート（5000）でパラメータリクエスト
-  requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
-
-  // パラメータ取得後、専用ポートに切り替え
-  serverPort = agentPort;
-  Serial.printf("[INFO] Switched to agent-specific port: %d\n", serverPort);
-
-  // サーボモータを真ん中に動かす
-  myServo.write(servoCenter); // パラメータ受信後の値で中心に設定
-  Serial.println("[INFO] Servo moved to center position");
-
-  Serial.println("[INFO] Ready to log in RAM");
   prevLoopEndTime = micros();
   prevLoopEndTime2 = prevLoopEndTime;
 
   // 初期状態をオフに設定
   paused = true;
   logIndex = 0;  // バッファインデックスを初期化
-  resetPowerAccumulator();
-  sendLogBuffer();
+  if constexpr (ENABLE_LOGGING) {
+    resetPowerAccumulator();
+    sendLogBuffer();
+  }
   kappa_now = kappa_init;
   srand(micros());
   Serial.println("[INFO] System is paused. Press the button to start.");
@@ -654,6 +788,10 @@ void setup() {
 
 // UDPコマンド受信処理
 void checkControlCommand() {
+  if constexpr (!USE_WIFI) {
+    return;
+  }
+
   int packetSize = udp.parsePacket();
   if (packetSize > 0) {
     char buf[16] = {0};
@@ -679,35 +817,41 @@ void checkControlCommand() {
 }
 
 void loop() {
-  checkControlCommand();
+  if constexpr (USE_WIFI) {
+    checkControlCommand();
+  }
 
-  // サーバーからのパラメータに基づく停止処理
-  if (!paused && stopAgentId == agent_id && stopAgentId != 0 && stopDelaySeconds > 0 && (millis() - startLoggingMillis >= (unsigned long)stopDelaySeconds * 1000)) {
-    Serial.printf("[INFO] Agent %d stopping as per server: finalization phase (triggered after %d s).\\n", agent_id, stopDelaySeconds);
-    
-    // ファイナライズ期間は、ログ開始 (startLoggingMillis) から最大180秒後まで。
-    unsigned long finalizationEndTime = startLoggingMillis + 180000UL; 
+  // サーバーからのパラメータに基づく停止処理 (通信有効時のみ)
+  if constexpr (USE_WIFI) {
+    if (!paused && stopAgentId == agent_id && stopAgentId != 0 && stopDelaySeconds > 0 && (millis() - startLoggingMillis >= (unsigned long)stopDelaySeconds * 1000)) {
+      Serial.printf("[INFO] Agent %d stopping as per server: finalization phase (triggered after %d s).\n", agent_id, stopDelaySeconds);
+      
+      // ファイナライズ期間は、ログ開始 (startLoggingMillis) から最大180秒後まで。
+      unsigned long finalizationEndTime = startLoggingMillis + 180000UL; 
 
-    // 現在時刻がファイナライズ終了時刻より前の場合のみ待機
-    if (millis() < finalizationEndTime) {
-        Serial.printf("[INFO] Entering finalization wait. Current: %lu, Target end: %lu (from startLoggingMillis: %lu)\\n", millis(), finalizationEndTime, startLoggingMillis);
-        while(millis() < finalizationEndTime){
-            delay(1000); 
-        }
-        Serial.println("[INFO] Finalization wait period finished.");
-    } else {
-        Serial.println("[INFO] Finalization period already passed or not applicable at stop trigger.");
+      // 現在時刻がファイナライズ終了時刻より前の場合のみ待機
+      if (millis() < finalizationEndTime) {
+          Serial.printf("[INFO] Entering finalization wait. Current: %lu, Target end: %lu (from startLoggingMillis: %lu)\n", millis(), finalizationEndTime, startLoggingMillis);
+          while(millis() < finalizationEndTime){
+              delay(1000); 
+          }
+          Serial.println("[INFO] Finalization wait period finished.");
+      } else {
+          Serial.println("[INFO] Finalization period already passed or not applicable at stop trigger.");
+      }
+
+      paused = true;
+      Serial.println("[INFO] Operation paused. Sending final log buffer.");
+      if constexpr (ENABLE_LOGGING) {
+        sendLogBuffer();
+      }
+      logIndex = 0;
+      kappa_now = kappa_init; // kappaを初期値に戻す
+      
+      Serial.println("[INFO] Resetting stop parameters (stopAgentId, stopDelaySeconds) to prevent re-triggering.");
+      stopAgentId = 0; 
+      stopDelaySeconds = 0;
     }
-
-    paused = true;
-    Serial.println("[INFO] Operation paused. Sending final log buffer.");
-    sendLogBuffer();
-    logIndex = 0;
-    kappa_now = kappa_init; // kappaを初期値に戻す
-    
-    Serial.println("[INFO] Resetting stop parameters (stopAgentId, stopDelaySeconds) to prevent re-triggering.");
-    stopAgentId = 0; 
-    stopDelaySeconds = 0;
   }
 
   // kappaの更新ロジック (これは元のまま)
@@ -718,24 +862,34 @@ void loop() {
   bool currentButtonState = digitalRead(digitalInputPin);
   if (currentButtonState && !lastButtonState) {
     paused = !paused;
-    Serial.println(paused ? "[INFO] Paused - Sending log from RAM" : "[INFO] Resumed");
+    if constexpr (DEMO_MODE) {
+      Serial.println(paused ? "[INFO] Button pressed: Paused" : "[INFO] Button pressed: Started");
+    } else {
+      Serial.println(paused ? "[INFO] Paused - Sending log from RAM" : "[INFO] Resumed");
+    }
     delay(300);  // チャタリング防止
 
     if (paused) {
-      // ログ送信
-      sendLogBuffer();
+      if constexpr (ENABLE_LOGGING) {
+        // ログ送信
+        sendLogBuffer();
+      }
       // バッファ初期化
       logIndex = 0;
       kappa_now = kappa_init;
 
-      // サーバーにパラメータをリクエスト（一時的にメインポートを使用）
-      unsigned int tempPort = serverPort;
-      serverPort = 5000; // メインポートに一時切り替え
-      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
-      serverPort = tempPort; // 専用ポートに戻す
-      lastRequestTime = millis();  // リクエスト送信時刻を記録
-    } else{
-      resetPowerAccumulator();
+      if constexpr (USE_WIFI) {
+        // サーバーにパラメータをリクエスト（一時的にメインポートを使用）
+        unsigned int tempPort = serverPort;
+        serverPort = 5000; // メインポートに一時切り替え
+        requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+        serverPort = tempPort; // 専用ポートに戻す
+        lastRequestTime = millis();  // リクエスト送信時刻を記録
+      }
+    } else {
+      if constexpr (ENABLE_LOGGING) {
+        resetPowerAccumulator();
+      }
       startLoggingMillis = millis(); // ログ開始時刻を記録
       startLoggingMicros = micros(); // ログ開始時刻を記録 
       lightFilterInitialized = false; // 光センサフィルタ初期化
@@ -746,22 +900,24 @@ void loop() {
   }
   lastButtonState = currentButtonState;
 
-  // ポーズ中に一定間隔でパラメータをリクエスト
-  if (paused && millis() - lastRequestTime >= 10000) {
-    while (WiFi.status() != WL_CONNECTED) {
-      connectToWiFi(ssid, password);
+  // ポーズ中に一定間隔でパラメータをリクエスト (通信有効時のみ)
+  if constexpr (USE_WIFI) {
+    if (paused && millis() - lastRequestTime >= 10000) {
+      while (WiFi.status() != WL_CONNECTED) {
+        connectToWiFi(ssid, password);
+      }
+      Serial.println("[INFO] WiFi connected.");
+      
+      // パラメータリクエスト時は一時的にメインポートを使用
+      unsigned int tempPort = serverPort;
+      serverPort = 5000; // メインポートに一時切り替え
+      requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
+      serverPort = tempPort; // 専用ポートに戻す
+      lastRequestTime = millis();  // リクエスト送信時刻を更新
     }
-    Serial.println("[INFO] WiFi connected.");
-    
-    // パラメータリクエスト時は一時的にメインポートを使用
-    unsigned int tempPort = serverPort;
-    serverPort = 5000; // メインポートに一時切り替え
-    requestParametersFromServer(udp, serverIP, serverPort, agent_id, readMonitorVoltageV(), omega, kappa, servoCenter, servoAmplitude, stopAgentId, stopDelaySeconds, feedbackTauSec, lightTauSec, lightFeedbackGain, lightFeedbackOmegaGain, minAmplitudeRatio, initialPhase, isRandomInitialPhase, prcHarmonics, prcCosCoeffs, prcSinCoeffs, PRC_MAX_HARMONICS);
-    serverPort = tempPort; // 専用ポートに戻す
-    lastRequestTime = millis();  // リクエスト送信時刻を更新
   }
 
-  // 記録中
+  // 制御実行
   if (!paused) {
     logSensorData();
   }
